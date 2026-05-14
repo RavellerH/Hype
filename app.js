@@ -22,6 +22,8 @@ let priceAlerts = [];
 let monitorActive = false;
 
 const MONITOR_COINS = ['BTC','ETH','SOL','HYPE','SUI','AVAX','DOGE','WIF','PEPE','ARB','OP','INJ'];
+const TA_COINS = ['BTC','ETH','SOL','HYPE'];
+let taCoin = 'BTC', taTf = '1h', taLoading = false, taOIPrev = {};
 
 // Narrative groupings
 const NARRATIVES = {
@@ -792,10 +794,267 @@ async function loadMonitor() {
         <span class="muted" style="font-size:11px">Alerts will appear here</span>
       </div>
     </div>
+
+    <div class="card" style="margin-top:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div class="card-title" style="margin:0">📊 TA Signal Dashboard</div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <div style="display:flex;gap:3px">
+            ${['1h','4h'].map(tf=>`<button class="tab ta-tf-tab${taTf===tf?' active':''}" data-tf="${tf}" onclick="setTATf('${tf}')">${tf}</button>`).join('')}
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="refreshTA()" style="padding:3px 10px;font-size:11px">↻</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:4px;margin-bottom:14px;flex-wrap:wrap">
+        ${TA_COINS.map(c=>`<button class="tab ta-coin-tab${c===taCoin?' active':''}" data-coin="${c}" onclick="setTACoin('${c}')">${c}</button>`).join('')}
+      </div>
+      <div id="ta-content"><div class="loading">${spinnerHtml()} Loading…</div></div>
+    </div>
   `;
 
   renderActiveAlerts();
   connectWS();
+  refreshTA();
+}
+
+// ── TA Math ───────────────────────────────────────────────────────────────────
+function iEMA(arr, p) {
+  const k = 2/(p+1); let ema = arr[0];
+  return arr.map(v => (ema = v*k + ema*(1-k)));
+}
+function iMACD(arr, f=12, s=26, sig=9) {
+  const emaF = iEMA(arr, f), emaS = iEMA(arr, s);
+  const macd = emaF.map((v,i) => v - emaS[i]);
+  const signal = iEMA(macd, sig);
+  return { macd, signal, hist: macd.map((v,i) => v - signal[i]) };
+}
+function iRSI(arr, p=14) {
+  let gAvg=0, lAvg=0;
+  for (let i=1; i<=p; i++) { const d=arr[i]-arr[i-1]; if(d>0) gAvg+=d; else lAvg-=d; }
+  gAvg/=p; lAvg/=p;
+  const out = new Array(p).fill(null);
+  out.push(lAvg===0 ? 100 : 100-100/(1+gAvg/lAvg));
+  for (let i=p+1; i<arr.length; i++) {
+    const d=arr[i]-arr[i-1];
+    gAvg=(gAvg*(p-1)+Math.max(d,0))/p; lAvg=(lAvg*(p-1)+Math.max(-d,0))/p;
+    out.push(lAvg===0 ? 100 : 100-100/(1+gAvg/lAvg));
+  }
+  return out;
+}
+function iStoch(highs, lows, closes, k=14, d=3) {
+  const kArr = closes.map((c,i) => {
+    if (i<k-1) return null;
+    const h=Math.max(...highs.slice(i-k+1,i+1)), l=Math.min(...lows.slice(i-k+1,i+1));
+    return h===l ? 50 : (c-l)/(h-l)*100;
+  });
+  const dArr = kArr.map((v,i) => {
+    if (v===null || i<k+d-2) return null;
+    const sl=kArr.slice(i-d+1,i+1).filter(x=>x!==null);
+    return sl.length===d ? sl.reduce((a,b)=>a+b)/d : null;
+  });
+  return { k: kArr, d: dArr };
+}
+function iBB(arr, p=20, mult=2) {
+  return arr.map((v,i) => {
+    if (i<p-1) return null;
+    const sl=arr.slice(i-p+1,i+1), mid=sl.reduce((a,b)=>a+b)/p;
+    const sd=Math.sqrt(sl.reduce((a,b)=>a+(b-mid)**2,0)/p);
+    const upper=mid+mult*sd, lower=mid-mult*sd;
+    return { upper, mid, lower, pctB:(v-lower)/(upper-lower), bw:(upper-lower)/mid*100 };
+  });
+}
+function iATR(highs, lows, closes, p=14) {
+  const tr=closes.map((c,i)=>i===0?highs[0]-lows[0]:Math.max(highs[i]-lows[i],Math.abs(highs[i]-closes[i-1]),Math.abs(lows[i]-closes[i-1])));
+  let atr=tr.slice(0,p).reduce((a,b)=>a+b)/p;
+  const out=[...new Array(p-1).fill(null),atr];
+  for(let i=p;i<tr.length;i++){atr=(atr*(p-1)+tr[i])/p;out.push(atr);}
+  return out;
+}
+function iMoneyFlow(opens, closes, volumes, p=20) {
+  let bSum=0, sSum=0;
+  for(let i=Math.max(0,closes.length-p);i<closes.length;i++){
+    if(closes[i]>=opens[i]) bSum+=volumes[i]; else sSum+=volumes[i];
+  }
+  const tot=bSum+sSum||1;
+  return { buyPct:bSum/tot*100, sellPct:sSum/tot*100 };
+}
+
+// ── TA Signals ────────────────────────────────────────────────────────────────
+function sigEMA(price, e20, e50, e200) {
+  const a20=price>e20, a50=price>e50, a200=e200!==null?price>e200:null;
+  let label, cls;
+  if(a200===null){
+    label=a20&&a50?'ABOVE EMA 20/50':!a20&&!a50?'BELOW EMA 20/50':'MIXED';
+    cls=a20&&a50?'bull':!a20&&!a50?'bear':'neut';
+  } else {
+    if(a20&&a50&&a200){label='FULL BULL';cls='bull';}
+    else if(!a20&&!a50&&!a200){label='FULL BEAR';cls='bear';}
+    else if(a50&&a200){label='ABOVE 50/200';cls='bull';}
+    else if(!a50&&!a200){label='BELOW 50/200';cls='bear';}
+    else {label='MIXED';cls='neut';}
+  }
+  const p20=((price-e20)/e20*100).toFixed(2), p50=((price-e50)/e50*100).toFixed(2);
+  return {label,cls,sub:`EMA20 ${p20>0?'+':''}${p20}% · EMA50 ${p50>0?'+':''}${p50}%`};
+}
+function sigMACD(hist, macd) {
+  const h=hist.at(-1),hP=hist.at(-2),m=macd.at(-1);
+  let label,cls;
+  if(h>0&&hP<=0){label='BULLISH CROSS';cls='bull';}
+  else if(h<0&&hP>=0){label='BEARISH CROSS';cls='bear';}
+  else if(h>0&&h>hP){label='BULLISH EXPANDING';cls='bull';}
+  else if(h>0){label='BULLISH FADING';cls='warn';}
+  else if(h<0&&h<hP){label='BEARISH EXPANDING';cls='bear';}
+  else if(h<0){label='BEARISH FADING';cls='warn';}
+  else{label='NEUTRAL';cls='neut';}
+  return {label,cls,sub:`Hist ${h>=0?'+':''}${h.toFixed(5)} · MACD ${m>=0?'+':''}${m.toFixed(5)}`};
+}
+function sigRSI(val) {
+  let label,cls;
+  if(val>=75){label='OVERBOUGHT';cls='warn';}
+  else if(val>=60){label='BULLISH';cls='bull';}
+  else if(val<=25){label='OVERSOLD';cls='info';}
+  else if(val<=40){label='BEARISH';cls='bear';}
+  else{label='NEUTRAL';cls='neut';}
+  return {label,cls,sub:`RSI ${val.toFixed(1)}`};
+}
+function sigStoch(k,d) {
+  let label,cls;
+  if(k>=80&&d>=80){label='OVERBOUGHT';cls='warn';}
+  else if(k<=20&&d<=20){label='OVERSOLD';cls='info';}
+  else if(k>d&&k>50){label='BULLISH';cls='bull';}
+  else if(k<d&&k<50){label='BEARISH';cls='bear';}
+  else{label='NEUTRAL';cls='neut';}
+  return {label,cls,sub:`K ${k.toFixed(1)} · D ${d.toFixed(1)}`};
+}
+function sigBB(bb) {
+  let label,cls;
+  if(bb.pctB>0.9){label='AT UPPER BAND';cls='warn';}
+  else if(bb.pctB>0.6){label='UPPER HALF';cls='bull';}
+  else if(bb.pctB<0.1){label='AT LOWER BAND';cls='info';}
+  else if(bb.pctB<0.4){label='LOWER HALF';cls='bear';}
+  else{label='MID BAND';cls='neut';}
+  const sq=bb.bw<3;
+  return {label,cls,sub:`%B ${(bb.pctB*100).toFixed(0)}% · BW ${bb.bw.toFixed(2)}%${sq?' · SQUEEZE':''}`};
+}
+function sigATR(atr,price) {
+  const pct=atr/price*100;
+  let label,cls;
+  if(pct>4){label='HIGH VOLATILITY';cls='warn';}
+  else if(pct>2){label='ELEVATED';cls='warn';}
+  else if(pct<0.5){label='LOW VOLATILITY';cls='info';}
+  else{label='NORMAL';cls='neut';}
+  return {label,cls,sub:`ATR ${pct.toFixed(2)}% of price`};
+}
+function sigFunding(rate) {
+  const pct=rate*100;
+  let label,cls;
+  if(pct>0.05){label='CROWDED LONG';cls='warn';}
+  else if(pct>0.01){label='LONG BIASED';cls='bull';}
+  else if(pct<-0.05){label='CROWDED SHORT';cls='info';}
+  else if(pct<-0.01){label='SHORT BIASED';cls='bear';}
+  else{label='NEUTRAL';cls='neut';}
+  return {label,cls,sub:`${pct>=0?'+':''}${pct.toFixed(4)}%/8h`};
+}
+function sigOI(oi,prev) {
+  const fmt=v=>v>=1e9?`$${(v/1e9).toFixed(2)}B`:v>=1e6?`$${(v/1e6).toFixed(1)}M`:`$${(v/1e3).toFixed(0)}K`;
+  if(!prev) return {label:'OI '+fmt(oi),cls:'neut',sub:'no prev data'};
+  const chg=(oi-prev)/prev*100;
+  let label,cls;
+  if(chg>3){label='RISING FAST';cls='bull';}
+  else if(chg>1){label='RISING';cls='bull';}
+  else if(chg<-3){label='FALLING FAST';cls='bear';}
+  else if(chg<-1){label='FALLING';cls='bear';}
+  else{label='STABLE';cls='neut';}
+  return {label,cls,sub:`${fmt(oi)} (${chg>=0?'+':''}${chg.toFixed(1)}%)`};
+}
+function sigFlow(buyPct) {
+  let label,cls;
+  if(buyPct>65){label='STRONG BUY FLOW';cls='bull';}
+  else if(buyPct>55){label='BUY FLOW';cls='bull';}
+  else if(buyPct<35){label='STRONG SELL FLOW';cls='bear';}
+  else if(buyPct<45){label='SELL FLOW';cls='bear';}
+  else{label='BALANCED';cls='neut';}
+  return {label,cls,sub:`Buy ${buyPct.toFixed(0)}% · Sell ${(100-buyPct).toFixed(0)}%`};
+}
+
+// ── TA Dashboard ──────────────────────────────────────────────────────────────
+function setTACoin(coin) {
+  taCoin = coin;
+  document.querySelectorAll('.ta-coin-tab').forEach(t => t.classList.toggle('active', t.dataset.coin===coin));
+  refreshTA();
+}
+function setTATf(tf) {
+  taTf = tf;
+  document.querySelectorAll('.ta-tf-tab').forEach(t => t.classList.toggle('active', t.dataset.tf===tf));
+  refreshTA();
+}
+
+async function refreshTA() {
+  if (taLoading) return;
+  taLoading = true;
+  const el = document.getElementById('ta-content');
+  if (!el) { taLoading=false; return; }
+  el.innerHTML = `<div class="loading">${spinnerHtml()} Fetching ${taCoin} ${taTf}…</div>`;
+  try {
+    const days = taTf==='4h' ? 60 : 15;
+    const [candles, meta] = await Promise.all([getCandles(taCoin, taTf, days), getMetaAndAssetCtxs()]);
+    const opens=candles.map(c=>parseFloat(c.o)), closes=candles.map(c=>parseFloat(c.c));
+    const highs=candles.map(c=>parseFloat(c.h)), lows=candles.map(c=>parseFloat(c.l));
+    const volumes=candles.map(c=>parseFloat(c.v));
+    const price=closes.at(-1);
+
+    const ema20=iEMA(closes,20), ema50=iEMA(closes,50);
+    const ema200=closes.length>=200?iEMA(closes,200):null;
+    const {hist,macd}=iMACD(closes);
+    const rsiArr=iRSI(closes); const rsiVal=rsiArr.filter(v=>v!==null).at(-1);
+    const {k:stochK,d:stochD}=iStoch(highs,lows,closes);
+    const kVal=stochK.filter(v=>v!==null).at(-1), dVal=stochD.filter(v=>v!==null).at(-1);
+    const bbArr=iBB(closes); const bb=bbArr.filter(v=>v!==null).at(-1);
+    const atrArr=iATR(highs,lows,closes); const atr=atrArr.filter(v=>v!==null).at(-1);
+    const mf=iMoneyFlow(opens,closes,volumes);
+
+    const universe=meta[0].universe, ctxs=meta[1];
+    const idx=universe.findIndex(a=>a.name===taCoin);
+    const ctx=idx>=0?ctxs[idx]:{};
+    const fundingRate=parseFloat(ctx.funding||0);
+    const markPx=parseFloat(ctx.markPx||ctx.midPx||0);
+    const oi=parseFloat(ctx.openInterest||0)*markPx;
+    const prev=taOIPrev[taCoin+taTf]||null;
+    taOIPrev[taCoin+taTf]=oi;
+
+    el.innerHTML = renderTADash({
+      ema: sigEMA(price, ema20.at(-1), ema50.at(-1), ema200?ema200.at(-1):null),
+      macd: sigMACD(hist, macd),
+      rsi: rsiVal!=null ? sigRSI(rsiVal) : null,
+      stoch: kVal!=null&&dVal!=null ? sigStoch(kVal,dVal) : null,
+      bb: bb ? sigBB(bb) : null,
+      atr: atr ? sigATR(atr,price) : null,
+      funding: sigFunding(fundingRate),
+      oi: sigOI(oi,prev),
+      mf: sigFlow(mf.buyPct)
+    }, price);
+  } catch(e) {
+    el.innerHTML = `<div class="loading">Error: ${e.message}</div>`;
+  }
+  taLoading = false;
+}
+
+function taRow(icon, name, sig) {
+  if (!sig) return '';
+  return `<div class="ta-row"><div class="ta-row-label"><span>${icon}</span>${name}</div><div class="ta-sig ta-${sig.cls}"><span class="ta-badge">${sig.label}</span>${sig.sub?`<span class="ta-sub">${sig.sub}</span>`:''}</div></div>`;
+}
+
+function renderTADash(s, price) {
+  return `
+    <div class="ta-group"><div class="ta-gtitle">TREND</div>
+      ${taRow('📏','EMA Bias',s.ema)}${taRow('〰️','MACD',s.macd)}</div>
+    <div class="ta-group"><div class="ta-gtitle">MOMENTUM</div>
+      ${taRow('⚡','RSI (14)',s.rsi)}${taRow('🔁','Stochastic',s.stoch)}</div>
+    <div class="ta-group"><div class="ta-gtitle">VOLATILITY</div>
+      ${taRow('🎯','Bollinger %B',s.bb)}${taRow('📐','ATR (14)',s.atr)}</div>
+    <div class="ta-group ta-last"><div class="ta-gtitle">CRYPTO-NATIVE</div>
+      ${taRow('💰','Funding',s.funding)}${taRow('📊','Open Interest',s.oi)}${taRow('🌊','Money Flow',s.mf)}</div>
+    <div style="text-align:right;font-size:10px;color:var(--text-muted);padding-top:6px">${taCoin} · ${taTf} · ${fmtPrice(price)} · ${new Date().toLocaleTimeString()}</div>`;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
