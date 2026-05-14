@@ -23,6 +23,7 @@ let monitorActive = false;
 
 const MONITOR_COINS = ['BTC','ETH','SOL','HYPE','SUI','AVAX','DOGE','WIF','PEPE','ARB','OP','INJ'];
 const TA_COINS = ['BTC','ETH','SOL','HYPE'];
+const PHASE_COINS = ['BTC','ETH','SOL','HYPE'];
 let taCoin = 'BTC', taTf = '1h', taLoading = false, taOIPrev = {};
 
 // Narrative groupings
@@ -111,29 +112,77 @@ function parseMarketData([meta, assetCtxs]) {
 
 // ── Phase Detector (Wyckoff) ──────────────────────────────────────────────────
 function detectPhase(candles) {
-  if (!candles||candles.length<10) return {phase:'NEUTRAL',confidence:0,price_trend:'flat',volume_trend:'neutral',range_compression:false,signals:['Not enough data'],score:0};
-  const closes=candles.map(c=>parseFloat(c.c)),volumes=candles.map(c=>parseFloat(c.v)),highs=candles.map(c=>parseFloat(c.h)),lows=candles.map(c=>parseFloat(c.l));
-  const n=candles.length,half=Math.floor(n/2),qtr=Math.max(Math.floor(n/4),1);
-  const avg=arr=>arr.reduce((a,b)=>a+b,0)/arr.length;
-  const pct=(avg(closes.slice(half))-avg(closes.slice(0,half)))/avg(closes.slice(0,half));
-  const price_trend=pct>0.03?'up':pct<-0.03?'down':'flat';
-  const vp=(avg(volumes.slice(-qtr))-avg(volumes.slice(0,qtr)))/avg(volumes.slice(0,qtr));
-  const volume_trend=vp>0.2?'expanding':vp<-0.2?'contracting':'neutral';
-  const fullRange=Math.max(...highs)-Math.min(...lows)||1;
-  const range_compression=(Math.max(...highs.slice(-qtr))-Math.min(...lows.slice(-qtr)))/fullRange<0.35;
-  const signals=[];let score=0;
-  if(price_trend==='up'){score+=0.3;signals.push('Price trending up');}else if(price_trend==='down'){score-=0.3;signals.push('Price trending down');}else signals.push('Price flat / sideways');
-  if(price_trend==='flat'&&volume_trend==='contracting'&&range_compression){score+=0.4;signals.push('Tight range + low volume → accumulation');}
-  else if(price_trend==='up'&&volume_trend==='expanding'){score+=0.35;signals.push('Price up + expanding volume → markup');}
-  else if(price_trend==='flat'&&volume_trend==='expanding'){score-=0.15;signals.push('Flat price + rising volume → distribution?');}
-  else if(price_trend==='down'&&volume_trend==='expanding'){score-=0.4;signals.push('Price down + volume → markdown');}
-  else if(price_trend==='down'&&volume_trend==='contracting'){score-=0.2;signals.push('Drying volume on downtrend → exhaustion');}
-  if(range_compression) signals.push('Range compressed (breakout setup)');
-  const avgVol=avg(volumes.slice(0,-1)),lastVol=volumes[volumes.length-1];
-  if(lastVol>avgVol*2){signals.push(`Vol spike ${(lastVol/avgVol).toFixed(1)}x avg`);score+=closes[closes.length-1]>closes[closes.length-2]?0.1:-0.1;}
+  if (!candles||candles.length<20) return {phase:'NEUTRAL',confidence:0,price_trend:'flat',volume_trend:'neutral',range_compression:false,signals:['Not enough data'],score:0};
+  const closes=candles.map(c=>parseFloat(c.c)),volumes=candles.map(c=>parseFloat(c.v));
+  const highs=candles.map(c=>parseFloat(c.h)),lows=candles.map(c=>parseFloat(c.l));
+  const n=candles.length, price=closes.at(-1);
+
+  // EMA bias
+  const ema20=iEMA(closes,20);
+  const ema50=closes.length>=50?iEMA(closes,50):null;
+  const e20=ema20.at(-1), e20p=ema20.at(-Math.min(6,n));
+  const e50=ema50?ema50.at(-1):null, e50p=ema50?ema50.at(-Math.min(6,n)):null;
+  const aboveE20=price>e20, aboveE50=ema50?price>e50:aboveE20;
+  const e20Slope=(e20-e20p)/e20p;
+  const e50Slope=e50&&e50p?(e50-e50p)/e50p:0;
+
+  // Price change over last ~20% of period
+  const lb=Math.max(5,Math.floor(n*0.2));
+  const pctChg=(price-closes[n-lb-1])/(closes[n-lb-1]||1);
+
+  // Volume: last quarter vs first quarter
+  const q=Math.max(4,Math.floor(n/4));
+  const avgV=arr=>arr.reduce((a,b)=>a+b,0)/arr.length;
+  const volRatio=avgV(volumes.slice(-q))/Math.max(avgV(volumes.slice(0,q)),1);
+
+  // ATR-based range compression
+  const atrArr=iATR(highs,lows,closes,14);
+  const atrNow=atrArr.at(-1)||0;
+  const atrEarly=avgV(atrArr.slice(0,Math.floor(n/4)).filter(Boolean))||atrNow||1;
+  const atrRatio=atrNow/atrEarly;
+  const rangeCompressed=atrRatio<0.65;
+
+  // RSI
+  const rsiVal=iRSI(closes).filter(v=>v!==null).at(-1)||50;
+
+  const signals=[];
+  let score=0;
+
+  // 1. EMA stack
+  if(aboveE20&&aboveE50){score+=0.25;signals.push('Above EMA 20 & 50 — bullish structure');}
+  else if(!aboveE20&&!aboveE50){score-=0.25;signals.push('Below EMA 20 & 50 — bearish structure');}
+  else{score+=aboveE20?0.05:-0.05;signals.push('Mixed EMA alignment');}
+
+  // 2. EMA slope
+  if(e20Slope>0.004){score+=0.15;signals.push('EMA 20 rising — momentum building');}
+  else if(e20Slope<-0.004){score-=0.15;signals.push('EMA 20 declining — momentum fading');}
+  if(e50&&e50Slope>0.002){score+=0.08;}
+  else if(e50&&e50Slope<-0.002){score-=0.08;}
+
+  // 3. Recent price change
+  if(pctChg>0.04){score+=0.2;signals.push(`Price +${(pctChg*100).toFixed(1)}% recent`);}
+  else if(pctChg<-0.04){score-=0.2;signals.push(`Price ${(pctChg*100).toFixed(1)}% recent`);}
+  else{signals.push(`Price flat (${(pctChg*100).toFixed(1)}%)`);}
+
+  // 4. Volume vs trend
+  const volTrend=volRatio>1.3?'expanding':volRatio<0.75?'contracting':'neutral';
+  if(aboveE20&&volTrend==='expanding'){score+=0.2;signals.push(`Vol ${volRatio.toFixed(1)}x avg — expanding in uptrend (markup)`);}
+  else if(!aboveE20&&volTrend==='expanding'){score-=0.2;signals.push(`Vol ${volRatio.toFixed(1)}x avg — expanding in downtrend (markdown)`);}
+  else if(volTrend==='contracting'&&Math.abs(pctChg)<0.03){score+=0.2;signals.push('Low vol + tight range — accumulation zone');}
+  else if(volTrend==='contracting'&&pctChg<-0.02){score-=0.1;signals.push('Shrinking vol on drop — exhaustion / base forming');}
+
+  // 5. Range compression
+  if(rangeCompressed){signals.push(`ATR at ${(atrRatio*100).toFixed(0)}% of avg — compressed (breakout watch)`);}
+
+  // 6. RSI context
+  if(rsiVal>70){signals.push(`RSI ${rsiVal.toFixed(0)} — overbought`);if(score>0.2)score-=0.1;}
+  else if(rsiVal<30){signals.push(`RSI ${rsiVal.toFixed(0)} — oversold`);if(score<-0.2)score+=0.1;}
+  else{signals.push(`RSI ${rsiVal.toFixed(0)}`);}
+
   score=Math.max(-1,Math.min(1,score));
-  const phase=score>=0.55?'MARKUP':score>=0.2?'ACCUMULATION':score<=-0.55?'MARKDOWN':score<=-0.2?'DISTRIBUTION':'NEUTRAL';
-  return {phase,confidence:+Math.min(Math.abs(score)+0.1*Math.min(n/50,1),1).toFixed(3),price_trend,volume_trend,range_compression,signals,score:+score.toFixed(4)};
+  const phase=score>=0.45?'MARKUP':score>=0.12?'ACCUMULATION':score<=-0.45?'MARKDOWN':score<=-0.12?'DISTRIBUTION':'NEUTRAL';
+  const price_trend=pctChg>0.03?'up':pctChg<-0.03?'down':'flat';
+  return {phase,confidence:+Math.min(Math.abs(score)+0.05*Math.min(n/60,1),1).toFixed(3),price_trend,volume_trend:volTrend,range_compression:rangeCompressed,signals,score:+score.toFixed(4)};
 }
 
 // ── Navigation ────────────────────────────────────────────────────────────────
@@ -441,14 +490,19 @@ async function loadPhases(interval){
   try{
     const state=await getClearinghouseState(currentWallet);
     const positions=parsePositions(state);
+    const posCoinSet=new Set(positions.map(p=>p.coin));
+    // Always show PHASE_COINS; append any open-position coins not in that list
+    const allCoins=[...PHASE_COINS,...positions.map(p=>p.coin).filter(c=>!PHASE_COINS.includes(c))];
+    const days={'1h':30,'4h':60,'1d':90}[phaseInterval]||30;
+
     el.innerHTML=`
       <div class="section-header">
         <div class="section-title">Phase Detector</div>
         <div class="tabs">${['1h','4h','1d'].map(iv=>`<button class="tab ${phaseInterval===iv?'active':''}" onclick="loadPhases('${iv}')">${iv}</button>`).join('')}</div>
       </div>
-      ${positions.length===0
-        ?'<div class="empty-state">No open positions to analyze.</div>'
-        :`<div id="phase-cards" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px"><div class="loading" style="grid-column:1/-1">${spinnerHtml()} Detecting…</div></div>`}
+      <div id="phase-cards" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div class="loading" style="grid-column:1/-1">${spinnerHtml()} Analyzing ${allCoins.join(', ')} on ${phaseInterval}…</div>
+      </div>
       <div class="card"><div class="card-title">Phase Key</div>
         <div style="display:flex;flex-direction:column;gap:7px;padding:2px 0">
           <span class="phase-badge phase-ACCUMULATION">🔵 Accumulation — quiet buying, tight range</span>
@@ -458,15 +512,17 @@ async function loadPhases(interval){
           <span class="phase-badge phase-NEUTRAL">⚪ Neutral — no clear signal</span>
         </div>
       </div>`;
-    if(positions.length>0){
-      const results=await Promise.allSettled(positions.map(async p=>{
-        const candles=await getCandles(p.coin,phaseInterval,7);
-        return {coin:p.coin,...detectPhase(candles)};
-      }));
-      const phases=results.map((r,i)=>r.status==='fulfilled'?r.value:{coin:positions[i].coin,phase:'NEUTRAL',confidence:0,signals:['fetch failed']});
-      const pcards=document.getElementById('phase-cards');
-      if(pcards) pcards.innerHTML=phases.map(phaseCard).join('');
-    }
+
+    const results=await Promise.allSettled(allCoins.map(async coin=>{
+      const candles=await getCandles(coin,phaseInterval,days);
+      return {coin,hasPosition:posCoinSet.has(coin),...detectPhase(candles)};
+    }));
+    const phases=results.map((r,i)=>
+      r.status==='fulfilled'?r.value:
+      {coin:allCoins[i],hasPosition:posCoinSet.has(allCoins[i]),phase:'NEUTRAL',confidence:0,signals:['fetch failed']}
+    );
+    const pcards=document.getElementById('phase-cards');
+    if(pcards) pcards.innerHTML=phases.map(phaseCard).join('');
     setRefreshTime();
   }catch(e){el.innerHTML=err(e);}
 }
@@ -475,11 +531,14 @@ function phaseCard(p){
   const icons={ACCUMULATION:'🔵',MARKUP:'🚀',DISTRIBUTION:'🟡',MARKDOWN:'🔻',NEUTRAL:'⚪'};
   const conf=Math.round((p.confidence||0)*100);
   return `<div class="card" style="margin-bottom:0">
-    <div class="card-title">${p.coin}</div>
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap">
+      <div class="card-title" style="margin:0">${p.coin}</div>
+      ${p.hasPosition?'<span style="font-size:9px;background:rgba(124,106,255,0.15);color:var(--accent);padding:2px 7px;border-radius:8px;font-weight:600">POSITION</span>':''}
+    </div>
     <div style="margin-bottom:8px"><span class="phase-badge phase-${p.phase}">${icons[p.phase]||'⚪'} ${p.phase}</span></div>
     <div class="conf-bar"><span class="muted" style="font-size:10px">Confidence</span><span class="conf-val">${conf}%</span></div>
     <div class="progress-bar" style="margin-bottom:8px"><div class="progress-fill" style="width:${conf}%"></div></div>
-    <div style="font-size:10px;color:var(--text-muted);margin-bottom:5px">Price: <b style="color:var(--text)">${p.price_trend}</b> · Vol: <b style="color:var(--text)">${p.volume_trend}</b></div>
+    <div style="font-size:10px;color:var(--text-muted);margin-bottom:5px">Price: <b style="color:var(--text)">${p.price_trend}</b> · Vol: <b style="color:var(--text)">${p.volume_trend}</b> · Score: <b style="color:var(--text)">${p.score}</b></div>
     <ul style="font-size:10px;color:var(--text-muted);padding-left:12px;line-height:1.7">${(p.signals||[]).map(s=>`<li>${s}</li>`).join('')}</ul>
   </div>`;
 }
