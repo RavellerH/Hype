@@ -122,13 +122,17 @@ function detectPhase(candles) {
 
 // ── Navigation ────────────────────────────────────────────────────────────────
 function navigate(page) {
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-item,.bottom-nav-item').forEach(n=>n.classList.remove('active'));
-  document.getElementById(`page-${page}`).classList.add('active');
-  document.querySelectorAll(`[data-page="${page}"]`).forEach(el=>el.classList.add('active'));
-  currentPage = page;
-  const loaders={overview:loadOverview,trades:loadTrades,funding:loadFunding,flows:loadFlows,markets:loadMarkets,phases:loadPhases,intel:loadIntel,watchlist:loadWatchlist};
-  if(loaders[page]) loaders[page]();
+  try {
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.nav-item,.bottom-nav-item').forEach(n=>n.classList.remove('active'));
+    const pageEl = document.getElementById(`page-${page}`);
+    if (!pageEl) return;
+    pageEl.classList.add('active');
+    document.querySelectorAll(`[data-page="${page}"]`).forEach(el=>el.classList.add('active'));
+    currentPage = page;
+    const loaders={overview:loadOverview,trades:loadTrades,funding:loadFunding,flows:loadFlows,markets:loadMarkets,phases:loadPhases,intel:typeof loadIntel!=='undefined'?loadIntel:null,watchlist:loadWatchlist};
+    if(loaders[page]) loaders[page]();
+  } catch(e) { console.error('navigate error:', e); }
 }
 function refreshAll(){navigate(currentPage);}
 
