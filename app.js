@@ -1,13 +1,27 @@
 // ── Config ───────────────────────────────────────────────────────────────────
 const HL = 'https://api.hyperliquid.xyz/info';
+const HL_WS = 'wss://api.hyperliquid.xyz/ws';
 const DEFAULT_WALLET = '0x6e4c6da09f06690cc4db53d42ab539d3d4882015';
 let currentWallet = localStorage.getItem('hype_wallet') || DEFAULT_WALLET;
 let currentPage = 'overview';
 let phaseInterval = '1h';
 let activeNarrative = 'all';
 let autoRefreshTimer = null;
-let marketSortKey = 'volume'; // volume | oi | change | funding
+let marketSortKey = 'volume';
 let allMarketData = [];
+
+// ── WebSocket state ───────────────────────────────────────────────────────────
+let ws = null;
+let wsReconnectTimer = null;
+let wsConnected = false;
+let livePrices = {};
+let livePrevDay = {};
+let livePositions = [];
+let priceHistory = {};
+let priceAlerts = [];
+let monitorActive = false;
+
+const MONITOR_COINS = ['BTC','ETH','SOL','HYPE','SUI','AVAX','DOGE','WIF','PEPE','ARB','OP','INJ'];
 
 // Narrative groupings
 const NARRATIVES = {
@@ -123,6 +137,7 @@ function detectPhase(candles) {
 // ── Navigation ────────────────────────────────────────────────────────────────
 function navigate(page) {
   try {
+    if (currentPage === 'monitor' && page !== 'monitor') disconnectWS();
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
     document.querySelectorAll('.nav-item,.bottom-nav-item').forEach(n=>n.classList.remove('active'));
     const pageEl = document.getElementById(`page-${page}`);
@@ -130,7 +145,7 @@ function navigate(page) {
     pageEl.classList.add('active');
     document.querySelectorAll(`[data-page="${page}"]`).forEach(el=>el.classList.add('active'));
     currentPage = page;
-    const loaders={overview:loadOverview,trades:loadTrades,funding:loadFunding,flows:loadFlows,markets:loadMarkets,phases:loadPhases,intel:typeof loadIntel!=='undefined'?loadIntel:null,watchlist:loadWatchlist};
+    const loaders={overview:loadOverview,trades:loadTrades,funding:loadFunding,flows:loadFlows,monitor:loadMonitor,markets:loadMarkets,phases:loadPhases,intel:typeof loadIntel!=='undefined'?loadIntel:null,watchlist:loadWatchlist};
     if(loaders[page]) loaders[page]();
   } catch(e) { console.error('navigate error:', e); }
 }
@@ -529,6 +544,258 @@ function addWatchWallet(){
 function removeWatchWallet(addr){
   if(!confirm('Remove?')) return;
   saveWatchlist(getWatchlist().filter(w=>w.address!==addr));loadWatchlist();
+}
+
+// ── Live Monitor + WebSocket ──────────────────────────────────────────────────
+function connectWS() {
+  if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
+  try { ws = new WebSocket(HL_WS); } catch(e) { scheduleReconnect(); return; }
+  ws.onopen = () => {
+    wsConnected = true;
+    ws.send(JSON.stringify({method:'subscribe', subscription:{type:'allMids'}}));
+    setWSStatus(true);
+    if (wsReconnectTimer) { clearTimeout(wsReconnectTimer); wsReconnectTimer = null; }
+  };
+  ws.onmessage = (e) => {
+    try {
+      const msg = JSON.parse(e.data);
+      if (msg.channel === 'allMids' && msg.data && msg.data.mids) handleMids(msg.data.mids);
+    } catch(_) {}
+  };
+  ws.onclose = () => { wsConnected = false; setWSStatus(false); if (monitorActive) scheduleReconnect(); };
+  ws.onerror = () => { ws.close(); };
+}
+
+function scheduleReconnect() {
+  if (wsReconnectTimer) return;
+  wsReconnectTimer = setTimeout(() => { wsReconnectTimer = null; if (monitorActive) connectWS(); }, 3000);
+}
+
+function disconnectWS() {
+  monitorActive = false;
+  if (wsReconnectTimer) { clearTimeout(wsReconnectTimer); wsReconnectTimer = null; }
+  if (ws) { ws.close(); ws = null; }
+  wsConnected = false;
+  setWSStatus(false);
+}
+
+function setWSStatus(on) {
+  const dot = document.getElementById('ws-status');
+  if (dot) dot.className = 'status-dot' + (on ? '' : ' off');
+  const badge = document.getElementById('monitor-live-badge');
+  if (badge) { badge.textContent = on ? '🟢 LIVE' : '🔴 Reconnecting…'; badge.style.color = on ? 'var(--green)' : 'var(--red)'; }
+}
+
+function handleMids(mids) {
+  for (const [coin, rawPrice] of Object.entries(mids)) {
+    const price = parseFloat(rawPrice);
+    if (!price) continue;
+    const prev = livePrices[coin];
+    livePrices[coin] = price;
+    if (!priceHistory[coin]) priceHistory[coin] = [];
+    priceHistory[coin].push(price);
+    if (priceHistory[coin].length > 40) priceHistory[coin].shift();
+    refreshPriceRow(coin, price, prev);
+  }
+  refreshLivePnL();
+  checkPriceAlerts();
+  const ts = document.getElementById('monitor-ts');
+  if (ts) ts.textContent = new Date().toLocaleTimeString();
+}
+
+function refreshPriceRow(coin, price, prev) {
+  const priceEl = document.getElementById('lp-' + coin);
+  if (!priceEl) return;
+  const dir = prev ? (price > prev ? 'up' : price < prev ? 'dn' : '') : '';
+  priceEl.textContent = fmtPrice(price);
+  if (dir) {
+    priceEl.className = 'mono ' + (dir === 'up' ? 'pos ticker-flash-up' : 'neg ticker-flash-dn');
+    setTimeout(() => { if (priceEl) priceEl.className = 'mono ' + (dir === 'up' ? 'pos' : 'neg'); }, 400);
+  }
+  const chgEl = document.getElementById('lc-' + coin);
+  if (chgEl && livePrevDay[coin]) {
+    const chg = ((price - livePrevDay[coin]) / livePrevDay[coin]) * 100;
+    chgEl.textContent = (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%';
+    chgEl.className = chg >= 0 ? 'pos' : 'neg';
+  }
+  const sparkEl = document.getElementById('lsp-' + coin);
+  if (sparkEl && priceHistory[coin] && priceHistory[coin].length > 1) {
+    sparkEl.innerHTML = sparkline(priceHistory[coin]);
+  }
+}
+
+function refreshLivePnL() {
+  for (const pos of livePositions) {
+    const price = livePrices[pos.coin];
+    if (!price) continue;
+    const pnl = pos.side === 'long' ? (price - pos.entry_price) * pos.size : (pos.entry_price - price) * pos.size;
+    const key = pos.coin + pos.side;
+    const pnlEl = document.getElementById('lpnl-' + key);
+    const nowEl = document.getElementById('lnow-' + key);
+    if (pnlEl) { pnlEl.textContent = fmt$(pnl); pnlEl.className = pnl >= 0 ? 'pos mono' : 'neg mono'; }
+    if (nowEl) { nowEl.textContent = fmtPrice(price); nowEl.className = 'mono'; }
+  }
+}
+
+function sparkline(prices) {
+  const W = 56, H = 18;
+  const mn = Math.min(...prices), mx = Math.max(...prices), rng = mx - mn || 1;
+  const pts = prices.map((p, i) => `${((i / (prices.length - 1)) * W).toFixed(1)},${(H - ((p - mn) / rng) * H).toFixed(1)}`).join(' ');
+  const color = prices[prices.length - 1] >= prices[0] ? '#22c55e' : '#ef4444';
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="display:block"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+
+function checkPriceAlerts() {
+  let changed = false;
+  for (const a of priceAlerts) {
+    if (a.triggered) continue;
+    const price = livePrices[a.coin];
+    if (!price) continue;
+    if ((a.above && price >= a.target) || (!a.above && price <= a.target)) {
+      a.triggered = true;
+      changed = true;
+      logAlert(a.coin, a.above ? '▲ crossed above' : '▼ dropped below', a.target, price);
+    }
+  }
+  if (changed) { saveAlerts(); renderActiveAlerts(); }
+}
+
+function logAlert(coin, desc, target, price) {
+  const log = document.getElementById('alert-log');
+  if (!log) return;
+  const row = document.createElement('div');
+  row.className = 'alert-log-row';
+  row.innerHTML = `<span class="muted" style="font-size:10px">${new Date().toLocaleTimeString()}</span> <b>${coin}</b> ${desc} ${fmtPrice(target)} <span class="muted">(now ${fmtPrice(price)})</span>`;
+  log.prepend(row);
+  if (log.children.length > 30) log.removeChild(log.lastChild);
+}
+
+function saveAlerts() { try { localStorage.setItem('hype_alerts', JSON.stringify(priceAlerts)); } catch(_) {} }
+function loadAlerts() { try { priceAlerts = JSON.parse(localStorage.getItem('hype_alerts') || '[]'); } catch(_) { priceAlerts = []; } }
+
+function addAlert() {
+  const coin = (document.getElementById('alert-coin').value || '').trim().toUpperCase();
+  const dir  = document.getElementById('alert-dir').value;
+  const tgt  = parseFloat(document.getElementById('alert-price').value);
+  if (!coin || !tgt) return;
+  priceAlerts.push({ id: Date.now(), coin, above: dir === 'above', target: tgt, triggered: false });
+  saveAlerts();
+  renderActiveAlerts();
+  document.getElementById('alert-coin').value = '';
+  document.getElementById('alert-price').value = '';
+}
+
+function deleteAlert(id) {
+  priceAlerts = priceAlerts.filter(a => a.id !== id);
+  saveAlerts();
+  renderActiveAlerts();
+}
+
+function clearTriggered() {
+  priceAlerts = priceAlerts.filter(a => !a.triggered);
+  saveAlerts();
+  renderActiveAlerts();
+}
+
+function renderActiveAlerts() {
+  const el = document.getElementById('active-alerts');
+  if (!el) return;
+  const active = priceAlerts.filter(a => !a.triggered);
+  const done   = priceAlerts.filter(a => a.triggered);
+  el.innerHTML = active.length === 0 && done.length === 0
+    ? '<div class="muted" style="font-size:12px">No alerts set</div>'
+    : [
+        ...active.map(a => `<div class="alert-row"><span class="accent mono">${a.coin}</span> <span class="muted">${a.above ? '▲ above' : '▼ below'}</span> <b>${fmtPrice(a.target)}</b><button class="btn btn-ghost btn-sm" onclick="deleteAlert(${a.id})" style="padding:0 6px;margin-left:auto">✕</button></div>`),
+        ...done.map(a => `<div class="alert-row" style="opacity:0.45;text-decoration:line-through"><span class="accent mono">${a.coin}</span> ${a.above ? '▲' : '▼'} ${fmtPrice(a.target)} ✅</div>`),
+      ].join('') + (done.length ? `<button class="btn btn-ghost btn-sm" onclick="clearTriggered()" style="margin-top:6px;font-size:11px">Clear triggered</button>` : '');
+}
+
+async function loadMonitor() {
+  monitorActive = true;
+  loadAlerts();
+  const el = document.getElementById('monitor-content');
+
+  // Fetch positions + prevDay prices concurrently
+  let positions = [];
+  try {
+    const [state, meta] = await Promise.all([getClearinghouseState(currentWallet), getMetaAndAssetCtxs()]);
+    positions = parsePositions(state);
+    livePositions = positions;
+    // Store prevDay prices for 24h % calc
+    const universe = meta[0].universe;
+    const ctxs = meta[1];
+    universe.forEach((asset, i) => {
+      const prev = parseFloat(ctxs[i].prevDayPx || 0);
+      if (prev) livePrevDay[asset.name] = prev;
+    });
+  } catch(_) {}
+
+  el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div><div class="section-title">⚡ Live Monitor</div><div class="muted" style="font-size:11px">WebSocket · Hyperliquid real-time feed</div></div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span id="monitor-live-badge" style="font-size:12px;font-weight:600;color:var(--red)">🔴 Connecting…</span>
+        <span class="muted" style="font-size:11px"><span id="monitor-ts">—</span></span>
+      </div>
+    </div>
+
+    ${positions.length > 0 ? `
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-title">📍 Positions · Live P&L</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Coin</th><th>Side</th><th>Size</th><th>Entry</th><th>Now</th><th>Live PnL</th><th>Lev</th></tr></thead>
+        <tbody>${positions.map(p => {
+          const key = p.coin + p.side;
+          return `<tr>
+            <td class="accent" style="font-weight:600">${p.coin}</td>
+            <td><span class="side-badge ${p.side}">${p.side === 'long' ? 'L' : 'S'}</span></td>
+            <td class="mono">${p.size}</td>
+            <td class="mono">${fmtPrice(p.entry_price)}</td>
+            <td id="lnow-${key}" class="mono">—</td>
+            <td id="lpnl-${key}" class="mono muted">—</td>
+            <td class="muted">${p.leverage_value}x</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table></div>
+    </div>` : '<div class="card" style="margin-bottom:14px"><div class="muted" style="padding:10px;font-size:12px">No open positions · P&L tracker will appear here when you have positions</div></div>'}
+
+    <div class="card" style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px">
+        <div class="card-title" style="margin:0">📈 Live Prices</div>
+        <span class="muted" style="font-size:10px">Updates every tick via WebSocket</span>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Coin</th><th>Price</th><th>24h %</th><th style="width:64px">Trend</th></tr></thead>
+        <tbody>${MONITOR_COINS.map(coin => `<tr>
+          <td class="accent" style="font-weight:600">${coin}</td>
+          <td id="lp-${coin}" class="mono">—</td>
+          <td id="lc-${coin}" class="muted">—</td>
+          <td id="lsp-${coin}" style="padding:0 6px 0 0"></td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🔔 Price Alerts</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
+        <input class="input" id="alert-coin" placeholder="BTC" style="width:72px;flex-shrink:0" oninput="this.value=this.value.toUpperCase()">
+        <select class="input" id="alert-dir" style="width:90px;flex-shrink:0">
+          <option value="above">▲ Above</option>
+          <option value="below">▼ Below</option>
+        </select>
+        <input class="input" id="alert-price" placeholder="Price" type="number" style="width:110px;flex-shrink:0">
+        <button class="btn btn-primary btn-sm" onclick="addAlert()">+ Set Alert</button>
+      </div>
+      <div id="active-alerts" style="margin-bottom:12px"></div>
+      <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">Alert Log</div>
+      <div id="alert-log" style="display:flex;flex-direction:column;gap:4px;max-height:180px;overflow-y:auto;font-size:12px">
+        <span class="muted" style="font-size:11px">Alerts will appear here</span>
+      </div>
+    </div>
+  `;
+
+  renderActiveAlerts();
+  connectWS();
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

@@ -159,6 +159,15 @@ tr:hover td{background:rgba(255,255,255,0.025);}
 /* bottom nav */
 .bottom-nav{display:none;}
 
+/* ── Live Monitor ─────────────────────────────────────────────────────────── */
+.mono{font-family:var(--mono);font-size:12px;}
+@keyframes flash-up{0%{background:rgba(34,197,94,.35)}100%{background:transparent}}
+@keyframes flash-dn{0%{background:rgba(239,68,68,.35)}100%{background:transparent}}
+.ticker-flash-up{animation:flash-up .4s ease-out;}
+.ticker-flash-dn{animation:flash-dn .4s ease-out;}
+.alert-row{display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--surface2);border-radius:6px;margin-bottom:4px;font-size:12px;}
+.alert-log-row{padding:5px 8px;border-radius:6px;background:var(--surface2);margin-bottom:3px;line-height:1.5;}
+
 /* MOBILE */
 @media(max-width:768px){
   body{overflow:hidden;}
