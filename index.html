@@ -2,87 +2,72 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
   <meta name="theme-color" content="#16181c">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Hype — Trade Analyzer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-  <!-- Topbar -->
   <header class="topbar">
     <span class="logo">⚡ HYPE</span>
     <span class="wallet-badge" id="wallet-display">0x6e4c…2015</span>
     <div class="topbar-right">
       <span class="refresh-info" id="refresh-info"></span>
-      <button class="btn btn-ghost btn-sm" onclick="refreshAll()" style="min-width:36px">↺</button>
+      <button class="btn btn-ghost btn-sm" onclick="refreshAll()">↺</button>
       <div id="ws-status" class="status-dot off"></div>
     </div>
   </header>
 
   <!-- Desktop sidebar -->
   <nav class="sidebar">
-    <div class="nav-section">Portfolio</div>
-    <a class="nav-item active" data-page="overview" onclick="navigate('overview')">
-      <span class="icon">📊</span> Overview
-    </a>
-    <a class="nav-item" data-page="trades" onclick="navigate('trades')">
-      <span class="icon">🔄</span> Trade History
-    </a>
-    <a class="nav-item" data-page="funding" onclick="navigate('funding')">
-      <span class="icon">💹</span> Funding
-    </a>
-    <a class="nav-item" data-page="flows" onclick="navigate('flows')">
-      <span class="icon">💰</span> Inflow / Outflow
-    </a>
-    <div class="nav-section" style="margin-top:8px">Analysis</div>
-    <a class="nav-item" data-page="phases" onclick="navigate('phases')">
-      <span class="icon">🔵</span> Phase Detector
-    </a>
+    <div class="nav-section">My Portfolio</div>
+    <a class="nav-item active" data-page="overview" onclick="navigate('overview')"><span class="icon">📊</span>Overview</a>
+    <a class="nav-item" data-page="trades" onclick="navigate('trades')"><span class="icon">🔄</span>Trade History</a>
+    <a class="nav-item" data-page="funding" onclick="navigate('funding')"><span class="icon">💹</span>Funding</a>
+    <a class="nav-item" data-page="flows" onclick="navigate('flows')"><span class="icon">💰</span>My Flows</a>
+    <div class="nav-section" style="margin-top:8px">Markets</div>
+    <a class="nav-item" data-page="markets" onclick="navigate('markets')"><span class="icon">🌊</span>Global Flows</a>
+    <a class="nav-item" data-page="phases" onclick="navigate('phases')"><span class="icon">🔵</span>Phase Detector</a>
     <div class="nav-section" style="margin-top:8px">Tracking</div>
-    <a class="nav-item" data-page="watchlist" onclick="navigate('watchlist')">
-      <span class="icon">👛</span> Watchlist
-    </a>
+    <a class="nav-item" data-page="watchlist" onclick="navigate('watchlist')"><span class="icon">👛</span>Watchlist</a>
   </nav>
 
   <!-- Mobile bottom nav -->
   <nav class="bottom-nav">
     <button class="bottom-nav-item active" data-page="overview" onclick="navigate('overview')">
-      <span class="bnav-icon">📊</span>
-      <span>Overview</span>
+      <span class="bnav-icon">📊</span><span>Portfolio</span>
     </button>
     <button class="bottom-nav-item" data-page="trades" onclick="navigate('trades')">
-      <span class="bnav-icon">🔄</span>
-      <span>Trades</span>
+      <span class="bnav-icon">🔄</span><span>Trades</span>
     </button>
-    <button class="bottom-nav-item" data-page="funding" onclick="navigate('funding')">
-      <span class="bnav-icon">💹</span>
-      <span>Funding</span>
-    </button>
-    <button class="bottom-nav-item" data-page="flows" onclick="navigate('flows')">
-      <span class="bnav-icon">💰</span>
-      <span>Flows</span>
+    <button class="bottom-nav-item" data-page="markets" onclick="navigate('markets')">
+      <span class="bnav-icon">🌊</span><span>Markets</span>
     </button>
     <button class="bottom-nav-item" data-page="phases" onclick="navigate('phases')">
-      <span class="bnav-icon">🔵</span>
-      <span>Phase</span>
+      <span class="bnav-icon">🔵</span><span>Phase</span>
+    </button>
+    <button class="bottom-nav-item" data-page="funding" onclick="navigate('funding')">
+      <span class="bnav-icon">💹</span><span>Funding</span>
+    </button>
+    <button class="bottom-nav-item" data-page="flows" onclick="navigate('flows')">
+      <span class="bnav-icon">💰</span><span>Flows</span>
     </button>
     <button class="bottom-nav-item" data-page="watchlist" onclick="navigate('watchlist')">
-      <span class="bnav-icon">👛</span>
-      <span>Watch</span>
+      <span class="bnav-icon">👛</span><span>Watch</span>
     </button>
   </nav>
 
-  <!-- Pages -->
   <main class="main">
     <div class="page active" id="page-overview"><div id="overview-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page" id="page-trades"><div id="trades-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page" id="page-funding"><div id="funding-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page" id="page-flows"><div id="flows-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
+    <div class="page" id="page-markets"><div id="markets-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page" id="page-phases"><div id="phases-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page" id="page-watchlist"><div id="watchlist-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
   </main>
