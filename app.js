@@ -166,7 +166,7 @@ async function loadOverview(){
       ${orders.length>0?`<div class="card"><div class="card-title">Open Orders (${orders.length})</div><div class="table-wrap"><table>
         <thead><tr><th>Coin</th><th>Side</th><th>Size</th><th>Limit</th></tr></thead>
         <tbody>${orders.map(o=>`<tr><td class="accent">${o.coin}</td><td><span class="side-badge ${o.side==='B'?'long':'short'}">${o.side==='B'?'B':'S'}</span></td><td>${o.sz}</td><td>${o.limitPx?fmt$(parseFloat(o.limitPx)):'—'}</td></tr>`).join('')}</tbody>
-      </table></div></div>`:''}]`;
+      </table></div></div>`:''}`;
     setRefreshTime();
   }catch(e){el.innerHTML=err(e);setStatus(false);}
 }
