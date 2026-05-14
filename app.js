@@ -21,6 +21,13 @@ let priceHistory = {};
 let priceAlerts = [];
 let monitorActive = false;
 
+// ── Telegram state ────────────────────────────────────────────────────────────
+let tgToken = localStorage.getItem('hype_tg_token') || '';
+let tgChatId = localStorage.getItem('hype_tg_chat') || '';
+let pnlThreshold = parseFloat(localStorage.getItem('hype_pnl_thr') || '0');
+let livePnLSnapshot = {};   // coin+side → last PnL for milestone detection
+let lastOrderIds = null;    // Set of oid strings for fill detection
+
 const MONITOR_COINS = ['BTC','ETH','SOL','HYPE','SUI','AVAX','DOGE','WIF','PEPE','ARB','OP','INJ'];
 const TA_COINS = ['BTC','ETH','SOL','HYPE'];
 const PHASE_COINS = ['BTC','ETH','SOL','HYPE'];
@@ -209,6 +216,7 @@ async function loadOverview(){
   try{
     setStatus(true);
     const [state,orders]=await Promise.all([getClearinghouseState(currentWallet),getOpenOrders(currentWallet)]);
+    checkOrderFills(orders);
     const s=parseAccountSummary(state),positions=parsePositions(state);
     const totalUnr=positions.reduce((a,p)=>a+p.unrealized_pnl,0);
     el.innerHTML=`
@@ -695,7 +703,20 @@ function refreshLivePnL() {
     const nowEl = document.getElementById('lnow-' + key);
     if (pnlEl) { pnlEl.textContent = fmt$(pnl); pnlEl.className = pnl >= 0 ? 'pos mono' : 'neg mono'; }
     if (nowEl) { nowEl.textContent = fmtPrice(price); nowEl.className = 'mono'; }
+    checkPnLMilestone(key, pos.coin, pos.side, pnl);
   }
+}
+
+function checkPnLMilestone(key, coin, side, pnl) {
+  if (!pnlThreshold || pnlThreshold <= 0) return;
+  const prev = livePnLSnapshot[key];
+  livePnLSnapshot[key] = pnl;
+  if (prev === undefined) return;
+  const prevBucket = Math.floor(prev / pnlThreshold);
+  const nowBucket = Math.floor(pnl / pnlThreshold);
+  if (nowBucket === prevBucket) return;
+  const emoji = pnl >= 0 ? '🟢' : '🔴';
+  sendTelegram(`${emoji} <b>P&L Milestone — ${coin} ${side.toUpperCase()}</b>\nP&L crossed ${fmt$(nowBucket * pnlThreshold)}\nCurrent: ${fmt$(pnl)} @ ${fmtPrice(livePrices[coin])}`);
 }
 
 function sparkline(prices) {
@@ -715,7 +736,9 @@ function checkPriceAlerts() {
     if ((a.above && price >= a.target) || (!a.above && price <= a.target)) {
       a.triggered = true;
       changed = true;
-      logAlert(a.coin, a.above ? '▲ crossed above' : '▼ dropped below', a.target, price);
+      const dir = a.above ? '▲ crossed above' : '▼ dropped below';
+      logAlert(a.coin, dir, a.target, price);
+      sendTelegram(`🔔 <b>Price Alert — ${a.coin}</b>\n${dir} ${fmtPrice(a.target)}\nNow: ${fmtPrice(price)}`);
     }
   }
   if (changed) { saveAlerts(); renderActiveAlerts(); }
@@ -855,6 +878,34 @@ async function loadMonitor() {
     </div>
 
     <div class="card" style="margin-top:14px">
+      <div class="card-title">📲 Telegram Notifications</div>
+      <div class="muted" style="font-size:11px;margin-bottom:12px">Token stored in your browser only — never committed to code or sent anywhere except Telegram.</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div>
+          <div class="stat-label" style="margin-bottom:4px">Bot Token</div>
+          <input class="input" id="tg-token-input" type="password" placeholder="Paste your bot token" value="${tgToken}" style="width:100%;font-family:var(--mono);font-size:11px">
+        </div>
+        <div>
+          <div class="stat-label" style="margin-bottom:4px">Your Chat ID</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <input class="input" id="tg-chat-input" placeholder="e.g. 123456789" value="${tgChatId}" style="flex:1;min-width:120px;font-family:var(--mono)">
+            <button class="btn btn-ghost btn-sm" onclick="getTGChatId()" style="white-space:nowrap">Auto-detect</button>
+          </div>
+          <div class="muted" style="font-size:10px;margin-top:4px">Send any message to your bot first, then click Auto-detect.</div>
+        </div>
+        <div>
+          <div class="stat-label" style="margin-bottom:4px">P&L Milestone — Alert every $</div>
+          <input class="input" id="tg-pnl-thr" type="number" placeholder="e.g. 500" value="${pnlThreshold||''}" style="width:130px">
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" onclick="saveTGSettings()">Save</button>
+          <button class="btn btn-ghost btn-sm" onclick="testTelegram()">Send Test</button>
+          <span id="tg-status" style="font-size:11px;color:var(--text-muted)">${tgToken&&tgChatId?'✓ Configured':'Not configured'}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
         <div class="card-title" style="margin:0">📊 TA Signal Dashboard</div>
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
@@ -874,6 +925,76 @@ async function loadMonitor() {
   renderActiveAlerts();
   connectWS();
   refreshTA();
+}
+
+// ── Telegram ──────────────────────────────────────────────────────────────────
+async function sendTelegram(text) {
+  if (!tgToken || !tgChatId) return false;
+  try {
+    const r = await fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: tgChatId, text, parse_mode: 'HTML' })
+    });
+    return r.ok;
+  } catch(_) { return false; }
+}
+
+async function getTGChatId() {
+  const tokenEl = document.getElementById('tg-token-input');
+  const tok = tokenEl ? tokenEl.value.trim() : tgToken;
+  if (!tok) { tgSetStatus('Enter your bot token first', false); return; }
+  tgSetStatus('Fetching…', null);
+  try {
+    const r = await fetch(`https://api.telegram.org/bot${tok}/getUpdates`);
+    const data = await r.json();
+    if (!data.ok) { tgSetStatus('Invalid token', false); return; }
+    const updates = data.result || [];
+    if (!updates.length) { tgSetStatus('No messages found — send your bot any message first, then retry', null); return; }
+    const last = updates[updates.length - 1];
+    const chat = (last.message || last.edited_message || last.channel_post || {}).chat;
+    if (!chat) { tgSetStatus('Could not read chat — try sending /start to your bot', null); return; }
+    tgChatId = String(chat.id);
+    localStorage.setItem('hype_tg_chat', tgChatId);
+    const chatEl = document.getElementById('tg-chat-input');
+    if (chatEl) chatEl.value = tgChatId;
+    tgSetStatus(`✓ Chat ID detected: ${tgChatId} (${chat.first_name || chat.username || 'you'})`, true);
+  } catch(e) { tgSetStatus('Error: ' + e.message, false); }
+}
+
+function saveTGSettings() {
+  const tok = (document.getElementById('tg-token-input')?.value || '').trim();
+  const chat = (document.getElementById('tg-chat-input')?.value || '').trim();
+  const thr = parseFloat(document.getElementById('tg-pnl-thr')?.value || '0');
+  tgToken = tok; tgChatId = chat; pnlThreshold = thr;
+  localStorage.setItem('hype_tg_token', tok);
+  localStorage.setItem('hype_tg_chat', chat);
+  localStorage.setItem('hype_pnl_thr', thr || '0');
+  tgSetStatus('Settings saved ✓', true);
+}
+
+async function testTelegram() {
+  saveTGSettings();
+  const ok = await sendTelegram('🔔 <b>Hype Dashboard</b>\n\nTest notification — Telegram alerts are working! ✅\n\nYou\'ll receive:\n• Price alert triggers\n• P&L milestones\n• Order fills');
+  tgSetStatus(ok ? '✅ Test message sent!' : '❌ Failed — check token & chat ID', ok);
+}
+
+function tgSetStatus(msg, ok) {
+  const el = document.getElementById('tg-status');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = ok === true ? 'var(--green)' : ok === false ? 'var(--red)' : 'var(--text-muted)';
+}
+
+async function checkOrderFills(newOrders) {
+  if (lastOrderIds === null) { lastOrderIds = new Set(newOrders.map(o => o.oid)); return; }
+  const newSet = new Set(newOrders.map(o => o.oid));
+  for (const oid of lastOrderIds) {
+    if (!newSet.has(oid)) {
+      sendTelegram(`⚡ <b>Order Filled / Cancelled</b>\nOrder ID ${oid} is no longer open.\nCheck your positions on Hype Dashboard.`);
+    }
+  }
+  lastOrderIds = newSet;
 }
 
 // ── TA Math ───────────────────────────────────────────────────────────────────
