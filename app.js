@@ -21,6 +21,11 @@ let priceHistory = {};
 let priceAlerts = [];
 let monitorActive = false;
 
+// ── Portfolio chart state ─────────────────────────────────────────────────────
+let portfolioChart = null;
+let chartCurrency = 'USD';
+let usdToIdr = 0;
+
 // ── Telegram state ────────────────────────────────────────────────────────────
 let tgToken = localStorage.getItem('hype_tg_token') || '';
 let tgChatId = localStorage.getItem('hype_tg_chat') || '';
@@ -264,6 +269,24 @@ async function loadOverview(){
         <div class="stat-card"><div class="stat-label">Margin Used</div><div class="stat-value">${fmt$(s.total_margin_used)}</div><div class="stat-sub">${s.account_value>0?((s.total_margin_used/s.account_value)*100).toFixed(1):0}%</div></div>
         <div class="stat-card"><div class="stat-label">Unr. PnL</div><div class="stat-value ${totalUnr>=0?'pos':'neg'}">${fmt$(totalUnr)}</div></div>
       </div>
+
+      <div class="card" style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+          <div class="card-title" style="margin:0">📈 Portfolio Growth — 7 Days</div>
+          <div style="display:flex;gap:4px">
+            <button class="tab ch-cur-tab active" data-cur="USD" onclick="setChartCurrency('USD')">$ USD</button>
+            <button class="tab ch-cur-tab" data-cur="IDR" onclick="setChartCurrency('IDR')">Rp IDR</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:16px;margin-bottom:10px;flex-wrap:wrap">
+          <div><div class="stat-label">Now</div><div id="ch-cur" class="mono" style="font-size:15px;font-weight:600">—</div></div>
+          <div><div class="stat-label">7d Change</div><div id="ch-chg" class="mono" style="font-size:13px">—</div></div>
+          <div><div class="stat-label">7d %</div><div id="ch-pct" class="mono" style="font-size:13px">—</div></div>
+          <div><div class="stat-label">Rate</div><div id="ch-rate" class="muted" style="font-size:11px">fetching…</div></div>
+        </div>
+        <div style="position:relative;height:160px"><canvas id="portfolio-chart"></canvas></div>
+      </div>
+
       <div class="card">
         <div class="card-title">Open Positions</div>
         ${positions.length===0?'<div class="empty-state">No open positions</div>':`
@@ -284,6 +307,7 @@ async function loadOverview(){
         <tbody>${orders.map(o=>`<tr><td class="accent">${o.coin}</td><td><span class="side-badge ${o.side==='B'?'long':'short'}">${o.side==='B'?'B':'S'}</span></td><td>${o.sz}</td><td>${o.limitPx?fmt$(parseFloat(o.limitPx)):'—'}</td></tr>`).join('')}</tbody>
       </table></div></div>`:''}`;
     setRefreshTime();
+    renderPortfolioChart(s.account_value);
   }catch(e){el.innerHTML=err(e);setStatus(false);}
 }
 
@@ -963,6 +987,170 @@ async function loadMonitor() {
   renderActiveAlerts();
   connectWS();
   refreshTA();
+}
+
+// ── Portfolio Chart ───────────────────────────────────────────────────────────
+function savePortfolioSnap(v) {
+  try {
+    const snaps = JSON.parse(localStorage.getItem('hype_snaps') || '[]');
+    const now = Date.now();
+    if (snaps.length && now - snaps.at(-1).ts < 30 * 60 * 1000) return;
+    snaps.push({ ts: now, v });
+    const cut = now - 8 * 86400000;
+    localStorage.setItem('hype_snaps', JSON.stringify(snaps.filter(s => s.ts >= cut)));
+  } catch(_) {}
+}
+function getPortfolioSnaps() {
+  try { return JSON.parse(localStorage.getItem('hype_snaps') || '[]'); } catch { return []; }
+}
+
+async function fetchIDRRate() {
+  try {
+    const r = await fetch('https://api.frankfurter.app/latest?from=USD&to=IDR');
+    const d = await r.json();
+    usdToIdr = d.rates?.IDR || 0;
+    const el = document.getElementById('ch-rate');
+    if (el && usdToIdr) el.textContent = `1 USD = Rp ${Math.round(usdToIdr).toLocaleString('id-ID')}`;
+  } catch(_) {}
+}
+
+function buildPortfolioHistory(currentValue, fills, funding) {
+  const msDay = 86400000;
+  const now = Date.now();
+  const today = Math.floor(now / msDay) * msDay;
+
+  // Daily PnL buckets (UTC day start ms → total PnL)
+  const dailyPnL = {};
+  for (const f of fills) {
+    const d = Math.floor(f.time / msDay) * msDay;
+    dailyPnL[d] = (dailyPnL[d] || 0) + (f.closed_pnl || 0);
+  }
+  for (const f of funding) {
+    const d = Math.floor(f.time / msDay) * msDay;
+    dailyPnL[d] = (dailyPnL[d] || 0) + (f.usdc || 0);
+  }
+
+  // Work backwards: starting value 7 days ago
+  let startV = currentValue;
+  for (let i = 0; i < 7; i++) startV -= (dailyPnL[today - i * msDay] || 0);
+  startV = Math.max(0, startV);
+
+  // Reconstruct forward (8 points: 7d ago → today)
+  const daily = [];
+  let v = startV;
+  for (let i = 7; i >= 0; i--) {
+    const ts = today - i * msDay;
+    daily.push({ ts, v });
+    if (i > 0) v += (dailyPnL[ts] || 0);
+  }
+  // Last point = current value (exact)
+  daily[daily.length - 1].v = currentValue;
+
+  // Merge with stored intraday snapshots for the last 2 days
+  const snaps = getPortfolioSnaps().filter(s => s.ts >= today - 2 * msDay);
+  if (snaps.length >= 3) {
+    // Replace last 2 daily bars with hourly granularity
+    const base = daily.filter(p => p.ts < today - 2 * msDay);
+    return [...base, ...snaps.map(s => ({ ts: s.ts, v: s.v }))];
+  }
+  return daily;
+}
+
+function fmtChartValue(v) {
+  if (chartCurrency === 'IDR') {
+    const idr = v * (usdToIdr || 16000);
+    return 'Rp ' + Math.round(idr).toLocaleString('id-ID');
+  }
+  return '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function setChartCurrency(cur) {
+  chartCurrency = cur;
+  document.querySelectorAll('.ch-cur-tab').forEach(t => t.classList.toggle('active', t.dataset.cur === cur));
+  if (portfolioChart) updateChartLabels();
+}
+
+function updateChartLabels() {
+  if (!portfolioChart) return;
+  const rate = chartCurrency === 'IDR' ? (usdToIdr || 16000) : 1;
+  const raw = portfolioChart._rawPts;
+  portfolioChart.data.datasets[0].data = raw.map(p => +(p.v * rate).toFixed(2));
+  portfolioChart.options.scales.y.ticks.callback = v =>
+    chartCurrency === 'IDR' ? 'Rp ' + (v / 1e6).toFixed(1) + 'M' : '$' + (v >= 1000 ? (v / 1000).toFixed(1) + 'K' : v.toFixed(0));
+  portfolioChart.update('none');
+  // Update stat strip
+  const pts = portfolioChart._rawPts;
+  const cur = pts.at(-1)?.v || 0, start = pts[0]?.v || cur;
+  const chg = cur - start, pct = start > 0 ? chg / start * 100 : 0;
+  const el = id => document.getElementById(id);
+  if (el('ch-cur')) el('ch-cur').textContent = fmtChartValue(cur);
+  if (el('ch-chg')) { el('ch-chg').textContent = (chg >= 0 ? '+' : '') + fmtChartValue(Math.abs(chg)); el('ch-chg').className = chg >= 0 ? 'pos mono' : 'neg mono'; }
+  if (el('ch-pct')) { el('ch-pct').textContent = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%'; el('ch-pct').className = pct >= 0 ? 'pos mono' : 'neg mono'; }
+}
+
+async function renderPortfolioChart(accountValue) {
+  savePortfolioSnap(accountValue);
+  fetchIDRRate(); // fire and forget — updates label async
+
+  let fills = [], funding = [];
+  try {
+    [fills, funding] = await Promise.all([
+      getUserFills(currentWallet).then(parseFills),
+      getUserFunding(currentWallet, 7).then(parseFunding)
+    ]);
+  } catch(_) {}
+
+  const pts = buildPortfolioHistory(accountValue, fills, funding);
+  if (!pts.length) return;
+
+  const isUp = pts.at(-1).v >= pts[0].v;
+  const color = isUp ? '#22c55e' : '#ef4444';
+  const bg = isUp ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)';
+
+  const labels = pts.map(p => {
+    const d = new Date(p.ts);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + (pts.length > 10 ? ' ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '');
+  });
+  const values = pts.map(p => +p.v.toFixed(2));
+
+  const ctx = document.getElementById('portfolio-chart');
+  if (!ctx || !window.Chart) return;
+  if (portfolioChart) { portfolioChart.destroy(); portfolioChart = null; }
+
+  portfolioChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        borderColor: color,
+        backgroundColor: bg,
+        fill: true,
+        tension: 0.35,
+        pointRadius: pts.length <= 10 ? 3 : 0,
+        pointHoverRadius: 5,
+        borderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: c => fmtChartValue(c.raw / (chartCurrency === 'IDR' ? (usdToIdr || 16000) : 1)),
+            title: items => labels[items[0].dataIndex]
+          }
+        }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#666', maxRotation: 0, maxTicksLimit: 7, font: { size: 10 } } },
+        y: { position: 'right', grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#666', font: { size: 10 }, callback: v => '$' + (v >= 1000 ? (v/1000).toFixed(1)+'K' : v.toFixed(0)) } }
+      }
+    }
+  });
+  portfolioChart._rawPts = pts;
+  updateChartLabels();
 }
 
 // ── Telegram ──────────────────────────────────────────────────────────────────
