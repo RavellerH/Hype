@@ -3,10 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
-  <meta name="theme-color" content="#16181c">
+  <meta name="theme-color" content="#7c6aff">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Hype">
   <title>Analyzer</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
@@ -15,11 +18,15 @@
 <body>
 
   <header class="topbar">
-    <span class="logo">⚡ Analyzer</span>
-    <span class="wallet-badge" id="wallet-display">0x6e4c…2015</span>
+    <span class="logo">&#9889; Analyzer</span>
+    <span class="wallet-badge" id="wallet-display">0x6e4c&#8230;2015</span>
     <div class="topbar-right">
       <span class="refresh-info" id="refresh-info"></span>
-      <button class="btn btn-ghost btn-sm" onclick="refreshAll()">↺</button>
+      <button class="btn btn-ghost btn-sm" onclick="refreshAll()">&#8635;</button>
+      <button class="btn btn-ghost btn-sm" id="install-btn" style="display:none" onclick="installPWA()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v13m0 0l-4-4m4 4l4-4"/><path d="M2 17v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2"/></svg>
+        Install
+      </button>
       <div id="ws-status" class="status-dot off" title="WebSocket"></div>
     </div>
   </header>
@@ -27,59 +34,81 @@
   <!-- Desktop sidebar -->
   <nav class="sidebar">
     <div class="nav-section">My Portfolio</div>
-    <a class="nav-item active" data-page="overview" onclick="navigate('overview')"><span class="icon">📊</span>Overview</a>
-    <a class="nav-item" data-page="trades" onclick="navigate('trades')"><span class="icon">🔄</span>Trade History</a>
-    <a class="nav-item" data-page="funding" onclick="navigate('funding')"><span class="icon">💹</span>Funding</a>
-    <a class="nav-item" data-page="flows" onclick="navigate('flows')"><span class="icon">💰</span>My Flows</a>
+    <a class="nav-item active" data-page="overview" onclick="navigate('overview')"><span class="icon">&#128202;</span>Overview</a>
+    <a class="nav-item" data-page="trades" onclick="navigate('trades')"><span class="icon">&#128260;</span>Trade History</a>
+    <a class="nav-item" data-page="funding" onclick="navigate('funding')"><span class="icon">&#128185;</span>Funding</a>
+    <a class="nav-item" data-page="flows" onclick="navigate('flows')"><span class="icon">&#128176;</span>My Flows</a>
     <div class="nav-section" style="margin-top:8px">Live</div>
-    <a class="nav-item" data-page="monitor" onclick="navigate('monitor')"><span class="icon">⚡</span>Live Monitor</a>
+    <a class="nav-item" data-page="monitor" onclick="navigate('monitor')"><span class="icon">&#9889;</span>Live Monitor</a>
     <div class="nav-section" style="margin-top:8px">Markets</div>
-    <a class="nav-item" data-page="markets" onclick="navigate('markets')"><span class="icon">🌊</span>Global Flows</a>
-    <a class="nav-item" data-page="phases" onclick="navigate('phases')"><span class="icon">🔵</span>Phase Detector</a>
+    <a class="nav-item" data-page="markets" onclick="navigate('markets')"><span class="icon">&#127754;</span>Global Flows</a>
+    <a class="nav-item" data-page="phases" onclick="navigate('phases')"><span class="icon">&#128309;</span>Phase Detector</a>
     <div class="nav-section" style="margin-top:8px">Research</div>
-    <a class="nav-item" data-page="intel" onclick="navigate('intel')"><span class="icon">📡</span>Intel</a>
+    <a class="nav-item" data-page="intel" onclick="navigate('intel')"><span class="icon">&#128225;</span>Intel</a>
     <div class="nav-section" style="margin-top:8px">Tracking</div>
-    <a class="nav-item" data-page="watchlist" onclick="navigate('watchlist')"><span class="icon">👛</span>Watchlist</a>
+    <a class="nav-item" data-page="watchlist" onclick="navigate('watchlist')"><span class="icon">&#128091;</span>Watchlist</a>
   </nav>
 
   <!-- Mobile bottom nav -->
   <nav class="bottom-nav">
     <button class="bottom-nav-item active" data-page="overview" onclick="navigate('overview')">
-      <span class="bnav-icon">📊</span><span>Portfolio</span>
+      <span class="bnav-icon">&#128202;</span><span>Portfolio</span>
     </button>
     <button class="bottom-nav-item" data-page="monitor" onclick="navigate('monitor')">
-      <span class="bnav-icon">⚡</span><span>Live</span>
+      <span class="bnav-icon">&#9889;</span><span>Live</span>
     </button>
     <button class="bottom-nav-item" data-page="intel" onclick="navigate('intel')">
-      <span class="bnav-icon">📡</span><span>Intel</span>
+      <span class="bnav-icon">&#128225;</span><span>Intel</span>
     </button>
     <button class="bottom-nav-item" data-page="markets" onclick="navigate('markets')">
-      <span class="bnav-icon">🌊</span><span>Markets</span>
+      <span class="bnav-icon">&#127754;</span><span>Markets</span>
     </button>
     <button class="bottom-nav-item" data-page="trades" onclick="navigate('trades')">
-      <span class="bnav-icon">🔄</span><span>Trades</span>
+      <span class="bnav-icon">&#128260;</span><span>Trades</span>
     </button>
     <button class="bottom-nav-item" data-page="phases" onclick="navigate('phases')">
-      <span class="bnav-icon">🔵</span><span>Phase</span>
+      <span class="bnav-icon">&#128309;</span><span>Phase</span>
     </button>
     <button class="bottom-nav-item" data-page="watchlist" onclick="navigate('watchlist')">
-      <span class="bnav-icon">👛</span><span>Watch</span>
+      <span class="bnav-icon">&#128091;</span><span>Watch</span>
     </button>
   </nav>
 
   <main class="main">
-    <div class="page active" id="page-overview"><div id="overview-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
-    <div class="page" id="page-trades"><div id="trades-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
-    <div class="page" id="page-funding"><div id="funding-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
-    <div class="page" id="page-flows"><div id="flows-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
-    <div class="page" id="page-monitor"><div id="monitor-content"><div class="loading"><div class="spinner"></div> Connecting…</div></div></div>
-    <div class="page" id="page-markets"><div id="markets-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
-    <div class="page" id="page-phases"><div id="phases-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
-    <div class="page" id="page-intel"><div id="intel-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
-    <div class="page" id="page-watchlist"><div id="watchlist-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
+    <div class="page active" id="page-overview"><div id="overview-content"><div class="loading"><div class="spinner"></div> Loading&#8230;</div></div></div>
+    <div class="page" id="page-trades"><div id="trades-content"><div class="loading"><div class="spinner"></div> Loading&#8230;</div></div></div>
+    <div class="page" id="page-funding"><div id="funding-content"><div class="loading"><div class="spinner"></div> Loading&#8230;</div></div></div>
+    <div class="page" id="page-flows"><div id="flows-content"><div class="loading"><div class="spinner"></div> Loading&#8230;</div></div></div>
+    <div class="page" id="page-monitor"><div id="monitor-content"><div class="loading"><div class="spinner"></div> Connecting&#8230;</div></div></div>
+    <div class="page" id="page-markets"><div id="markets-content"><div class="loading"><div class="spinner"></div> Loading&#8230;</div></div></div>
+    <div class="page" id="page-phases"><div id="phases-content"><div class="loading"><div class="spinner"></div> Loading&#8230;</div></div></div>
+    <div class="page" id="page-intel"><div id="intel-content"><div class="loading"><div class="spinner"></div> Loading&#8230;</div></div></div>
+    <div class="page" id="page-watchlist"><div id="watchlist-content"><div class="loading"><div class="spinner"></div> Loading&#8230;</div></div></div>
   </main>
 
 <script src="intel.js"></script>
 <script src="app.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
+  let _installPrompt = null;
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    _installPrompt = e;
+    const btn = document.getElementById('install-btn');
+    if (btn) btn.style.display = 'inline-flex';
+  });
+  window.addEventListener('appinstalled', () => {
+    const btn = document.getElementById('install-btn');
+    if (btn) btn.style.display = 'none';
+    _installPrompt = null;
+  });
+  function installPWA() {
+    if (!_installPrompt) return;
+    _installPrompt.prompt();
+    _installPrompt.userChoice.then(() => { _installPrompt = null; });
+  }
+</script>
 </body>
 </html>
