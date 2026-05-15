@@ -296,33 +296,29 @@ function navigate(page) {
 function refreshAll(){navigate(currentPage);}
 
 // ── Overview ──────────────────────────────────────────────────────────────────
-async function loadOverview(){
-  const el=document.getElementById('overview-content');
-  el.innerHTML=loading();
-  try{
-    setStatus(true);
-    const [state, orders, spotStateRaw, spotMetaRaw] = await Promise.all([
-      getClearinghouseState(currentWallet), getOpenOrders(currentWallet),
-      getSpotState(currentWallet).catch(()=>null),
-      getSpotMeta().catch(()=>null)
-    ]);
-    checkOrderFills(orders);
-    const s=parseAccountSummary(state), positions=parsePositions(state);
-    const {balances:spotBals, usdcBalance} = parseSpotBalances(spotStateRaw, spotMetaRaw);
-    const spotTotalValue = spotBals.reduce((a,b)=>a+b.value,0) + usdcBalance;
-    const spotUnrPnl = spotBals.reduce((a,b)=>a+b.unrealizedPnl,0);
-    const totalUnr = positions.reduce((a,p)=>a+p.unrealized_pnl,0) + spotUnrPnl;
-    const totalPortfolio = s.account_value + spotTotalValue;
+let overviewTab = 'summary';
+let _ovData = null; // cached for tab switching
 
-    el.innerHTML=`
-      <div class="grid-4">
-        <div class="stat-card"><div class="stat-label">Total Portfolio</div><div class="stat-value">${fmt$(totalPortfolio)}</div><div class="stat-sub">Perp ${fmt$(s.account_value)}</div></div>
-        <div class="stat-card"><div class="stat-label">Spot Holdings</div><div class="stat-value">${fmt$(spotTotalValue)}</div><div class="stat-sub">${spotBals.length} tokens + USDC ${fmt$(usdcBalance)}</div></div>
-        <div class="stat-card"><div class="stat-label">Perp Notional</div><div class="stat-value">${fmt$(s.total_ntl_pos)}</div><div class="stat-sub">${positions.length} positions</div></div>
-        <div class="stat-card"><div class="stat-label">Total Unr. PnL</div><div class="stat-value ${totalUnr>=0?'pos':'neg'}">${fmt$(totalUnr)}</div><div class="stat-sub">Spot ${fmt$(spotUnrPnl)}</div></div>
+function setOverviewTab(tab) {
+  overviewTab = tab;
+  document.querySelectorAll('.ov-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  if (_ovData) renderOverviewTab();
+}
+
+function renderOverviewTab() {
+  const el = document.getElementById('ov-tab-body');
+  if (!el || !_ovData) return;
+  const {s, positions, spotBals, usdcBalance, orders, totalPortfolio, spotTotalValue, spotUnrPnl, totalUnr} = _ovData;
+
+  if (overviewTab === 'summary') {
+    el.innerHTML = `
+      <div class="grid-4" style="margin-bottom:14px">
+        <div class="stat-card"><div class="stat-label">Total Portfolio</div><div class="stat-value">${fmt$(totalPortfolio)}</div><div class="stat-sub">Perp ${fmt$(s.account_value)} · Spot ${fmt$(spotTotalValue)}</div></div>
+        <div class="stat-card"><div class="stat-label">Unr. PnL</div><div class="stat-value ${totalUnr>=0?'pos':'neg'}">${fmt$(totalUnr)}</div><div class="stat-sub">Perp ${fmt$(positions.reduce((a,p)=>a+p.unrealized_pnl,0))} · Spot ${fmt$(spotUnrPnl)}</div></div>
+        <div class="stat-card"><div class="stat-label">Perp Margin Used</div><div class="stat-value">${fmt$(s.total_margin_used)}</div><div class="stat-sub">${s.account_value>0?((s.total_margin_used/s.account_value)*100).toFixed(1):0}% of perp acct</div></div>
+        <div class="stat-card"><div class="stat-label">Withdrawable</div><div class="stat-value">${fmt$(s.withdrawable)}</div><div class="stat-sub">USDC spot ${fmt$(usdcBalance)}</div></div>
       </div>
-
-      <div class="card" style="margin-bottom:14px">
+      <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
           <div class="card-title" style="margin:0">📈 Portfolio Growth — 7 Days</div>
           <div style="display:flex;gap:4px">
@@ -337,29 +333,62 @@ async function loadOverview(){
           <div><div class="stat-label">Rate</div><div id="ch-rate" class="muted" style="font-size:11px">fetching…</div></div>
         </div>
         <div style="position:relative;height:160px"><canvas id="portfolio-chart"></canvas></div>
-      </div>
+      </div>`;
+    requestAnimationFrame(() => renderPortfolioChart(totalPortfolio));
+  }
 
+  else if (overviewTab === 'perp') {
+    el.innerHTML = `
+      <div class="grid-4" style="margin-bottom:14px">
+        <div class="stat-card"><div class="stat-label">Account Value</div><div class="stat-value">${fmt$(s.account_value)}</div><div class="stat-sub">Withdrawable ${fmt$(s.withdrawable)}</div></div>
+        <div class="stat-card"><div class="stat-label">Notional</div><div class="stat-value">${fmt$(s.total_ntl_pos)}</div><div class="stat-sub">${positions.length} open</div></div>
+        <div class="stat-card"><div class="stat-label">Margin Used</div><div class="stat-value">${fmt$(s.total_margin_used)}</div><div class="stat-sub">${s.account_value>0?((s.total_margin_used/s.account_value)*100).toFixed(1):0}%</div></div>
+        <div class="stat-card"><div class="stat-label">Unr. PnL</div><div class="stat-value ${positions.reduce((a,p)=>a+p.unrealized_pnl,0)>=0?'pos':'neg'}">${fmt$(positions.reduce((a,p)=>a+p.unrealized_pnl,0))}</div></div>
+      </div>
       <div class="card" style="margin-bottom:14px">
-        <div class="card-title">Perp Positions</div>
+        <div class="card-title">Open Positions (${positions.length})</div>
         ${positions.length===0?'<div class="empty-state">No open perp positions</div>':`
         <div class="table-wrap"><table>
           <thead><tr><th>Coin</th><th>Side</th><th>Size</th><th>Entry</th><th>Liq</th><th>PnL</th><th>Lev</th></tr></thead>
           <tbody>${positions.map(p=>`<tr>
-            <td class="accent">${p.coin}</td>
-            <td><span class="side-badge ${p.side}">${p.side==='long'?'L':'S'}</span></td>
-            <td>${p.size}</td><td>${fmt$(p.entry_price)}</td>
-            <td class="${p.liquidation_price>0?'neg':'muted'}">${p.liquidation_price>0?fmt$(p.liquidation_price):'—'}</td>
-            <td class="${p.unrealized_pnl>=0?'pos':'neg'}">${fmt$(p.unrealized_pnl)}</td>
+            <td class="accent" style="font-weight:600">${p.coin}</td>
+            <td><span class="side-badge ${p.side}">${p.side==='long'?'LONG':'SHORT'}</span></td>
+            <td class="mono">${p.size}</td>
+            <td class="mono">${fmt$(p.entry_price)}</td>
+            <td class="${p.liquidation_price>0?'neg':'muted'} mono">${p.liquidation_price>0?fmt$(p.liquidation_price):'—'}</td>
+            <td class="${p.unrealized_pnl>=0?'pos':'neg'} mono">${fmt$(p.unrealized_pnl)}</td>
             <td class="muted">${p.leverage_value}x</td>
           </tr>`).join('')}</tbody>
         </table></div>`}
       </div>
+      ${orders.length>0?`<div class="card">
+        <div class="card-title">Open Orders (${orders.length})</div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Coin</th><th>Side</th><th>Size</th><th>Limit</th></tr></thead>
+          <tbody>${orders.map(o=>`<tr>
+            <td class="accent">${o.coin}</td>
+            <td><span class="side-badge ${o.side==='B'?'long':'short'}">${o.side==='B'?'BUY':'SELL'}</span></td>
+            <td class="mono">${o.sz}</td>
+            <td class="mono">${o.limitPx?fmt$(parseFloat(o.limitPx)):'—'}</td>
+          </tr>`).join('')}</tbody>
+        </table></div>
+      </div>`:'<div class="card"><div class="empty-state">No open orders</div></div>'}`;
+  }
 
-      <div class="card" style="margin-bottom:14px">
+  else if (overviewTab === 'spot') {
+    const totalSpotPnl = spotBals.reduce((a,b)=>a+b.unrealizedPnl,0);
+    el.innerHTML = `
+      <div class="grid-4" style="margin-bottom:14px">
+        <div class="stat-card"><div class="stat-label">Spot Total Value</div><div class="stat-value">${fmt$(spotTotalValue)}</div><div class="stat-sub">${spotBals.length} tokens</div></div>
+        <div class="stat-card"><div class="stat-label">USDC Balance</div><div class="stat-value">${fmt$(usdcBalance)}</div><div class="stat-sub">Available cash</div></div>
+        <div class="stat-card"><div class="stat-label">Tokens Value</div><div class="stat-value">${fmt$(spotBals.reduce((a,b)=>a+b.value,0))}</div><div class="stat-sub">excl. USDC</div></div>
+        <div class="stat-card"><div class="stat-label">Unr. PnL</div><div class="stat-value ${totalSpotPnl>=0?'pos':'neg'}">${fmt$(totalSpotPnl)}</div><div class="stat-sub">vs avg entry</div></div>
+      </div>
+      <div class="card">
         <div class="card-title">Spot Holdings</div>
         ${spotBals.length===0&&usdcBalance<0.01?'<div class="empty-state">No spot holdings</div>':`
         <div class="table-wrap"><table>
-          <thead><tr><th>Coin</th><th>Amount</th><th>Avg Entry</th><th>Price</th><th>Value</th><th>PnL</th><th>PnL %</th></tr></thead>
+          <thead><tr><th>Coin</th><th>Amount</th><th>Avg Entry</th><th>Price Now</th><th>Value</th><th>PnL $</th><th>PnL %</th></tr></thead>
           <tbody>
             ${spotBals.map(b=>`<tr>
               <td class="accent" style="font-weight:600">${b.coin}</td>
@@ -370,17 +399,52 @@ async function loadOverview(){
               <td class="${b.unrealizedPnl>=0?'pos':'neg'} mono">${b.avgEntry>0?fmt$(b.unrealizedPnl):'—'}</td>
               <td class="${b.pnlPct>=0?'pos':'neg'}">${b.avgEntry>0?(b.pnlPct>=0?'+':'')+b.pnlPct.toFixed(2)+'%':'—'}</td>
             </tr>`).join('')}
-            ${usdcBalance>0?`<tr><td class="muted">USDC</td><td class="mono">${usdcBalance.toFixed(2)}</td><td>—</td><td class="muted">$1.00</td><td class="mono">${fmt$(usdcBalance)}</td><td>—</td><td>—</td></tr>`:''}
+            ${usdcBalance>0.01?`<tr>
+              <td class="muted" style="font-weight:600">USDC</td>
+              <td class="mono">${usdcBalance.toFixed(2)}</td>
+              <td class="muted">—</td><td class="muted mono">$1.00</td>
+              <td class="mono">${fmt$(usdcBalance)}</td>
+              <td class="muted">—</td><td class="muted">—</td>
+            </tr>`:''}
           </tbody>
         </table></div>`}
-      </div>
+      </div>`;
+  }
+}
 
-      ${orders.length>0?`<div class="card" style="margin-bottom:14px"><div class="card-title">Open Orders (${orders.length})</div><div class="table-wrap"><table>
-        <thead><tr><th>Coin</th><th>Side</th><th>Size</th><th>Limit</th></tr></thead>
-        <tbody>${orders.map(o=>`<tr><td class="accent">${o.coin}</td><td><span class="side-badge ${o.side==='B'?'long':'short'}">${o.side==='B'?'B':'S'}</span></td><td>${o.sz}</td><td>${o.limitPx?fmt$(parseFloat(o.limitPx)):'—'}</td></tr>`).join('')}</tbody>
-      </table></div></div>`:''}`;
+async function loadOverview(){
+  const el=document.getElementById('overview-content');
+  el.innerHTML=loading();
+  try{
+    setStatus(true);
+    const [state, orders, spotStateRaw, spotMetaRaw] = await Promise.all([
+      getClearinghouseState(currentWallet), getOpenOrders(currentWallet),
+      getSpotState(currentWallet).catch(()=>null),
+      getSpotMeta().catch(()=>null)
+    ]);
+    checkOrderFills(orders);
+    const s = parseAccountSummary(state), positions = parsePositions(state);
+    const {balances:spotBals, usdcBalance} = parseSpotBalances(spotStateRaw, spotMetaRaw);
+    const spotTotalValue = spotBals.reduce((a,b)=>a+b.value,0) + usdcBalance;
+    const spotUnrPnl = spotBals.reduce((a,b)=>a+b.unrealizedPnl,0);
+    const totalUnr = positions.reduce((a,p)=>a+p.unrealized_pnl,0) + spotUnrPnl;
+    const totalPortfolio = s.account_value + spotTotalValue;
+
+    _ovData = {s, positions, spotBals, usdcBalance, orders, totalPortfolio, spotTotalValue, spotUnrPnl, totalUnr};
+
+    el.innerHTML = `
+      <div class="section-header" style="margin-bottom:14px">
+        <div class="section-title">Portfolio</div>
+        <div class="tabs">
+          <button class="tab ov-tab${overviewTab==='summary'?' active':''}" data-tab="summary" onclick="setOverviewTab('summary')">📊 Summary</button>
+          <button class="tab ov-tab${overviewTab==='perp'?' active':''}" data-tab="perp" onclick="setOverviewTab('perp')">⚡ Perp</button>
+          <button class="tab ov-tab${overviewTab==='spot'?' active':''}" data-tab="spot" onclick="setOverviewTab('spot')">💎 Spot</button>
+        </div>
+      </div>
+      <div id="ov-tab-body"></div>`;
+
+    renderOverviewTab();
     setRefreshTime();
-    renderPortfolioChart(totalPortfolio);
   }catch(e){el.innerHTML=err(e);setStatus(false);}
 }
 
