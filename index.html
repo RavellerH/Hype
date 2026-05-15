@@ -8,8 +8,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Hype">
   <title>Analyzer</title>
-  <link rel="manifest" href="/manifest.json">
-  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
@@ -90,18 +90,16 @@
 <script src="app.js"></script>
 <script>
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW:', err));
   }
   let _installPrompt = null;
   window.addEventListener('beforeinstallprompt', e => {
     e.preventDefault();
     _installPrompt = e;
-    const btn = document.getElementById('install-btn');
-    if (btn) btn.style.display = 'inline-flex';
+    document.getElementById('install-btn').style.display = 'inline-flex';
   });
   window.addEventListener('appinstalled', () => {
-    const btn = document.getElementById('install-btn');
-    if (btn) btn.style.display = 'none';
+    document.getElementById('install-btn').style.display = 'none';
     _installPrompt = null;
   });
   function installPWA() {

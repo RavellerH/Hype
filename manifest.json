@@ -2,7 +2,7 @@
   "name": "Hype — Trade Analyzer",
   "short_name": "Hype",
   "description": "Hyperliquid personal trade analyzer with live phase detection",
-  "start_url": "/",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#0d0d0f",
   "theme_color": "#7c6aff",
@@ -10,13 +10,13 @@
   "lang": "en",
   "categories": ["finance"],
   "icons": [
-    {"src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"},
-    {"src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
-    {"src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+    {"src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"},
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
   ],
   "shortcuts": [
-    {"name": "Overview",       "url": "/?p=overview",  "description": "Portfolio overview"},
-    {"name": "Phase Detector", "url": "/?p=phases",    "description": "Market phase detection"},
-    {"name": "Watchlist",      "url": "/?p=watchlist", "description": "Wallet watchlist"}
+    {"name": "Overview",       "url": "./?p=overview",  "description": "Portfolio overview"},
+    {"name": "Phase Detector", "url": "./?p=phases",    "description": "Market phase detection"},
+    {"name": "Watchlist",      "url": "./?p=watchlist", "description": "Wallet watchlist"}
   ]
 }
