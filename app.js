@@ -58,6 +58,8 @@ async function hlPost(payload) {
   return r.json();
 }
 async function getClearinghouseState(w) { return hlPost({ type:'clearinghouseState', user:w }); }
+async function getSpotState(w) { return hlPost({ type:'spotClearinghouseState', user:w }); }
+async function getSpotMeta() { return hlPost({ type:'spotMetaAndAssetCtxs' }); }
 async function getUserFills(w) { return hlPost({ type:'userFills', user:w }); }
 async function getUserFunding(w, days=30) { return hlPost({ type:'userFunding', user:w, startTime:Date.now()-days*86400000 }); }
 async function getLedgerUpdates(w, days=90) { return hlPost({ type:'userNonFundingLedgerUpdates', user:w, startTime:Date.now()-days*86400000 }); }
@@ -95,6 +97,47 @@ function parseFunding(funding) {
 }
 function parseLedger(ledger) {
   return (ledger||[]).map(e=>{ const d=e.delta||{}; const usdc=parseFloat(d.usdc||0); return {time:e.time,type:d.type||'',usdc,direction:usdc>=0?'inflow':'outflow',hash:d.hash||''}; }).sort((a,b)=>b.time-a.time);
+}
+
+// Spot fills have coin = "@N" (spot market index). Map @N → coin name via spot universe.
+function buildSpotIndexMap(spotMetaAndCtxs) {
+  const universe = (spotMetaAndCtxs?.[0]?.universe) || [];
+  const map = {};
+  universe.forEach((u, i) => { map['@'+i] = u.name.split('/')[0]; });
+  return map;
+}
+function parseSpotBalances(state, spotMetaAndCtxs) {
+  if (!state?.balances) return { balances:[], usdcBalance:0 };
+  const [spotMeta, assetCtxs=[]] = spotMetaAndCtxs || [];
+  const universe = spotMeta?.universe || [];
+  const priceMap = {};
+  universe.forEach((u, i) => {
+    const px = parseFloat(assetCtxs[i]?.midPx || assetCtxs[i]?.markPx || 0);
+    if (px) priceMap[u.name.split('/')[0]] = px;
+  });
+  const usdcEntry = state.balances.find(b => b.coin === 'USDC');
+  const usdcBalance = parseFloat(usdcEntry?.total || 0);
+  const balances = state.balances
+    .filter(b => b.coin !== 'USDC' && parseFloat(b.total) > 0)
+    .map(b => {
+      const total = parseFloat(b.total);
+      const entryNtl = parseFloat(b.entryNtl || 0);
+      const avgEntry = total > 0 && entryNtl > 0 ? entryNtl / total : 0;
+      const currentPrice = priceMap[b.coin] || 0;
+      const value = currentPrice * total;
+      const unrealizedPnl = currentPrice > 0 && avgEntry > 0 ? (currentPrice - avgEntry) * total : 0;
+      const pnlPct = entryNtl > 0 ? unrealizedPnl / entryNtl * 100 : 0;
+      return { coin:b.coin, total, hold:parseFloat(b.hold||0), avgEntry, entryNtl, currentPrice, unrealizedPnl, pnlPct, value };
+    })
+    .filter(b => b.value > 0.01 || b.entryNtl > 0)
+    .sort((a,b) => b.value - a.value);
+  return { balances, usdcBalance };
+}
+function tagFills(fills, spotIndexMap) {
+  return (fills||[]).map(f => {
+    const isSpot = f.coin.startsWith('@');
+    return { ...f, isSpot, type: isSpot ? 'SPOT' : 'PERP', coin: isSpot ? (spotIndexMap[f.coin] || f.coin) : f.coin };
+  });
 }
 
 function parseMarketData([meta, assetCtxs]) {
@@ -258,16 +301,25 @@ async function loadOverview(){
   el.innerHTML=loading();
   try{
     setStatus(true);
-    const [state,orders]=await Promise.all([getClearinghouseState(currentWallet),getOpenOrders(currentWallet)]);
+    const [state, orders, spotStateRaw, spotMetaRaw] = await Promise.all([
+      getClearinghouseState(currentWallet), getOpenOrders(currentWallet),
+      getSpotState(currentWallet).catch(()=>null),
+      getSpotMeta().catch(()=>null)
+    ]);
     checkOrderFills(orders);
-    const s=parseAccountSummary(state),positions=parsePositions(state);
-    const totalUnr=positions.reduce((a,p)=>a+p.unrealized_pnl,0);
+    const s=parseAccountSummary(state), positions=parsePositions(state);
+    const {balances:spotBals, usdcBalance} = parseSpotBalances(spotStateRaw, spotMetaRaw);
+    const spotTotalValue = spotBals.reduce((a,b)=>a+b.value,0) + usdcBalance;
+    const spotUnrPnl = spotBals.reduce((a,b)=>a+b.unrealizedPnl,0);
+    const totalUnr = positions.reduce((a,p)=>a+p.unrealized_pnl,0) + spotUnrPnl;
+    const totalPortfolio = s.account_value + spotTotalValue;
+
     el.innerHTML=`
       <div class="grid-4">
-        <div class="stat-card"><div class="stat-label">Account Value</div><div class="stat-value">${fmt$(s.account_value)}</div><div class="stat-sub">Withdrawable ${fmt$(s.withdrawable)}</div></div>
-        <div class="stat-card"><div class="stat-label">Notional</div><div class="stat-value">${fmt$(s.total_ntl_pos)}</div><div class="stat-sub">${positions.length} pos</div></div>
-        <div class="stat-card"><div class="stat-label">Margin Used</div><div class="stat-value">${fmt$(s.total_margin_used)}</div><div class="stat-sub">${s.account_value>0?((s.total_margin_used/s.account_value)*100).toFixed(1):0}%</div></div>
-        <div class="stat-card"><div class="stat-label">Unr. PnL</div><div class="stat-value ${totalUnr>=0?'pos':'neg'}">${fmt$(totalUnr)}</div></div>
+        <div class="stat-card"><div class="stat-label">Total Portfolio</div><div class="stat-value">${fmt$(totalPortfolio)}</div><div class="stat-sub">Perp ${fmt$(s.account_value)}</div></div>
+        <div class="stat-card"><div class="stat-label">Spot Holdings</div><div class="stat-value">${fmt$(spotTotalValue)}</div><div class="stat-sub">${spotBals.length} tokens + USDC ${fmt$(usdcBalance)}</div></div>
+        <div class="stat-card"><div class="stat-label">Perp Notional</div><div class="stat-value">${fmt$(s.total_ntl_pos)}</div><div class="stat-sub">${positions.length} positions</div></div>
+        <div class="stat-card"><div class="stat-label">Total Unr. PnL</div><div class="stat-value ${totalUnr>=0?'pos':'neg'}">${fmt$(totalUnr)}</div><div class="stat-sub">Spot ${fmt$(spotUnrPnl)}</div></div>
       </div>
 
       <div class="card" style="margin-bottom:14px">
@@ -287,9 +339,9 @@ async function loadOverview(){
         <div style="position:relative;height:160px"><canvas id="portfolio-chart"></canvas></div>
       </div>
 
-      <div class="card">
-        <div class="card-title">Open Positions</div>
-        ${positions.length===0?'<div class="empty-state">No open positions</div>':`
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-title">Perp Positions</div>
+        ${positions.length===0?'<div class="empty-state">No open perp positions</div>':`
         <div class="table-wrap"><table>
           <thead><tr><th>Coin</th><th>Side</th><th>Size</th><th>Entry</th><th>Liq</th><th>PnL</th><th>Lev</th></tr></thead>
           <tbody>${positions.map(p=>`<tr>
@@ -302,12 +354,33 @@ async function loadOverview(){
           </tr>`).join('')}</tbody>
         </table></div>`}
       </div>
-      ${orders.length>0?`<div class="card"><div class="card-title">Open Orders (${orders.length})</div><div class="table-wrap"><table>
+
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-title">Spot Holdings</div>
+        ${spotBals.length===0&&usdcBalance<0.01?'<div class="empty-state">No spot holdings</div>':`
+        <div class="table-wrap"><table>
+          <thead><tr><th>Coin</th><th>Amount</th><th>Avg Entry</th><th>Price</th><th>Value</th><th>PnL</th><th>PnL %</th></tr></thead>
+          <tbody>
+            ${spotBals.map(b=>`<tr>
+              <td class="accent" style="font-weight:600">${b.coin}</td>
+              <td class="mono">${b.total.toLocaleString('en-US',{maximumFractionDigits:6})}</td>
+              <td class="mono muted">${b.avgEntry>0?fmtPrice(b.avgEntry):'—'}</td>
+              <td class="mono">${b.currentPrice>0?fmtPrice(b.currentPrice):'—'}</td>
+              <td class="mono">${b.value>0?fmt$(b.value):'—'}</td>
+              <td class="${b.unrealizedPnl>=0?'pos':'neg'} mono">${b.avgEntry>0?fmt$(b.unrealizedPnl):'—'}</td>
+              <td class="${b.pnlPct>=0?'pos':'neg'}">${b.avgEntry>0?(b.pnlPct>=0?'+':'')+b.pnlPct.toFixed(2)+'%':'—'}</td>
+            </tr>`).join('')}
+            ${usdcBalance>0?`<tr><td class="muted">USDC</td><td class="mono">${usdcBalance.toFixed(2)}</td><td>—</td><td class="muted">$1.00</td><td class="mono">${fmt$(usdcBalance)}</td><td>—</td><td>—</td></tr>`:''}
+          </tbody>
+        </table></div>`}
+      </div>
+
+      ${orders.length>0?`<div class="card" style="margin-bottom:14px"><div class="card-title">Open Orders (${orders.length})</div><div class="table-wrap"><table>
         <thead><tr><th>Coin</th><th>Side</th><th>Size</th><th>Limit</th></tr></thead>
         <tbody>${orders.map(o=>`<tr><td class="accent">${o.coin}</td><td><span class="side-badge ${o.side==='B'?'long':'short'}">${o.side==='B'?'B':'S'}</span></td><td>${o.sz}</td><td>${o.limitPx?fmt$(parseFloat(o.limitPx)):'—'}</td></tr>`).join('')}</tbody>
       </table></div></div>`:''}`;
     setRefreshTime();
-    renderPortfolioChart(s.account_value);
+    renderPortfolioChart(totalPortfolio);
   }catch(e){el.innerHTML=err(e);setStatus(false);}
 }
 
@@ -316,21 +389,49 @@ async function loadTrades(){
   const el=document.getElementById('trades-content');
   el.innerHTML=loading();
   try{
-    const fills=parseFills(await getUserFills(currentWallet));
-    const totalPnl=fills.reduce((a,f)=>a+f.closed_pnl,0);
-    const wins=fills.filter(f=>f.closed_pnl>0).length,losses=fills.filter(f=>f.closed_pnl<0).length;
+    const [rawFills, spotMetaRaw] = await Promise.all([
+      getUserFills(currentWallet),
+      getSpotMeta().catch(()=>null)
+    ]);
+    const spotIndexMap = buildSpotIndexMap(spotMetaRaw);
+    const allFills = tagFills(parseFills(rawFills), spotIndexMap).sort((a,b)=>b.time-a.time);
+    const perpFills = allFills.filter(f=>!f.isSpot);
+    const spotFills = allFills.filter(f=>f.isSpot);
+    const perpPnl = perpFills.reduce((a,f)=>a+f.closed_pnl,0);
+    const spotFees = spotFills.reduce((a,f)=>a+f.fee,0);
+    const wins=perpFills.filter(f=>f.closed_pnl>0).length, losses=perpFills.filter(f=>f.closed_pnl<0).length;
+
     el.innerHTML=`
       <div class="grid-4">
-        <div class="stat-card"><div class="stat-label">Fills</div><div class="stat-value">${fills.length}</div></div>
-        <div class="stat-card"><div class="stat-label">Realized PnL</div><div class="stat-value ${totalPnl>=0?'pos':'neg'}">${fmt$(totalPnl)}</div></div>
-        <div class="stat-card"><div class="stat-label">Win Rate</div><div class="stat-value">${fills.length>0?(wins/fills.length*100).toFixed(1):0}%</div><div class="stat-sub">${wins}W / ${losses}L</div></div>
-        <div class="stat-card"><div class="stat-label">Fees</div><div class="stat-value neg">−${fmt$(fills.reduce((a,f)=>a+f.fee,0))}</div></div>
+        <div class="stat-card"><div class="stat-label">Total Fills</div><div class="stat-value">${allFills.length}</div><div class="stat-sub">Perp ${perpFills.length} · Spot ${spotFills.length}</div></div>
+        <div class="stat-card"><div class="stat-label">Perp Realized PnL</div><div class="stat-value ${perpPnl>=0?'pos':'neg'}">${fmt$(perpPnl)}</div></div>
+        <div class="stat-card"><div class="stat-label">Perp Win Rate</div><div class="stat-value">${perpFills.length>0?(wins/perpFills.length*100).toFixed(1):0}%</div><div class="stat-sub">${wins}W / ${losses}L</div></div>
+        <div class="stat-card"><div class="stat-label">Total Fees</div><div class="stat-value neg">−${fmt$(allFills.reduce((a,f)=>a+f.fee,0))}</div><div class="stat-sub">Spot ${fmt$(spotFees)}</div></div>
       </div>
-      <div class="card"><div class="card-title">Fill History</div>
+
+      ${spotFills.length>0?`<div class="card" style="margin-bottom:14px">
+        <div class="card-title">Spot Trade History (${spotFills.length})</div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Time</th><th>Coin</th><th>Side</th><th>Price</th><th>Amount</th><th>Total</th><th>Fee</th></tr></thead>
+          <tbody>${spotFills.slice(0,200).map(f=>`<tr>
+            <td class="muted">${fmtTime(f.time)}</td>
+            <td class="accent" style="font-weight:600">${f.coin}</td>
+            <td><span class="side-badge ${f.side==='B'?'long':'short'}">${f.side==='B'?'BUY':'SELL'}</span></td>
+            <td class="mono">${fmtPrice(f.price)}</td>
+            <td class="mono">${f.size}</td>
+            <td class="mono">${fmt$(f.price*f.size)}</td>
+            <td class="neg mono">${f.fee>0?'−'+fmt$(f.fee):'—'}</td>
+          </tr>`).join('')}</tbody>
+        </table></div>
+      </div>`:''}
+
+      <div class="card">
+        <div class="card-title">Perp Fill History (${perpFills.length})</div>
         <div class="table-wrap"><table>
           <thead><tr><th>Time</th><th>Coin</th><th>Side</th><th>Price</th><th>Size</th><th>PnL</th></tr></thead>
-          <tbody>${fills.slice(0,200).map(f=>`<tr>
-            <td class="muted">${fmtTime(f.time)}</td><td class="accent">${f.coin}</td>
+          <tbody>${perpFills.slice(0,200).map(f=>`<tr>
+            <td class="muted">${fmtTime(f.time)}</td>
+            <td class="accent">${f.coin}</td>
             <td><span class="side-badge ${f.side==='B'?'long':'short'}">${f.side==='B'?'B':'S'}</span></td>
             <td>${fmt$(f.price)}</td><td>${f.size}</td>
             <td class="${f.closed_pnl>=0?'pos':'neg'}">${f.closed_pnl!==0?fmt$(f.closed_pnl):'—'}</td>
