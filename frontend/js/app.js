@@ -305,7 +305,23 @@ async function loadPhases() {
           <span class="phase-badge phase-NEUTRAL">⚪ Neutral — no clear signal</span>
         </div>
       </div>
+      <div class="card" id="phase-history-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div class="card-title" style="margin:0">Phase History <span class="muted" style="font-size:11px;font-weight:400">(recorded every hour, 14-day rolling)</span></div>
+          <div style="display:flex;gap:8px">
+            <select class="input" id="phase-history-coin" onchange="loadPhaseHistory()" style="padding:4px 8px;font-size:12px;height:28px">
+              <option value="">All coins</option>
+              <option>BTC</option><option>ETH</option><option>SOL</option>
+              <option>HYPE</option><option>SUI</option><option>AVAX</option>
+            </select>
+            <button class="btn btn-ghost btn-sm" onclick="loadPhaseHistory()">↺ Refresh</button>
+            <a class="btn btn-ghost btn-sm" href="${API}/api/phase/history/export" download="phase_log.csv">⬇ CSV</a>
+          </div>
+        </div>
+        <div id="phase-history-body"><div class="loading"><div class="spinner"></div> Loading history…</div></div>
+      </div>
     `;
+    loadPhaseHistory();
   } catch(e) { el.innerHTML = `<div class="loading">Error: ${e.message}</div>`; }
 }
 
@@ -347,6 +363,132 @@ async function reloadPhases(interval, btn) {
     const data = await fetch(`${API}/api/phase?wallet=${PRIMARY_WALLET}&interval=${interval}`).then(r => r.json());
     el.innerHTML = data.phases.map(p => phaseCard(p)).join('');
   } catch(e) { el.innerHTML = `<div class="loading" style="grid-column:1/-1">Error: ${e.message}</div>`; }
+}
+
+async function loadPhaseHistory() {
+  const el   = document.getElementById('phase-history-body');
+  const coin = document.getElementById('phase-history-coin')?.value || '';
+  if (!el) return;
+  el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  try {
+    const url  = `${API}/api/phase/history${coin ? `?coin=${coin}` : ''}`;
+    const data = await fetch(url).then(r => r.json());
+    const rows = data.rows || [];
+
+    if (!rows.length) {
+      el.innerHTML = '<div class="muted" style="padding:12px;font-size:13px">No history yet — recordings start automatically every hour while the backend is running.</div>';
+      return;
+    }
+
+    // Build duration stats from rows
+    const stats = buildPhaseDurationStats(rows);
+
+    // Stats table
+    const ICONS = {ACCUMULATION:'🔵',MARKUP:'🚀',DISTRIBUTION:'🟡',MARKDOWN:'🔻',NEUTRAL:'⚪'};
+    let statsHtml = '';
+    if (Object.keys(stats).length) {
+      statsHtml = `
+        <div style="margin-bottom:14px;overflow-x:auto">
+          <table class="data-table" style="font-size:12px">
+            <thead><tr>
+              <th>Phase</th><th>Runs</th><th>Min</th><th>Median</th><th>P75</th><th>Max</th><th>Accuracy →</th>
+            </tr></thead>
+            <tbody>
+              ${Object.entries(stats).map(([ph, s]) => `
+                <tr>
+                  <td>${ICONS[ph]||''}  ${ph}</td>
+                  <td>${s.count}</td>
+                  <td>${fmtHours(s.min_h)}</td>
+                  <td><strong>${fmtHours(s.median_h)}</strong></td>
+                  <td>${fmtHours(s.p75_h)}</td>
+                  <td>${fmtHours(s.max_h)}</td>
+                  <td>${s.accuracy_pct !== null ? `${s.accuracy_pct}% → ${s.expected_next||'?'}` : '—'}</td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>`;
+    }
+
+    // History rows (newest first, limit 200 for display)
+    const display = rows.slice(0, 200);
+    const tableHtml = `
+      <div style="overflow-x:auto;max-height:360px;overflow-y:auto">
+        <table class="data-table" style="font-size:12px">
+          <thead><tr><th>Time</th><th>Coin</th><th>Phase</th><th>Conf</th><th>Score</th><th>Price</th></tr></thead>
+          <tbody>
+            ${display.map(r => {
+              const ph = r.phase;
+              return `<tr>
+                <td class="mono muted">${r.timestamp.slice(0,16)}</td>
+                <td><strong>${r.coin}</strong></td>
+                <td><span class="phase-badge phase-${ph}" style="font-size:10px;padding:1px 6px">${ICONS[ph]||''} ${ph}</span></td>
+                <td>${Math.round(r.confidence*100)}%</td>
+                <td class="${parseFloat(r.score)>=0?'pos':'neg'}">${parseFloat(r.score)>0?'+':''}${r.score}</td>
+                <td class="mono">${r.price ? parseFloat(r.price).toLocaleString() : '—'}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+      ${rows.length > 200 ? `<div class="muted" style="font-size:11px;padding:6px">Showing 200 of ${rows.length} rows — download CSV for full data</div>` : ''}`;
+
+    el.innerHTML = statsHtml + tableHtml;
+  } catch(e) {
+    el.innerHTML = `<div class="muted" style="padding:12px">Error loading history: ${e.message}</div>`;
+  }
+}
+
+function fmtHours(h) {
+  if (h == null) return '—';
+  if (h < 48) return `${Math.round(h)}h`;
+  return `${(h/24).toFixed(1)}d`;
+}
+
+function buildPhaseDurationStats(rows) {
+  const EXPECTED = {ACCUMULATION:'MARKUP',MARKUP:'DISTRIBUTION',DISTRIBUTION:'MARKDOWN',MARKDOWN:'ACCUMULATION'};
+  // Group into runs per coin
+  const byCoin = {};
+  for (const r of [...rows].reverse()) {  // oldest first for run detection
+    if (!byCoin[r.coin]) byCoin[r.coin] = [];
+    byCoin[r.coin].push(r);
+  }
+
+  const allRuns = [];
+  for (const coinRows of Object.values(byCoin)) {
+    let runPhase = coinRows[0].phase, runStart = coinRows[0].timestamp, runCount = 1;
+    for (let i = 1; i < coinRows.length; i++) {
+      if (coinRows[i].phase !== runPhase) {
+        allRuns.push({phase: runPhase, start: runStart, end: coinRows[i].timestamp,
+                      duration_h: (new Date(coinRows[i].timestamp) - new Date(runStart)) / 3600000,
+                      next_phase: coinRows[i].phase});
+        runPhase = coinRows[i].phase; runStart = coinRows[i].timestamp; runCount = 1;
+      } else { runCount++; }
+    }
+  }
+
+  const byPhase = {};
+  for (const run of allRuns) {
+    if (!byPhase[run.phase]) byPhase[run.phase] = [];
+    byPhase[run.phase].push(run);
+  }
+
+  const stats = {};
+  for (const [phase, runs] of Object.entries(byPhase)) {
+    if (runs.length < 2) continue;
+    const durs = runs.map(r => r.duration_h).sort((a,b) => a-b);
+    const n    = durs.length;
+    const correct = runs.filter(r => r.next_phase === EXPECTED[phase]).length;
+    stats[phase] = {
+      count:        n,
+      min_h:        durs[0],
+      median_h:     durs[Math.floor(n/2)],
+      p75_h:        durs[Math.floor(n*0.75)],
+      max_h:        durs[n-1],
+      accuracy_pct: EXPECTED[phase] ? Math.round(correct/n*100) : null,
+      expected_next: EXPECTED[phase] || null,
+    };
+  }
+  return stats;
 }
 
 // ── Watchlist ─────────────────────────────────────────────────────────────────

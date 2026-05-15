@@ -10,3 +10,8 @@ POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "30"))
 
 HL_API_URL = "https://api.hyperliquid.xyz/info"
 HL_WS_URL = "wss://api.hyperliquid.xyz/ws"
+
+WATCH_COINS = ["BTC", "ETH", "SOL", "HYPE", "SUI", "AVAX"]
+PHASE_RECORD_INTERVAL = 3600   # record every hour (seconds)
+PHASE_RETENTION_DAYS  = 14     # keep 2 weeks of history
+PHASE_LOG_CSV         = os.path.join(os.path.dirname(__file__), "phase_log.csv")

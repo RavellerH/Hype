@@ -12,8 +12,9 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 import hyperliquid as hl
-from config import POLL_INTERVAL, PRIMARY_WALLET
+from config import POLL_INTERVAL, PRIMARY_WALLET, PHASE_RECORD_INTERVAL
 from phase_detector import detect_phase, phase_to_dict
+from phase_log import record_phases, read_log, PHASE_LOG_CSV
 from telegram_bot import dispatch_wallet_events
 from wallet_tracker import (
     add_wallet,
@@ -103,6 +104,7 @@ async def lifespan(app: FastAPI):
     add_wallet(PRIMARY_WALLET, "My Wallet")
 
     scheduler.add_job(polling_task, "interval", seconds=POLL_INTERVAL, id="poller")
+    scheduler.add_job(record_phases, "interval", seconds=PHASE_RECORD_INTERVAL, id="phase_recorder")
     scheduler.start()
     yield
     scheduler.shutdown()
@@ -218,6 +220,38 @@ async def get_phases_for_positions(wallet: str = PRIMARY_WALLET, interval: str =
         except Exception:
             results.append({"coin": coin, "phase": "NEUTRAL", "error": "fetch failed"})
     return {"phases": results}
+
+
+# ── Phase history ────────────────────────────────────────────────────────────
+
+@app.get("/api/phase/history")
+async def get_phase_history(coin: str | None = None, days: int = 14):
+    """Return recorded phase log rows as JSON, newest first."""
+    from datetime import datetime, timezone, timedelta
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    rows = read_log(coin)
+    filtered = []
+    for r in rows:
+        try:
+            ts = datetime.fromisoformat(r["timestamp"].replace(" ", "T") + "+00:00")
+            if ts >= cutoff:
+                filtered.append(r)
+        except Exception:
+            filtered.append(r)
+    return {"rows": list(reversed(filtered)), "total": len(filtered)}
+
+
+@app.get("/api/phase/history/export")
+async def export_phase_csv():
+    """Download the full phase_log.csv file."""
+    from fastapi.responses import FileResponse
+    if not os.path.exists(PHASE_LOG_CSV):
+        raise HTTPException(404, "No phase log yet — wait for the first hourly recording")
+    return FileResponse(
+        PHASE_LOG_CSV,
+        media_type="text/csv",
+        filename="phase_log.csv",
+    )
 
 
 # ── Market data ───────────────────────────────────────────────────────────────
