@@ -7,7 +7,7 @@
 
   <!-- PWA -->
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#7c6aff">
+  <meta name="theme-color" content="#111827">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Hype">
@@ -22,16 +22,27 @@
 
   <!-- Topbar -->
   <header class="topbar">
-    <span class="logo">⚡ HYPE</span>
-    <span class="wallet-badge">0x6e4c…2015</span>
+    <div class="topbar-logo">⚡</div>
+
+    <nav class="topbar-nav">
+      <button class="topbar-tab active" data-page="overview"  onclick="navigate('overview')">Overview</button>
+      <button class="topbar-tab"        data-page="trades"    onclick="navigate('trades')">Trades</button>
+      <button class="topbar-tab"        data-page="funding"   onclick="navigate('funding')">Funding</button>
+      <button class="topbar-tab"        data-page="flows"     onclick="navigate('flows')">Flows</button>
+      <button class="topbar-tab"        data-page="phases"    onclick="navigate('phases')">Phases</button>
+      <button class="topbar-tab"        data-page="watchlist" onclick="navigate('watchlist')">Watchlist</button>
+      <button class="topbar-tab"        data-page="settings"  onclick="navigate('settings')">Settings</button>
+    </nav>
+
     <div class="topbar-right">
-      <button class="btn btn-ghost btn-sm install-btn" id="install-btn" style="display:none" onclick="installPWA()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v13m0 0l-4-4m4 4l4-4"/><path d="M2 17v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2"/></svg>
+      <button class="btn btn-ghost btn-sm" id="install-btn" onclick="installPWA()" title="Install app">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v13m0 0l-4-4m4 4l4-4"/><path d="M2 17v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2"/></svg>
         Install
       </button>
+      <span class="wallet-badge">0x6e4c…2015</span>
       <div id="ws-status" class="status-dot off" title="Live connection"></div>
       <button class="notif-btn" id="notif-toggle-btn" onclick="toggleNotifications()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
         <span class="notif-badge" id="notif-count">0</span>
       </button>
     </div>
@@ -46,84 +57,70 @@
     <div id="notif-list"><div class="notif-empty">Loading…</div></div>
   </div>
 
-  <!-- Sidebar -->
+  <!-- Sidebar icon rail -->
   <nav class="sidebar">
-    <div class="nav-section">Portfolio</div>
-    <a class="nav-item active" data-page="overview" onclick="navigate('overview')">
-      <span class="icon">📊</span> Overview
-    </a>
-    <a class="nav-item" data-page="trades" onclick="navigate('trades')">
-      <span class="icon">🔄</span> Trade History
-    </a>
-    <a class="nav-item" data-page="funding" onclick="navigate('funding')">
-      <span class="icon">💹</span> Funding
-    </a>
-    <a class="nav-item" data-page="flows" onclick="navigate('flows')">
-      <span class="icon">💰</span> Inflow / Outflow
-    </a>
-
-    <div class="nav-section" style="margin-top:8px">Analysis</div>
-    <a class="nav-item" data-page="phases" onclick="navigate('phases')">
-      <span class="icon">🔵</span> Phase Detector
-    </a>
-
-    <div class="nav-section" style="margin-top:8px">Tracking</div>
-    <a class="nav-item" data-page="watchlist" onclick="navigate('watchlist')">
-      <span class="icon">👛</span> Watchlist
-    </a>
-
-    <div class="nav-section" style="margin-top:8px">Config</div>
-    <a class="nav-item" data-page="settings" onclick="navigate('settings')">
-      <span class="icon">⚙️</span> Settings
-    </a>
+    <button class="nav-icon-btn active" data-page="overview" onclick="navigate('overview')" title="Overview">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    </button>
+    <button class="nav-icon-btn" data-page="trades" onclick="navigate('trades')" title="Trade History">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+    </button>
+    <button class="nav-icon-btn" data-page="funding" onclick="navigate('funding')" title="Funding">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+    </button>
+    <button class="nav-icon-btn" data-page="flows" onclick="navigate('flows')" title="Inflow / Outflow">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+    </button>
+    <button class="nav-icon-btn" data-page="phases" onclick="navigate('phases')" title="Phase Detector">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+    </button>
+    <button class="nav-icon-btn" data-page="watchlist" onclick="navigate('watchlist')" title="Watchlist">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+    </button>
+    <button class="nav-icon-btn" data-page="settings" onclick="navigate('settings')" title="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
   </nav>
 
   <!-- Main content -->
   <main class="main">
 
-    <!-- Overview -->
     <div class="page active" id="page-overview">
       <div id="overview-content">
         <div class="loading"><div class="spinner"></div> Loading…</div>
       </div>
     </div>
 
-    <!-- Trades -->
     <div class="page" id="page-trades">
       <div id="trades-content">
         <div class="loading"><div class="spinner"></div> Loading…</div>
       </div>
     </div>
 
-    <!-- Funding -->
     <div class="page" id="page-funding">
       <div id="funding-content">
         <div class="loading"><div class="spinner"></div> Loading…</div>
       </div>
     </div>
 
-    <!-- Flows -->
     <div class="page" id="page-flows">
       <div id="flows-content">
         <div class="loading"><div class="spinner"></div> Loading…</div>
       </div>
     </div>
 
-    <!-- Phases -->
     <div class="page" id="page-phases">
       <div id="phases-content">
         <div class="loading"><div class="spinner"></div> Loading…</div>
       </div>
     </div>
 
-    <!-- Watchlist -->
     <div class="page" id="page-watchlist">
       <div id="watchlist-content">
         <div class="loading"><div class="spinner"></div> Loading…</div>
       </div>
     </div>
 
-    <!-- Settings -->
     <div class="page" id="page-settings">
       <div id="settings-content">
         <div class="loading"><div class="spinner"></div> Loading…</div>
@@ -135,26 +132,29 @@
 
 <script src="/static/js/app.js"></script>
 <script>
-  // Service worker registration
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    navigator.serviceWorker.register('/sw.js').catch(err => console.warn('SW:', err));
   }
 
-  // PWA install prompt
   let _installPrompt = null;
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
   window.addEventListener('beforeinstallprompt', e => {
     e.preventDefault();
     _installPrompt = e;
-    document.getElementById('install-btn').style.display = 'inline-flex';
   });
   window.addEventListener('appinstalled', () => {
     document.getElementById('install-btn').style.display = 'none';
     _installPrompt = null;
   });
   function installPWA() {
-    if (!_installPrompt) return;
-    _installPrompt.prompt();
-    _installPrompt.userChoice.then(() => { _installPrompt = null; });
+    if (_installPrompt) {
+      _installPrompt.prompt();
+      _installPrompt.userChoice.then(() => { _installPrompt = null; });
+    } else if (isIOS) {
+      alert('To install: tap the Share button 📤 then "Add to Home Screen"');
+    } else {
+      alert('To install: open in Chrome/Edge and use the browser menu → "Install app"');
+    }
   }
 </script>
 </body>
