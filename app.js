@@ -124,12 +124,15 @@ function detectPhase(candles) {
   const highs=candles.map(c=>parseFloat(c.h)),lows=candles.map(c=>parseFloat(c.l));
   const n=candles.length, price=closes.at(-1);
 
-  // EMA bias
+  // EMAs
   const ema20=iEMA(closes,20);
   const ema50=closes.length>=50?iEMA(closes,50):null;
+  const ema200=closes.length>=200?iEMA(closes,200):null;
   const e20=ema20.at(-1), e20p=ema20.at(-Math.min(6,n));
   const e50=ema50?ema50.at(-1):null, e50p=ema50?ema50.at(-Math.min(6,n)):null;
+  const e200=ema200?ema200.at(-1):null;
   const aboveE20=price>e20, aboveE50=ema50?price>e50:aboveE20;
+  const aboveE200=e200?price>e200:null;
   const e20Slope=(e20-e20p)/e20p;
   const e50Slope=e50&&e50p?(e50-e50p)/e50p:0;
 
@@ -142,7 +145,7 @@ function detectPhase(candles) {
   const avgV=arr=>arr.reduce((a,b)=>a+b,0)/arr.length;
   const volRatio=avgV(volumes.slice(-q))/Math.max(avgV(volumes.slice(0,q)),1);
 
-  // ATR-based range compression
+  // ATR range compression
   const atrArr=iATR(highs,lows,closes,14);
   const atrNow=atrArr.at(-1)||0;
   const atrEarly=avgV(atrArr.slice(0,Math.floor(n/4)).filter(Boolean))||atrNow||1;
@@ -152,44 +155,79 @@ function detectPhase(candles) {
   // RSI
   const rsiVal=iRSI(closes).filter(v=>v!==null).at(-1)||50;
 
+  // MACD histogram
+  const {hist:macdHist}=iMACD(closes);
+  const mh=macdHist.at(-1), mhPrev=macdHist.at(-2);
+
+  // Consecutive close direction (last 5 candles)
+  const last5=closes.slice(-5);
+  const consecUp=last5.every((c,i)=>i===0||c>=last5[i-1]);
+  const consecDn=last5.every((c,i)=>i===0||c<=last5[i-1]);
+
   const signals=[];
   let score=0;
+  let bullCount=0, bearCount=0;
 
-  // 1. EMA stack
-  if(aboveE20&&aboveE50){score+=0.25;signals.push('Above EMA 20 & 50 — bullish structure');}
-  else if(!aboveE20&&!aboveE50){score-=0.25;signals.push('Below EMA 20 & 50 — bearish structure');}
+  // 1. EMA stack (weight 0.25)
+  if(aboveE20&&aboveE50){score+=0.25;bullCount++;signals.push('Above EMA 20 & 50 — bullish structure');}
+  else if(!aboveE20&&!aboveE50){score-=0.25;bearCount++;signals.push('Below EMA 20 & 50 — bearish structure');}
   else{score+=aboveE20?0.05:-0.05;signals.push('Mixed EMA alignment');}
 
-  // 2. EMA slope
-  if(e20Slope>0.004){score+=0.15;signals.push('EMA 20 rising — momentum building');}
-  else if(e20Slope<-0.004){score-=0.15;signals.push('EMA 20 declining — momentum fading');}
-  if(e50&&e50Slope>0.002){score+=0.08;}
-  else if(e50&&e50Slope<-0.002){score-=0.08;}
+  // 2. EMA 200 long-term context (weight 0.12)
+  if(aboveE200===true){score+=0.12;bullCount++;signals.push('Above EMA 200 — long-term bullish');}
+  else if(aboveE200===false){score-=0.12;bearCount++;signals.push('Below EMA 200 — long-term bearish');}
 
-  // 3. Recent price change
-  if(pctChg>0.04){score+=0.2;signals.push(`Price +${(pctChg*100).toFixed(1)}% recent`);}
-  else if(pctChg<-0.04){score-=0.2;signals.push(`Price ${(pctChg*100).toFixed(1)}% recent`);}
+  // 3. EMA slope (weight 0.15 + 0.08)
+  if(e20Slope>0.004){score+=0.15;bullCount++;signals.push('EMA 20 rising — momentum building');}
+  else if(e20Slope<-0.004){score-=0.15;bearCount++;signals.push('EMA 20 declining — momentum fading');}
+  if(e50&&e50Slope>0.002){score+=0.08;bullCount++;}
+  else if(e50&&e50Slope<-0.002){score-=0.08;bearCount++;}
+
+  // 4. MACD histogram (weight 0.2)
+  if(mh>0&&mh>mhPrev){score+=0.2;bullCount++;signals.push(`MACD expanding bullish (hist +${mh.toFixed(5)})`);}
+  else if(mh>0){score+=0.08;signals.push(`MACD bullish fading (hist +${mh.toFixed(5)})`);}
+  else if(mh<0&&mh<mhPrev){score-=0.2;bearCount++;signals.push(`MACD expanding bearish (hist ${mh.toFixed(5)})`);}
+  else if(mh<0){score-=0.08;signals.push(`MACD bearish fading (hist ${mh.toFixed(5)})`);}
+
+  // 5. RSI directional (weight 0.12)
+  if(rsiVal>60){score+=0.12;bullCount++;signals.push(`RSI ${rsiVal.toFixed(0)} — bullish momentum`);}
+  else if(rsiVal<40){score-=0.12;bearCount++;signals.push(`RSI ${rsiVal.toFixed(0)} — bearish momentum`);}
+  else{signals.push(`RSI ${rsiVal.toFixed(0)} — neutral zone`);}
+  if(rsiVal>75){score-=0.08;signals.push('RSI overbought — caution');}
+  else if(rsiVal<25){score+=0.08;signals.push('RSI oversold — potential reversal');}
+
+  // 6. Recent price change (weight 0.18)
+  if(pctChg>0.04){score+=0.18;bullCount++;signals.push(`Price +${(pctChg*100).toFixed(1)}% recent`);}
+  else if(pctChg<-0.04){score-=0.18;bearCount++;signals.push(`Price ${(pctChg*100).toFixed(1)}% recent`);}
   else{signals.push(`Price flat (${(pctChg*100).toFixed(1)}%)`);}
 
-  // 4. Volume vs trend
+  // 7. Volume vs trend (weight 0.18)
   const volTrend=volRatio>1.3?'expanding':volRatio<0.75?'contracting':'neutral';
-  if(aboveE20&&volTrend==='expanding'){score+=0.2;signals.push(`Vol ${volRatio.toFixed(1)}x avg — expanding in uptrend (markup)`);}
-  else if(!aboveE20&&volTrend==='expanding'){score-=0.2;signals.push(`Vol ${volRatio.toFixed(1)}x avg — expanding in downtrend (markdown)`);}
-  else if(volTrend==='contracting'&&Math.abs(pctChg)<0.03){score+=0.2;signals.push('Low vol + tight range — accumulation zone');}
-  else if(volTrend==='contracting'&&pctChg<-0.02){score-=0.1;signals.push('Shrinking vol on drop — exhaustion / base forming');}
+  if(aboveE20&&volTrend==='expanding'){score+=0.18;bullCount++;signals.push(`Vol ${volRatio.toFixed(1)}x avg — expanding in uptrend (markup)`);}
+  else if(!aboveE20&&volTrend==='expanding'){score-=0.18;bearCount++;signals.push(`Vol ${volRatio.toFixed(1)}x avg — expanding in downtrend (markdown)`);}
+  else if(volTrend==='contracting'&&Math.abs(pctChg)<0.03){score+=0.15;bullCount++;signals.push('Low vol + tight range — accumulation zone');}
+  else if(volTrend==='contracting'&&pctChg<-0.02){score-=0.08;signals.push('Shrinking vol on drop — exhaustion / base');}
 
-  // 5. Range compression
-  if(rangeCompressed){signals.push(`ATR at ${(atrRatio*100).toFixed(0)}% of avg — compressed (breakout watch)`);}
+  // 8. Consecutive close direction (weight 0.1)
+  if(consecUp){score+=0.1;bullCount++;signals.push('5 consecutive up closes — strong momentum');}
+  else if(consecDn){score-=0.1;bearCount++;signals.push('5 consecutive down closes — strong selling');}
 
-  // 6. RSI context
-  if(rsiVal>70){signals.push(`RSI ${rsiVal.toFixed(0)} — overbought`);if(score>0.2)score-=0.1;}
-  else if(rsiVal<30){signals.push(`RSI ${rsiVal.toFixed(0)} — oversold`);if(score<-0.2)score+=0.1;}
-  else{signals.push(`RSI ${rsiVal.toFixed(0)}`);}
+  // 9. Range compression bonus for accumulation
+  if(rangeCompressed){
+    signals.push(`ATR at ${(atrRatio*100).toFixed(0)}% of avg — compressed range`);
+    if(Math.abs(score)<0.3){score+=0.08;signals.push('Coiling inside tight range — breakout approaching');}
+  }
+
+  // 10. Signal alignment bonus: when 5+ signals agree, boost confidence
+  const agreement=Math.max(bullCount,bearCount);
+  const alignBonus=agreement>=5?0.1:agreement>=4?0.06:agreement>=3?0.03:0;
+  score=Math.max(-1,Math.min(1,score))*(1+alignBonus*(score>0?1:-1));
 
   score=Math.max(-1,Math.min(1,score));
   const phase=score>=0.45?'MARKUP':score>=0.12?'ACCUMULATION':score<=-0.45?'MARKDOWN':score<=-0.12?'DISTRIBUTION':'NEUTRAL';
   const price_trend=pctChg>0.03?'up':pctChg<-0.03?'down':'flat';
-  return {phase,confidence:+Math.min(Math.abs(score)+0.05*Math.min(n/60,1),1).toFixed(3),price_trend,volume_trend:volTrend,range_compression:rangeCompressed,signals,score:+score.toFixed(4)};
+  const candleBonus=0.04*Math.min(n/60,1);
+  return {phase,confidence:+Math.min(Math.abs(score)+candleBonus,1).toFixed(3),price_trend,volume_trend:volTrend,range_compression:rangeCompressed,signals,score:+score.toFixed(4)};
 }
 
 // ── Navigation ────────────────────────────────────────────────────────────────
