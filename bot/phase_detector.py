@@ -14,6 +14,14 @@ PHASES = {
     "MARKDOWN":     (float("-inf"), -0.45),
 }
 
+# Typical phase durations in candles per timeframe (based on Wyckoff crypto cycles)
+PHASE_TYPICAL_CANDLES = {
+    "15m": {"ACCUMULATION": 96,  "MARKUP": 160, "DISTRIBUTION": 64,  "MARKDOWN": 96,  "NEUTRAL": 48},
+    "1h":  {"ACCUMULATION": 36,  "MARKUP": 60,  "DISTRIBUTION": 24,  "MARKDOWN": 36,  "NEUTRAL": 18},
+    "4h":  {"ACCUMULATION": 20,  "MARKUP": 35,  "DISTRIBUTION": 14,  "MARKDOWN": 20,  "NEUTRAL": 10},
+    "1d":  {"ACCUMULATION": 14,  "MARKUP": 21,  "DISTRIBUTION": 7,   "MARKDOWN": 14,  "NEUTRAL": 5},
+}
+
 
 def detect_phase(raw_candles: list[dict]) -> dict:
     if len(raw_candles) < 60:
@@ -188,4 +196,63 @@ def detect_phase(raw_candles: list[dict]) -> dict:
         "confidence": round(confidence, 4),
         "score":      round(score, 4),
         "signals":    signals,
+    }
+
+
+def estimate_phase_duration(raw_candles: list[dict], current_phase: str, interval: str = "4h") -> dict:
+    """
+    Estimate how long the current phase has been running and how much longer it may last.
+
+    Strategy: slide detect_phase() backwards over the candle history using half-window
+    steps until the phase label changes — that marks the start of the current phase.
+
+    Returns:
+        days_elapsed:   how many days the phase has been running
+        days_remaining: estimated days left (negative means overdue)
+        progress_pct:   0-100+, how far through the typical cycle
+        typical_days:   historical median for this phase on this timeframe
+        is_late:        True if >80% through typical duration (exit risk rising)
+        candles_elapsed: raw candle count since phase started
+    """
+    tf_hours = {"15m": 0.25, "1h": 1.0, "4h": 4.0, "1d": 24.0}.get(interval, 4.0)
+    typical_candles = PHASE_TYPICAL_CANDLES.get(interval, PHASE_TYPICAL_CANDLES["4h"])
+    typical = typical_candles.get(current_phase, 20)
+
+    n = len(raw_candles)
+    # Minimum window to get a stable phase reading
+    win = max(40, n // 5)
+
+    # Walk backwards: find the earliest window whose tail still matches current_phase
+    phase_start_idx = 0   # assume phase started from the beginning if we can't find a break
+    step = max(win // 4, 5)
+
+    for end in range(n - win, win, -step):
+        subset = raw_candles[: end]
+        if len(subset) < 40:
+            break
+        result = detect_phase(subset)
+        if result["phase"] != current_phase:
+            # Phase changed at this point — current phase started just after here
+            phase_start_idx = end
+            break
+
+    candles_elapsed  = n - phase_start_idx
+    hours_elapsed    = candles_elapsed * tf_hours
+    days_elapsed     = hours_elapsed / 24.0
+
+    hours_typical    = typical * tf_hours
+    days_typical     = hours_typical / 24.0
+
+    remaining_candles = typical - candles_elapsed
+    days_remaining    = remaining_candles * tf_hours / 24.0
+
+    progress_pct = min(int(candles_elapsed / typical * 100), 150)
+
+    return {
+        "days_elapsed":    round(days_elapsed, 1),
+        "days_remaining":  round(days_remaining, 1),
+        "progress_pct":    progress_pct,
+        "typical_days":    round(days_typical, 1),
+        "candles_elapsed": candles_elapsed,
+        "is_late":         progress_pct >= 80,
     }

@@ -16,10 +16,16 @@ HL_API_URL = "https://api.hyperliquid.xyz"
 
 # ── Risk parameters
 MARGIN_PCT   = 0.10   # use 10% of account value per trade
-MAX_LEVERAGE = 10     # hard cap (safe calc will lower this)
-SL_PCT       = 0.25   # 25% stop-loss from entry
-TP_PCT       = 0.75   # 75% take-profit from entry
+MAX_LEVERAGE = 10     # at SL_PCT=8%, liquidation at ~-10% → 10x is safe
+SL_PCT       = 0.08   # 8% SL — tight enough for 10x (liq at -10%)
+TP_PCT_FIXED = 0.75   # fallback fixed TP if phase never changes
 MAX_OPEN_BOT_POSITIONS = 3
+
+# ── Dynamic exit strategy
+# PHASE_EXIT: close when phase flips to DISTRIBUTION or MARKDOWN
+# TRAIL_BREAKEVEN: move SL to breakeven once phase reaches MARKUP
+PHASE_EXIT        = True
+TRAIL_BREAKEVEN   = True
 
 # ── Entry conditions
 MIN_PHASE_CONFIDENCE = 0.40   # accumulation confidence threshold
