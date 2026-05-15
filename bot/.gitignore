@@ -4,6 +4,5 @@ __pycache__/
 *.pyo
 *.log
 bot_state.json
-phase_log.jsonl
 venv/
 .venv/
