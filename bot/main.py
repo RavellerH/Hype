@@ -50,6 +50,9 @@ from phase_detector  import detect_phase, estimate_phase_duration
 from wallet_monitor  import scan_all_wallets, has_wallet_signal, wallet_summary, get_wallet_longs
 from risk_manager    import risk_summary, sl_price, tp_price, breakeven_sl
 from telegram_notifier import send, notify_entry, notify_exit, notify_wallet_entry, notify_error
+from phase_recorder  import record_snapshot
+
+RECORD_INTERVAL = 3600   # record phase snapshot every hour
 
 # ── Logging
 logging.basicConfig(
@@ -454,9 +457,18 @@ def main():
     last_phase_scan  = 0.0
     last_wallet_scan = 0.0
     last_pos_poll    = 0.0
+    last_record      = 0.0
 
     while True:
         now = time.time()
+
+        if now - last_record >= RECORD_INTERVAL:
+            try:
+                record_snapshot(WATCH_COINS)
+                logger.info("Phase snapshot recorded to phase_log.jsonl")
+            except Exception as e:
+                logger.warning("Phase record error: %s", e)
+            last_record = now
 
         if now - last_wallet_scan >= WALLET_SCAN_INTERVAL:
             run_wallet_scan()
