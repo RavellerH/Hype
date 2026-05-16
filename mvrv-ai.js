@@ -147,15 +147,14 @@ let _aiSubTab = 'intel';
 let _chatHistory = [];
 let _intelLog = JSON.parse(localStorage.getItem('hype_intel_log') || '[]');
 
-// Migrate old notes to intel log (backward-compat)
+// Migrate old notes (backward-compat)
 (function migrateOldNotes() {
   try {
     const old = JSON.parse(localStorage.getItem('hype_kb_notes') || '[]');
     if (old.length && !_intelLog.some(e => e._migrated)) {
       const migrated = old.map(n => ({
         id: n.id || 'intel::' + Date.now() + Math.random(),
-        timestamp: Date.now(),
-        source: 'note',
+        timestamp: Date.now(), source: 'note',
         raw: (n.title ? n.title + '\n' : '') + (n.content || ''),
         coins: [], signals: [], phase: null, _migrated: true,
       }));
@@ -165,15 +164,196 @@ let _intelLog = JSON.parse(localStorage.getItem('hype_intel_log') || '[]');
   } catch(e) {}
 })();
 
+// Pre-seed with Cryptowatch intel on first load
+(function seedDefaultIntel() {
+  if (_intelLog.length > 0) return;
+  const T = 1778942400000; // 2026-05-16 14:44 UTC
+  const seeds = [
+    {
+      id: 'intel::1778942400003',
+      timestamp: T,
+      source: 'cryptowatch.id/desk',
+      raw: `CRYPTOWATCH DESK · 2026-05-16 14:44 UTC · Killzone NY_AM
+
+MARKET CONDITIONS:
+Funding 0.0026% (z 0.50) · OI $58.33B (Δ4H -0.46%) · Liq 24H $28.2M
+Options Skew 25Δ: -12.9 (mild risk-off) · VWAP +0.23% · CVD 4H 383.32
+MSAC Tail Risk: ELEVATED (Confluence 79.6)
+ETF Dump scenario: $95,000 → $88,000 (-7.4%)
+
+BTC — HTF 1D BULL
+Scalp LONG: moderate entry 78,010 · stop 77,924 · tp1 78,140 · tp2 78,227 · tp3 78,313 · R:R 1:2.5 · conf 8/10
+Intraday LONG: moderate entry 79,027 · stop 78,542 · tp1 79,998 · tp2 80,484 · R:R 1:3.0 · conf 5/10 · invalidation 1H EMA50 79,355
+Swing: NO-TRADE (Regime RANGE — no directional edge)
+Quant stat-arb: SHORT BTC / LONG ETH · z=+2.34 (60d) · BTC rich vs ETH · delta-flat · mean revert 3-10d
+
+ETH — HTF 1D BEAR
+Scalp SHORT: moderate entry 2,176 · stop 2,179 · tp1 2,171 · R:R 1:2.5 · conf 6/10 · invalidation above 2,180.99
+Intraday SHORT: moderate entry 2,216 · stop 2,234 · tp1 2,181 · R:R 1:3.0 · conf 5/10 · invalidation 1H EMA50 2,229
+Swing: NO-TRADE (Regime RANGE)
+
+SOL — HTF 1D BEAR · Funding +10.9% APR (z 1.63 elevated — longs paying) · OI $0.36B
+Scalp SHORT: moderate 86.24 · stop 86.39 · tp1 86.01 · R:R 1:2.5 · conf 5/10 · invalidation above 86.41
+Intraday: NO-TRADE (Confluence 4/10 — below 5+ minimum)
+Quant: Funding harvest SHORT perp / LONG spot · est +10.9% APR gross / ~7.1% net · delta-neutral
+
+HYPE — HTF 1D BULL · Funding -11.9% APR (z -1.92 — shorts paying longs) · OI $0.90B
+Scalp LONG: moderate 41.02 · stop 40.87 · tp1 41.24 · R:R 1:2.5 · conf 6/10 · invalidation below 40.69
+Intraday LONG: aggressive 41.12 · stop 39.74 · tp1 45.27 · tp2 48.03 · R:R 1:5.0 · conf 4/10 · invalidation 1H EMA50 42.67
+Quant: Funding harvest LONG perp / SHORT spot · est +11.9% APR gross / ~7.8% net · delta-neutral
+
+SMART MONEY TOP WALLETS (Solana-dominant):
+#1 Whale $21.1M · Quality 89.1 · Perf 70.2
+#2 Whale $5.7M · Quality 64.4 · Perf 83.3
+#3 Diversified Trader 22 tokens $6.8M · Quality 87.6
+
+KEY ALERTS TODAY:
+btc_ecosystem entered top 3 narratives (score 3.1) · 23:31 UTC
+perps_dex entered top 3 (score 3.2) · 19:47 UTC
+Smart Ape #1 bought BABYMANYU, SCHWAB1000, MILF SEX (new tokens, <1d old)`,
+      coins: ['BTC', 'ETH', 'SOL', 'HYPE'],
+      signals: ['funding', 'OI', 'EMA', 'VWAP', 'support', 'resistance', 'RSI'],
+      phase: null,
+    },
+    {
+      id: 'intel::1778942400002',
+      timestamp: T - 14400000, // 10:44 UTC
+      source: 'cryptowatch.id/macro',
+      raw: `CRYPTOWATCH MACRO · 2026-05-16
+
+BTC Price: ~$78,195–$80,900
+Portfolio Posture: WAIT · score -1 · 71% confidence
+Cycle Phase: ACCUMULATION · Bottom Proximity +28% (far from bottom)
+Net Capital Flow 30D: +$6.01B (Stablecoins leading · INFLOW)
+BTC Funding: +2.8% APR (calm · no crowding · OI $2.20B)
+Today Call: SIDEWAYS · Cycle calls accuracy 70% since 2015
+Evidence: 26 receipts · 6 bull / 7 bear / 13 flat · 27% agreement
+
+REGIME RADAR: Accumulation · BTC Season (not Altseason)
+Evidence trail:
+L1 Macro +1 · 7/7 scored
+L2 Cycle 0 · 5/5 scored
+L3 Capital/On-Chain 0 · 9/9 scored
+L4 Execution -3 · 5/5 scored
+
+ON-CHAIN z-SCORE MOVES (notable):
+Puell Multiple +1.65σ (0.9953) — accumulation range
+AHR999 +1.30σ (0.5286) — DCA zone
+BTC price +0.78σ (+1.32%) $80.90k
+MVRV Z-Score +0.73σ (0.9187) — accumulation
+Reserve Risk +0.72σ (0.001214) — buy zone
+Active Supply 1y+ +0.72σ (0.60%)
+LTH-MVRV +0.68σ (1.685) — accumulation
+NUPL +0.63σ (0.3297) — hope/fear transition
+Hot Capital Share -0.11σ (12.09%) — extreme cap distribution
+
+CYCLE BOTTOM RADAR: 84/100 (Strong bottom cluster — multi-indicator confluence)
+Bottom signals active (10/14): Puell 0.87 (accumulation) · 2Y MA -7% (buy) · AHR999 0.51 (DCA) · Mayer 0.99 (discount) · Hash Ribbons aligned · Reserve Risk 0.0012 (buy) · MVRV-Z 0.92 (accumulation) · LTH-MVRV 1.69 (accumulation) · NUPL 0.33 (hope/fear) · HCS 12.1% (extreme cap)
+Top signals (2): NVT Cross 15.4 (death cross) · Active 1y+ 59.9% (active cohort)
+30d trajectory: +8 (bottom score improving)
+
+COHORTS:
+LTH: ACCUMULATING +131,133 BTC 30d
+ETF/TradFi: DISTRIBUTING -$541M 7d
+Smart Money: ACCUMULATING (stable · Δ -3.63% 24h)
+Alignment: 2/3 cohorts accumulating — contrarian-bull setup; ETF disagreeing
+
+CYCLE POSITION:
+24.9 months since halving · 706 days to next
+AVIV 1.035 (fair value)
+LTH SOPR 0.94 (loss-taking → constructive)
+MA Compression Index 30.9% — tight bands · big move building · 10th pct 20% / 90th pct 78%
+Price/EMA50W velocity divergence +0.114 (neutral · bottom extreme below -1.0)
+Weekly RSI 49.4 — transition zone · MA Stack 2/4
+
+HISTORICAL at 20-40 proximity (n=79):
+7d median +0.52% (range -2.56% to +3.89%)
+30d median +2.73% (range -0.53% to +7.18%)
+90d median -8.18% (range -22.23% to +1.62%)
+
+RISK: NVT death cross + ETF distributing -$541M. If smart money stays idle 48h and BTC fails to reclaim 7d range → accumulation read was wrong, cut quickly.`,
+      coins: ['BTC'],
+      signals: ['MVRV', 'RSI', 'EMA', 'funding', 'OI', 'support', 'dominance', 'divergence', 'volume', 'higher low'],
+      phase: 'ACCUMULATION',
+    },
+    {
+      id: 'intel::1778942400001',
+      timestamp: T - 18000000, // 09:44 UTC
+      source: 'cryptowatch.id/hunter',
+      raw: `CRYPTOWATCH HUNTER · 2026-05-16
+
+MARKET REGIME: CAUTION · Score 0/+10 (max ±10)
+Heat: 41.8 (cool/opportunity range — threshold 55 for confirmation)
+BTC Dominance: 60.4% (day 1 neutral)
+Altcoin Breadth: 21% (most alts down)
+Smart Money: IDLE · $0 volume · 0 trades
+BTC Funding: +2.8% APR (calm)
+Fear & Greed 7d: unavailable — re-check tomorrow
+
+NARRATIVE ROTATION:
+Leading narrative rotated: perps_dex → btc_ecosystem
+Hottest narrative: RWA (ONDO lead · 7d -10.3%)
+BTC Ecosystem: mindshare leading price on -9% basket (BTC -2.6%, ORDI -25%, SATS -14.8%)
+→ Textbook early-rotation setup — attention front-running beaten-down basket
+→ BUT: smart money flat-out idle, heat cool → NO confirmation yet
+
+VERDICT: CAUTION — BTC Ecosystem attention leading price but smart money won't confirm
+Conviction 3/5 (60%) · signals: Morning Verdict ✓ · Risk Regime ✓ · Smart Money ✓
+Signals disagreeing: Narrative Entries ✗ · Concentration ✗
+
+AI SYNTHESIS:
+"Stay small, scale into BTC on confirmation. Treat ORDI/SATS as second-leg trades only if BTC leads first. Ignore CT shill noise around Mirage Narrative and Last Man Standing — exit liquidity."
+
+PLAYS:
+BTC: ENTRY (small) — low-beta leader of BTC Ecosystem rotation, -2.6% 7d
+ORDI: HOLD/WATCH — -25% 7d deepest drawdown, second-leg beta if BTC confirms
+SATS: HOLD/WATCH — -14.8% 7d, sympathy candidate, not a leader
+
+AVOID:
+GAMBLE — CT emergence + strong shill signal + Toshi.bet casino promo = exit liquidity
+BIOHACK — MIXED CT, possible shill, no smart money or price confirmation
+Mirage Narrative / XRP conspiracy — no ticker, pure noise
+
+WATCH TRIGGERS (CAUTION → HUNT flip):
+1. Smart money inflow into BTC Ecosystem names ($0 → any = biggest tell)
+2. BTC breaks higher + ORDI/SATS catch bid within 24-48h → rotation confirmed
+3. Heat score returns above 55 with stable BTC.D → confirmation
+4. AI/AI_agents correlation r=1.00 — if BTC Ecosystem fails, AI basket is next candidate
+
+WHALE FLOW (last 50 min):
+Net: +$1.27M · 200 trades · Buy $9.82M (109 trades) · Sell $8.55M (91 trades)
+Buy pressure 54% · Token: WETH dominant
+
+SMART APE ALERTS:
+Smart Ape #1 bought large MUSK (5d old) — 15 May 14:46
+Smart Ape #1 bought large GPT (5d old) — 15 May 14:13
+
+SPOTLIGHT (5 aligned):
+SOL: -3.5% 24h · Smart money #1 accumulation · EDGE 2.9/10 · hot L1s
+SUI: -4.9% 24h · L1s narrative · EDGE 4.7/10 · Conviction 2/5
+DOGE: -3.2% 24h · memecoins narrative · EDGE 3.1/10
+SHIB: -3.9% 24h · memecoins narrative
+PEPE: -3.9% 24h · memecoins narrative
+
+RISK TO THESIS: Smart money stays idle + BTC.D grinds higher without follow-through → rotation is attention noise on a still-bleeding basket. Concentration: 2 narratives (top 60%) — no forced-rebalance pressure, patience is cheap.`,
+      coins: ['BTC', 'ETH', 'SOL', 'SUI', 'DOGE', 'PEPE'],
+      signals: ['funding', 'dominance', 'RSI', 'OI', 'volume', 'bullish', 'bearish', 'support'],
+      phase: 'ACCUMULATION',
+    },
+  ];
+  _intelLog = seeds;
+  localStorage.setItem('hype_intel_log', JSON.stringify(_intelLog));
+})();
+
 // ── Intel parsing ─────────────────────────────────────────────────────────────
 
-const KNOWN_COINS = ['BTC','ETH','SOL','HYPE','SUI','AVAX','DOGE','WIF','PEPE','ARB','OP','INJ','LINK','ATOM','DOT','ADA','BNB','XRP','TON','TRX','SEI','APT','NEAR','FTM','STX','RNDR'];
+const KNOWN_COINS = ['BTC','ETH','SOL','HYPE','SUI','AVAX','DOGE','WIF','PEPE','ARB','OP','INJ','LINK','ATOM','DOT','ADA','BNB','XRP','TON','TRX','SEI','APT','NEAR','FTM','STX','RNDR','ORDI','SATS'];
 
 const PHASE_KW = {
   ACCUMULATION: ['accumulation','accumulate','accumulating','wyckoff bottom','spring','reaccumulation','phase b','phase c','shakeout','lps','last point of support'],
   MARKUP:       ['markup','uptrend','breakout','break out','bull run','rally','pump','impulse','higher high','higher low','upside'],
   DISTRIBUTION: ['distribution','distributing','lower high','lfh','wyckoff top','redistribution','phase d','buying climax','bcx','utad'],
-  MARKDOWN:     ['markdown','downtrend','breakdown','break down','bear','dump','capitulation','flush','lower low','lower high','downside'],
+  MARKDOWN:     ['markdown','downtrend','breakdown','break down','bear','dump','capitulation','flush','lower low','downside'],
 };
 
 const SIGNAL_KW = [
@@ -181,7 +361,7 @@ const SIGNAL_KW = [
   'support','resistance','divergence','golden cross','death cross','squeeze',
   'oversold','overbought','bullish','bearish','consolidat','higher low',
   'lower high','higher high','lower low','liquidity','order block','fair value gap',
-  'FVG','OB','imbalance','HTF','LTF','weekly','daily','4h','1h',
+  'FVG','OB','imbalance','HTF','LTF','weekly','daily','4h','1h','MVRV','NUPL',
 ];
 
 function parseIntel(text) {
@@ -211,14 +391,12 @@ let _liveCache = null, _liveCacheTs = 0;
 
 async function fetchLivePricesForGraph() {
   if (_liveCache && Date.now() - _liveCacheTs < 30000) return _liveCache;
-  // Try app.js WebSocket globals first
   if (typeof livePrices !== 'undefined' && Object.keys(livePrices).length > 4) {
     const pd = typeof livePrevDay !== 'undefined' ? livePrevDay : {};
     _liveCache = { prices: { ...livePrices }, prevDay: { ...pd } };
     _liveCacheTs = Date.now();
     return _liveCache;
   }
-  // Fallback: Hyperliquid REST
   try {
     const [mids, ctx] = await Promise.all([
       fetch('https://api.hyperliquid.xyz/info', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'allMids' }) }).then(r => r.json()),
@@ -280,7 +458,7 @@ function renderAIShell() {
     <div class="filter-bar" style="flex-wrap:wrap;gap:6px">
       <div style="display:flex;gap:6px">
         ${['intel', 'graph', 'chat'].map(t => {
-          const icons = { intel: '📋', graph: '🕸', chat: '💬' };
+          const icons  = { intel: '📋', graph: '🕸', chat: '💬' };
           const labels = { intel: 'Intel Log', graph: 'Graph', chat: 'Chat' };
           return `<button class="chip${_aiSubTab === t ? ' active' : ''}" onclick="setAITab('${t}')">${icons[t]} ${labels[t]}</button>`;
         }).join('')}
@@ -312,7 +490,7 @@ function renderIntelTab() {
   if (!el) return;
 
   const rows = _intelLog.length === 0
-    ? '<div class="chat-empty" style="padding:32px">No intel yet.<br><br>Paste analysis from cryptowatch.id or anywhere else.<br>Coins, phases and signals are auto-detected.</div>'
+    ? '<div class="chat-empty" style="padding:32px">No intel yet. Paste analysis from cryptowatch.id or anywhere else.</div>'
     : _intelLog.map(entry => {
         const dt = new Date(entry.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
         const coinBadges = entry.coins.map(c =>
@@ -336,7 +514,7 @@ function renderIntelTab() {
             </div>
             <button class="btn btn-danger btn-sm" style="flex-shrink:0;margin-left:8px" onclick="deleteIntel('${aiEsc(entry.id)}')" title="Delete">✕</button>
           </div>
-          <div id="intel-preview-${entry.id}" class="note-body" style="font-size:12px;margin-top:6px;cursor:${hasMore?'pointer':''}" ${hasMore ? `onclick="toggleIntelExpand('${aiEsc(entry.id)}')"` : ''}>${aiEsc(preview)}${hasMore ? ' <span style="color:var(--accent);font-size:11px">[more]</span>' : ''}</div>
+          <div id="intel-preview-${entry.id}" class="note-body" style="font-size:12px;margin-top:6px;cursor:${hasMore ? 'pointer' : ''}" ${hasMore ? `onclick="toggleIntelExpand('${aiEsc(entry.id)}')"` : ''}>${aiEsc(preview)}${hasMore ? ' <span style="color:var(--accent);font-size:11px">[more]</span>' : ''}</div>
           <div id="intel-full-${entry.id}" style="display:none;margin-top:8px">
             <pre style="white-space:pre-wrap;font-size:11px;color:var(--text-muted);font-family:var(--mono);line-height:1.6;background:var(--bg);border-radius:var(--radius-md);padding:10px 12px;border:1px solid var(--border)">${aiEsc(entry.raw)}</pre>
             <details style="margin-top:6px">
@@ -355,20 +533,15 @@ function renderIntelTab() {
           <span style="font-size:11px;color:var(--text-faint)">Coins, phases & signals auto-extracted</span>
         </div>
         <textarea class="input note-textarea" id="intel-text"
-          placeholder="Paste market analysis, narratives, macro intel, setups…
-
-Example:
-BTC showing accumulation signs with RSI divergence at the $90k support. Volume declining on each retest = bullish. ETH EMA200 reclaimed on daily — watch for breakout above $3.5k. SOL distribution detected near ATH, funding elevated. HYPE showing markup phase characteristics."
-          rows="6" style="min-height:120px"></textarea>
+          placeholder="Paste market analysis, narratives, macro intel, desk setups…"
+          rows="5" style="min-height:100px"></textarea>
         <button class="btn btn-primary" onclick="addIntel()" style="align-self:flex-start">📋 Save Intel</button>
       </div>
-
       ${_intelLog.length > 0 ? `
       <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0 4px">
         <span style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">${_intelLog.length} entries · newest first</span>
         <button class="btn btn-ghost btn-sm" onclick="exportIntel()">⬇ Export MD</button>
       </div>` : ''}
-
       <div class="notes-list">${rows}</div>
     </div>`;
 }
@@ -402,11 +575,11 @@ function deleteIntel(id) {
 }
 
 function exportIntel() {
-  const md = _intelLog.map(intelToMD).join('\n\n---\n\n');
+  const md   = _intelLog.map(intelToMD).join('\n\n---\n\n');
   const blob = new Blob([md], { type: 'text/markdown' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `hype-intel-${new Date().toISOString().slice(0,10)}.md`;
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = `hype-intel-${new Date().toISOString().slice(0, 10)}.md`;
   a.click();
 }
 
@@ -421,17 +594,16 @@ async function renderKGraph() {
   try { ({ prices, prevDay } = await fetchLivePricesForGraph()); } catch(e) {}
 
   const W = Math.min(el.clientWidth || 900, window.innerWidth - 16);
-  const H = 520;
+  const H = 560;
 
   const GRAPH_COINS = ['BTC', 'ETH', 'SOL', 'HYPE'];
-  const TYPE_COLOR  = { coin: null, intel: '#818cf8', phase: '#fbbf24', signal: '#fb923c' };
-  const TYPE_R      = { coin: 20,   intel: 10,        phase: 12,        signal: 8 };
+  const TYPE_COLOR  = { coin: null, intel: '#818cf8', phase: '#fbbf24', signal: '#fb923c', narrative: '#34d399' };
+  const TYPE_R      = { coin: 22,   intel: 11,        phase: 13,        signal: 9,         narrative: 10 };
 
-  // ── Build nodes ──
   const nodes = [];
   const idMap = {};
 
-  // Coin nodes
+  // Coin nodes with live price
   for (const coin of GRAPH_COINS) {
     const pct   = pctChange(coin, prices, prevDay);
     const color = coinNodeColor(pct);
@@ -440,28 +612,28 @@ async function renderKGraph() {
       id: `c:${coin}`, label: coin, type: 'coin', color,
       price, pct,
       priceStr: price ? fmt$(price) : '—',
-      pctStr:   pct !== null ? (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%' : '',
+      pctStr: pct !== null ? (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%' : '',
       r: TYPE_R.coin,
-      x: W / 2 + (Math.random() - .5) * 160,
-      y: H / 2 + (Math.random() - .5) * 120,
+      x: W / 2 + (Math.random() - .5) * 180,
+      y: H / 2 + (Math.random() - .5) * 130,
       vx: 0, vy: 0,
     });
   }
 
-  // Intel nodes (last 20 entries)
+  // Intel nodes (last 20)
   const recentIntel = _intelLog.slice(0, 20);
   for (const entry of recentIntel) {
     const dt = new Date(entry.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     nodes.push({
-      id: entry.id, label: dt, sublabel: entry.source.slice(0, 14),
+      id: entry.id, label: dt, sublabel: entry.source.slice(0, 16),
       type: 'intel', color: TYPE_COLOR.intel, r: TYPE_R.intel,
-      x: W / 2 + (Math.random() - .5) * W * .65,
+      x: W / 2 + (Math.random() - .5) * W * .68,
       y: H / 2 + (Math.random() - .5) * H * .55,
       vx: 0, vy: 0, _entry: entry,
     });
   }
 
-  // Phase nodes (only phases present in intel)
+  // Phase nodes
   const PHASE_COLORS = { ACCUMULATION: '#38bdf8', MARKUP: '#4ade80', DISTRIBUTION: '#fbbf24', MARKDOWN: '#f87171' };
   const phasesUsed = [...new Set(_intelLog.map(e => e.phase).filter(Boolean))];
   for (const phase of phasesUsed) {
@@ -474,7 +646,25 @@ async function renderKGraph() {
     });
   }
 
-  // Signal nodes (top 8 most-mentioned across all intel)
+  // Narrative nodes (extracted from intel: btc_ecosystem, perps_dex, RWA, l1s, memecoins)
+  const NARRATIVES_KW = { 'btc_ecosystem': ['btc ecosystem','ordi','sats'], 'perps_dex': ['perps dex','perps_dex'], 'RWA': ['rwa','ondo'], 'l1s': ['l1s','l1 narrative'], 'memecoins': ['memecoin','doge','pepe','shib'] };
+  const narrativesUsed = new Set();
+  for (const entry of _intelLog) {
+    for (const [name, kws] of Object.entries(NARRATIVES_KW)) {
+      if (kws.some(kw => entry.raw.toLowerCase().includes(kw))) narrativesUsed.add(name);
+    }
+  }
+  for (const narr of narrativesUsed) {
+    nodes.push({
+      id: `n:${narr}`, label: narr.slice(0, 10), sublabel: narr,
+      type: 'narrative', color: TYPE_COLOR.narrative, r: TYPE_R.narrative,
+      x: W / 2 + (Math.random() - .5) * W * .5,
+      y: H / 2 + (Math.random() - .5) * H * .45,
+      vx: 0, vy: 0,
+    });
+  }
+
+  // Signal nodes (top 8)
   const sigCount = {};
   for (const entry of _intelLog) for (const s of entry.signals) sigCount[s] = (sigCount[s] || 0) + 1;
   const topSignals = Object.entries(sigCount).sort((a, b) => b[1] - a[1]).slice(0, 8).map(e => e[0]);
@@ -502,39 +692,38 @@ async function renderKGraph() {
   }
 
   for (const entry of recentIntel) {
-    // Intel → coins it mentions
-    for (const coin of entry.coins.filter(c => GRAPH_COINS.includes(c))) {
-      addEdge(entry.id, `c:${coin}`, 2);
+    for (const coin of entry.coins.filter(c => GRAPH_COINS.includes(c))) addEdge(entry.id, `c:${coin}`, 2);
+    if (entry.phase) addEdge(entry.id, `p:${entry.phase}`, 1.5);
+    for (const sig of entry.signals.filter(s => topSignals.includes(s))) addEdge(entry.id, `s:${sig}`, 0.6);
+    // Intel ↔ narrative
+    for (const [name, kws] of Object.entries(NARRATIVES_KW)) {
+      if (narrativesUsed.has(name) && kws.some(kw => entry.raw.toLowerCase().includes(kw))) addEdge(entry.id, `n:${name}`, 1);
     }
-    // Intel → phase
-    if (entry.phase) addEdge(entry.id, `p:${entry.phase}`, 1.2);
-    // Intel → top signals
-    for (const sig of entry.signals.filter(s => topSignals.includes(s))) {
-      addEdge(entry.id, `s:${sig}`, 0.6);
-    }
-    // Intel ↔ Intel: share 2+ tracked coins
+    // Intel ↔ Intel (shared 2+ tracked coins)
     for (const other of recentIntel) {
       if (other.id <= entry.id) continue;
       const shared = entry.coins.filter(c => other.coins.includes(c) && GRAPH_COINS.includes(c));
-      if (shared.length >= 2) addEdge(entry.id, other.id, 0.4);
+      if (shared.length >= 2) addEdge(entry.id, other.id, 0.5);
     }
   }
 
-  // Coin → phase (from most recent intel mentioning that coin + phase)
+  // Coin → phase / signal / narrative
   for (const coin of GRAPH_COINS) {
     const match = recentIntel.find(e => e.coins.includes(coin) && e.phase);
-    if (match) addEdge(`c:${coin}`, `p:${match.phase}`, 1.8);
-  }
-
-  // Coin → top signals (from most recent intel mentioning coin)
-  for (const coin of GRAPH_COINS) {
+    if (match) addEdge(`c:${coin}`, `p:${match.phase}`, 2);
     const matches = recentIntel.filter(e => e.coins.includes(coin));
     const coinSigs = [...new Set(matches.flatMap(e => e.signals).filter(s => topSignals.includes(s)))].slice(0, 2);
     for (const sig of coinSigs) addEdge(`c:${coin}`, `s:${sig}`, 1);
   }
+  // Narrative → coin (if mentioned together)
+  for (const [name] of Object.entries(NARRATIVES_KW)) {
+    if (!narrativesUsed.has(name)) continue;
+    const nEntry = recentIntel.find(e => e.raw.toLowerCase().includes(name.replace('_', ' ')));
+    if (nEntry) for (const coin of nEntry.coins.filter(c => GRAPH_COINS.includes(c))) addEdge(`n:${name}`, `c:${coin}`, 1);
+  }
 
   // ── Force-directed layout ──
-  const k = Math.sqrt(W * H / Math.max(nodes.length, 1)) * 0.95;
+  const k = Math.sqrt(W * H / Math.max(nodes.length, 1)) * 0.92;
   for (let iter = 0; iter < 160; iter++) {
     for (const n of nodes) { n.fx = 0; n.fy = 0; }
     for (let i = 0; i < nodes.length; i++) {
@@ -559,9 +748,9 @@ async function renderKGraph() {
     }
   }
 
-  // ── Render SVG ──
+  // ── Render ──
   const edgeSvg = edges.map(e => {
-    const w  = e.strength >= 1.5 ? '1.8' : e.strength >= 1 ? '1.2' : '0.7';
+    const w  = e.strength >= 1.5 ? '2' : e.strength >= 1 ? '1.3' : '0.7';
     const op = e.strength >= 1.5 ? '0.6' : e.strength >= 1 ? '0.45' : '0.25';
     return `<line x1="${e.source.x.toFixed(0)}" y1="${e.source.y.toFixed(0)}" x2="${e.target.x.toFixed(0)}" y2="${e.target.y.toFixed(0)}" stroke="#383838" stroke-width="${w}" opacity="${op}"/>`;
   }).join('');
@@ -569,12 +758,11 @@ async function renderKGraph() {
   const nodesSvg = nodes.map(n => {
     const x = n.x.toFixed(0), y = n.y.toFixed(0), r = n.r;
     if (n.type === 'coin') {
-      const pctClass = n.pct !== null ? (n.pct >= 0 ? '+' : '-') : '';
       return `<g onclick="kgClick(this)" data-id="${aiEsc(n.id)}" data-label="${aiEsc(n.label)}" data-type="coin" data-price="${aiEsc(n.priceStr)}" data-pct="${aiEsc(n.pctStr)}" style="cursor:pointer">
-        <circle cx="${x}" cy="${y}" r="${r}" fill="${n.color}" fill-opacity="0.18" stroke="${n.color}" stroke-width="2.5"/>
+        <circle cx="${x}" cy="${y}" r="${r}" fill="${n.color}" fill-opacity="0.20" stroke="${n.color}" stroke-width="2.5"/>
         <text x="${x}" y="${(+y + 4).toFixed(0)}" fill="${n.color}" font-size="11" font-weight="700" text-anchor="middle" font-family="monospace">${aiEsc(n.label)}</text>
-        <text x="${x}" y="${(+y + r + 11).toFixed(0)}" fill="${n.color}" font-size="8.5" text-anchor="middle" font-family="monospace">${aiEsc(n.priceStr)}</text>
-        <text x="${x}" y="${(+y + r + 21).toFixed(0)}" fill="${n.color}" font-size="8" text-anchor="middle" font-family="monospace">${aiEsc(n.pctStr)}</text>
+        <text x="${x}" y="${(+y + r + 12).toFixed(0)}" fill="${n.color}" font-size="8.5" text-anchor="middle" font-family="monospace">${aiEsc(n.priceStr)}</text>
+        <text x="${x}" y="${(+y + r + 22).toFixed(0)}" fill="${n.color}" font-size="8" text-anchor="middle" font-family="monospace">${aiEsc(n.pctStr)}</text>
       </g>`;
     }
     const lbl = (n.label || '').slice(0, 10);
@@ -585,10 +773,11 @@ async function renderKGraph() {
   }).join('');
 
   const legend = [
-    { c: '#38bdf8',           l: 'Coin (live price)' },
-    { c: TYPE_COLOR.intel,    l: 'Intel entry' },
-    { c: TYPE_COLOR.phase,    l: 'Phase' },
-    { c: TYPE_COLOR.signal,   l: 'Signal / indicator' },
+    { c: '#38bdf8',                l: 'Coin (live)' },
+    { c: TYPE_COLOR.intel,         l: 'Intel entry' },
+    { c: TYPE_COLOR.phase,         l: 'Phase' },
+    { c: TYPE_COLOR.narrative,     l: 'Narrative' },
+    { c: TYPE_COLOR.signal,        l: 'Signal' },
   ].map(({ c, l }) => `<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-muted)"><svg width="10" height="10"><circle cx="5" cy="5" r="4" fill="${c}" fill-opacity=".2" stroke="${c}" stroke-width="1.5"/></svg>${l}</div>`).join('');
 
   el.innerHTML = `
@@ -598,7 +787,7 @@ async function renderKGraph() {
       <span style="margin-left:auto;font-size:11px;color:var(--text-faint)">${nodes.length} nodes · ${edges.length} edges</span>
       <button class="btn btn-ghost btn-sm" onclick="_liveCacheTs=0;setAITab('graph')">↺ Prices</button>
     </div>
-    <div id="kg-detail" style="padding:10px 16px;background:var(--surface2);font-size:12px;color:var(--text-muted);min-height:40px;line-height:1.6">Click a node to inspect</div>`;
+    <div id="kg-detail" style="padding:10px 16px;background:var(--surface2);font-size:12px;color:var(--text-muted);min-height:42px;line-height:1.6">Click a node to inspect · Coin nodes show live price from Hyperliquid</div>`;
 }
 
 function kgClick(el) {
@@ -610,13 +799,12 @@ function kgClick(el) {
     html += ` <span style="font-family:var(--mono);font-size:12px;color:var(--text);margin-left:8px">${aiEsc(el.dataset.price)}</span>`;
     const pct = parseFloat(el.dataset.pct);
     if (!isNaN(pct)) html += ` <span class="${pct >= 0 ? 'pos' : 'neg'}" style="font-family:var(--mono);font-size:12px">${aiEsc(el.dataset.pct)}</span>`;
-    const coinIntel = _intelLog.filter(e => e.coins.includes(label)).slice(0, 3);
+    const coinId = el.dataset.id?.replace('c:', '') || label;
+    const coinIntel = _intelLog.filter(e => e.coins.includes(coinId)).slice(0, 3);
     if (coinIntel.length) {
       html += '<div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">' +
-        coinIntel.map(e => `<div style="font-size:11px;padding:4px 8px;background:var(--surface);border-radius:var(--radius-sm);border:1px solid var(--border)"><span style="color:var(--text-faint);font-size:10px">${new Date(e.timestamp).toLocaleDateString()} · ${aiEsc(e.source)}</span><br>${aiEsc(e.raw.slice(0, 120))}…</div>`).join('') +
+        coinIntel.map(e => `<div style="font-size:11px;padding:4px 8px;background:var(--surface);border-radius:var(--radius-sm);border:1px solid var(--border)"><span style="color:var(--text-faint);font-size:10px">${new Date(e.timestamp).toLocaleDateString()} · ${aiEsc(e.source)}</span><br>${aiEsc(e.raw.slice(0, 130))}…</div>`).join('') +
         '</div>';
-    } else {
-      html += '<span style="color:var(--text-faint);font-size:11px;margin-left:12px">No intel saved for this coin yet</span>';
     }
   }
 
@@ -625,17 +813,23 @@ function kgClick(el) {
     const entry = _intelLog.find(e => e.id === id);
     if (entry) {
       const dt = new Date(entry.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-      html += `<div style="margin-top:6px;font-size:11px;color:var(--text-muted)">${dt} · ${aiEsc(entry.source)}</div>`;
-      html += `<div style="margin-top:4px;font-size:11px">${aiEsc(entry.raw.slice(0, 200))}${entry.raw.length > 200 ? '…' : ''}</div>`;
+      html += `<div style="margin-top:5px;font-size:11px;color:var(--text-muted)">${dt} · ${aiEsc(entry.source)}</div>`;
+      if (entry.coins.length) html += `<div style="margin-top:3px;font-size:11px"><span style="color:var(--text-faint)">Coins: </span>${entry.coins.map(c => `<span style="color:var(--accent)">${c}</span>`).join(' ')}</div>`;
+      html += `<div style="margin-top:4px;font-size:11px;color:var(--text-muted)">${aiEsc(entry.raw.slice(0, 220))}${entry.raw.length > 220 ? '…' : ''}</div>`;
     }
   }
 
-  if (type === 'phase' || type === 'signal') {
+  if (type === 'phase' || type === 'signal' || type === 'narrative') {
     const related = _intelLog.filter(e =>
-      type === 'phase' ? e.phase === label.toUpperCase() : e.signals.some(s => s.toLowerCase() === label.toLowerCase())
+      type === 'phase'     ? e.phase === label.toUpperCase() :
+      type === 'signal'    ? e.signals.some(s => s.toLowerCase() === label.toLowerCase()) :
+      e.raw.toLowerCase().includes(label.toLowerCase().replace('_', ' '))
     ).slice(0, 3);
     if (related.length) {
-      html += `<div style="margin-top:6px;font-size:11px;color:var(--text-faint)">${related.length} intel entr${related.length > 1 ? 'ies' : 'y'} reference this</div>`;
+      html += `<div style="margin-top:5px;font-size:11px;color:var(--text-faint)">${related.length} intel entr${related.length > 1 ? 'ies' : 'y'}:</div>` +
+        '<div style="margin-top:4px;display:flex;flex-direction:column;gap:3px">' +
+        related.map(e => `<div style="font-size:10px;color:var(--text-muted);padding:3px 6px;background:var(--surface);border-radius:var(--radius-sm)">${new Date(e.timestamp).toLocaleDateString()} · ${aiEsc(e.source)} — ${aiEsc(e.raw.slice(0, 80))}…</div>`).join('') +
+        '</div>';
     }
   }
 
@@ -648,7 +842,7 @@ function renderChatTab() {
   const el = document.getElementById('ai-sub-content');
   if (!el) return;
   const histHtml = _chatHistory.length === 0
-    ? `<div class="chat-empty">Ask anything about your saved intel, MVRV signals, or market conditions.<br><br><span style="color:var(--text-faint)">Your intel log is used as context · Add API key above to enable Claude</span></div>`
+    ? `<div class="chat-empty">Ask anything about your intel, MVRV signals, or setups.<br><br><span style="color:var(--text-faint)">Intel log used as context · Add Anthropic API key above to enable Claude</span></div>`
     : _chatHistory.map(m => m.role === 'user'
         ? `<div class="chat-bubble user">${aiEsc(m.content)}</div>`
         : `<div class="chat-bubble assistant"><div class="chat-answer">${mdToHtml(m.content)}</div></div>`
@@ -657,7 +851,7 @@ function renderChatTab() {
     <div class="chat-wrap">
       <div class="chat-history" id="chat-history">${histHtml}</div>
       <div class="chat-input-row">
-        <input class="input chat-input" id="chat-input" placeholder="Ask about your intel, MVRV, market phases…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}">
+        <input class="input chat-input" id="chat-input" placeholder="Ask about your intel, setups, MVRV…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}">
         <button class="btn btn-primary" onclick="sendChat()">Send</button>
         ${_chatHistory.length ? `<button class="btn btn-ghost btn-sm" onclick="_chatHistory=[];renderChatTab()">Clear</button>` : ''}
       </div>
@@ -676,20 +870,17 @@ async function sendChat() {
 
   const apiKey = localStorage.getItem('hype_anthropic_key') || '';
   if (!apiKey) {
-    _chatHistory.push({ role: 'assistant', content: '**No Anthropic API key set.** Enter your key in the field above and click Save.\n\nGet a free key at **console.anthropic.com**' });
+    _chatHistory.push({ role: 'assistant', content: '**No Anthropic API key set.** Enter your key above and click Save.\n\nGet a free key at **console.anthropic.com**' });
     renderChatTab();
     if (input) input.disabled = false;
     return;
   }
 
-  // Build context from intel log (newest first, capped at ~2000 chars)
-  let intelCtx = '';
-  let ctxLen = 0;
+  let intelCtx = '', ctxLen = 0;
   for (const entry of _intelLog) {
-    const line = `[${new Date(entry.timestamp).toLocaleDateString()} · ${entry.source}] ${entry.raw}\n`;
-    if (ctxLen + line.length > 2200) break;
-    intelCtx += line;
-    ctxLen += line.length;
+    const line = `[${new Date(entry.timestamp).toLocaleDateString()} · ${entry.source}]\n${entry.raw}\n\n`;
+    if (ctxLen + line.length > 3000) break;
+    intelCtx += line; ctxLen += line.length;
   }
 
   const mvrvCtx = _mvrvCache
@@ -698,28 +889,18 @@ async function sendChat() {
 
   const system = [
     'You are an AI trading research assistant for the Hype crypto dashboard.',
-    'Help analyze BTC, ETH, SOL, HYPE using saved intel and market data.',
+    'Analyze BTC, ETH, SOL, HYPE using the saved intel log below.',
     'MVRV zones: >1.4 overheated, 1.15–1.4 bullish, 0.85–1.15 neutral, <0.85 undervalued.',
     mvrvCtx,
-    intelCtx ? `\nSaved Intel Log (newest first):\n${intelCtx}` : '',
-    '\nBe concise and direct. Reference specific intel entries when relevant.',
+    intelCtx ? `\nIntel Log (newest first):\n${intelCtx}` : '',
+    'Be concise. Reference specific intel entries when relevant. Flag when signals conflict.',
   ].filter(Boolean).join('\n');
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-client-side-use': 'true',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1024,
-        system,
-        messages: _chatHistory.map(m => ({ role: m.role, content: m.content })),
-      }),
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-client-side-use': 'true' },
+      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1024, system, messages: _chatHistory.map(m => ({ role: m.role, content: m.content })) }),
     });
     const d = await res.json();
     _chatHistory.push({ role: 'assistant', content: d.content?.[0]?.text || JSON.stringify(d.error || d) });
@@ -744,7 +925,7 @@ function mdToHtml(md) {
     .replace(/\n/g, '<br>');
 }
 
-// ── Patch navigate() to trigger loaders for new pages ────────────────────────
+// ── Patch navigate() ──────────────────────────────────────────────────────────
 
 (function patchNavigate() {
   const _orig = window.navigate;
