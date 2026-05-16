@@ -1,4 +1,4 @@
-const CACHE = 'hype-v3';
+const CACHE = 'hype-v4';
 const STATIC = [
   './',
   './styles.css',
