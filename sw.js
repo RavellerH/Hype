@@ -1,4 +1,4 @@
-const CACHE = 'hype-v2';
+const CACHE = 'hype-v5';
 const STATIC = [
   './',
   './styles.css',
@@ -25,10 +25,7 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // Skip non-GET and cross-origin requests
   if (e.request.method !== 'GET') return;
-
-  // Cache-first for static assets
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
