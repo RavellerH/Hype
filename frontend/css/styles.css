@@ -701,6 +701,39 @@ tbody tr:hover td       { background: var(--surface-hover); }
   border-radius: var(--radius-sm); line-height: 1.4;
 }
 
+/* ── Health Score Modal ───────────────────────────────────────────────────────── */
+
+.health-modal-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.72);
+  display: flex; align-items: center; justify-content: center;
+}
+.health-modal-box {
+  background: var(--surface); border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg); padding: 20px;
+  min-width: 300px; max-width: 430px; width: 90%;
+  box-shadow: var(--shadow-lg); max-height: 90vh; overflow-y: auto;
+}
+.health-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.hm-close { background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; line-height: 1; padding: 0 4px; }
+.hm-close:hover { color: var(--text); }
+.health-modal-score-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+.health-modal-big-score { font-family: var(--mono); font-size: 44px; font-weight: 800; line-height: 1; }
+.hm-factor { display: flex; justify-content: space-between; align-items: flex-start; padding: 9px 0; border-bottom: 1px solid var(--border); }
+.hm-factor:last-child { border-bottom: none; }
+.hm-factor-left { display: flex; gap: 10px; align-items: flex-start; flex: 1; min-width: 0; }
+.hm-icon { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+.hm-pass { background: var(--green-bg);  color: var(--green); }
+.hm-fail { background: var(--red-bg);    color: var(--red); }
+.hm-warn { background: var(--yellow-bg); color: var(--yellow); }
+.hm-na   { background: var(--surface2);  color: var(--text-muted); }
+.hm-factor-name   { font-size: 12px; font-weight: 600; margin-bottom: 2px; }
+.hm-factor-detail { font-size: 11px; color: var(--text-muted); }
+.hm-ded { font-family: var(--mono); font-size: 13px; font-weight: 700; white-space: nowrap; padding-left: 10px; flex-shrink: 0; }
+.hm-ded-neg { color: var(--red); }
+.hm-ded-pos { color: var(--green); }
+.hm-ded-na  { color: var(--text-muted); }
+
 /* ── Badges ──────────────────────────────────────────────────────────────────── */
 
 .side-badge { display: inline-flex; align-items: center; padding: 2px 7px; border-radius: var(--radius-sm); font-size: 11px; font-weight: 600; }
