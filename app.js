@@ -102,47 +102,131 @@ function buildMarketCtx(raw) {
 }
 
 function scorePosition(p, marketCtx) {
-  let score=100; const flags=[]; const isLong=p.side==='long';
+  let score=100; const flags=[], factors=[]; const isLong=p.side==='long';
   const markPx=p.mark_price>0?p.mark_price:(marketCtx[p.coin]?.mark_price||p.entry_price);
   const lev=p.leverage_value||1;
-  if      (lev>15){score-=25;flags.push(`${lev}× leverage is very high`);}
-  else if (lev>10){score-=15;flags.push(`${lev}× leverage is elevated`);}
-  else if (lev>7) {score-=8; flags.push(`${lev}× leverage`);}
-  if (typeof INTEL!=='undefined'&&INTEL.macro){
-    const phase=(INTEL.macro.cycle_phase||'').toLowerCase(), posture=INTEL.macro.posture||'';
-    if      (isLong &&['distribution','markdown'].some(ph=>phase.includes(ph))){score-=25;flags.push(`LONG in ${INTEL.macro.cycle_phase} phase`);}
-    else if (!isLong&&['accumulation','markup'].some(ph=>phase.includes(ph)))  {score-=25;flags.push(`SHORT in ${INTEL.macro.cycle_phase} phase`);}
-    if      (isLong &&(posture==='SELL'||posture==='BEAR')){score-=15;flags.push(`macro posture: ${posture}`);}
-    else if (!isLong&&(posture==='BUY' ||posture==='BULL')){score-=15;flags.push(`macro posture: ${posture}`);}
-  }
+  // 1. Leverage
+  let levDed=0, levDetail, levStatus='pass';
+  if      (lev>15){levDed=25;levDetail=`${lev}× leverage is very high`;levStatus='fail';}
+  else if (lev>10){levDed=15;levDetail=`${lev}× leverage is elevated`;levStatus='warn';}
+  else if (lev>7) {levDed=8; levDetail=`${lev}× leverage`;levStatus='warn';}
+  else            {levDetail=`${lev}× leverage — acceptable`;}
+  score-=levDed; if(levDed)flags.push(levDetail);
+  factors.push({name:'Leverage',status:levStatus,detail:levDetail,deduction:levDed});
+  // 2. Cycle phase
+  let phaseDed=0, phaseDetail, phaseStatus='pass';
+  if(typeof INTEL!=='undefined'&&INTEL.macro){
+    const phase=(INTEL.macro.cycle_phase||'').toLowerCase();
+    if(phase){
+      if      (isLong &&['distribution','markdown'].some(ph=>phase.includes(ph))){phaseDed=25;phaseDetail=`LONG in ${INTEL.macro.cycle_phase} phase`;phaseStatus='fail';}
+      else if (!isLong&&['accumulation','markup'].some(ph=>phase.includes(ph)))  {phaseDed=25;phaseDetail=`SHORT in ${INTEL.macro.cycle_phase} phase`;phaseStatus='fail';}
+      else{phaseDetail=`${p.side} aligns with ${INTEL.macro.cycle_phase} phase`;}
+    }else{phaseDetail='Cycle phase not set';phaseStatus='na';}
+  }else{phaseDetail='INTEL data unavailable';phaseStatus='na';}
+  score-=phaseDed; if(phaseDed)flags.push(phaseDetail);
+  factors.push({name:'Cycle Phase',status:phaseStatus,detail:phaseDetail,deduction:phaseDed});
+  // 3. Macro posture
+  let postureDed=0, postureDetail, postureStatus='pass';
+  if(typeof INTEL!=='undefined'&&INTEL.macro){
+    const posture=INTEL.macro.posture||'';
+    if(posture){
+      if      (isLong &&(posture==='SELL'||posture==='BEAR')){postureDed=15;postureDetail=`Macro posture is ${posture} — against long`;postureStatus='fail';}
+      else if (!isLong&&(posture==='BUY' ||posture==='BULL')){postureDed=15;postureDetail=`Macro posture is ${posture} — against short`;postureStatus='fail';}
+      else{postureDetail=`Macro posture: ${posture} — aligned`;}
+    }else{postureDetail='Posture not set';postureStatus='na';}
+  }else{postureDetail='INTEL data unavailable';postureStatus='na';}
+  score-=postureDed; if(postureDed)flags.push(postureDetail);
+  factors.push({name:'Macro Posture',status:postureStatus,detail:postureDetail,deduction:postureDed});
+  // 4. Funding rate
+  let fundDed=0, fundDetail, fundStatus='pass';
   const ctx=marketCtx[p.coin];
-  if (ctx){
+  if(ctx){
     const apr=ctx.funding_apr;
-    if      (isLong &&apr> 15){score-=20;flags.push(`paying ${apr.toFixed(1)}% APR funding`);}
-    else if (isLong &&apr>  5){score-=10;flags.push(`paying ${apr.toFixed(1)}% APR funding`);}
-    else if (!isLong&&apr<-15){score-=20;flags.push(`paying ${Math.abs(apr).toFixed(1)}% APR funding`);}
-    else if (!isLong&&apr< -5){score-=10;flags.push(`paying ${Math.abs(apr).toFixed(1)}% APR funding`);}
-  }
-  if (typeof _mvrvData!=='undefined'&&_mvrvData?.coins?.[p.coin]){
+    if      (isLong &&apr> 15){fundDed=20;fundDetail=`Paying ${apr.toFixed(1)}% APR funding`;fundStatus='fail';}
+    else if (isLong &&apr>  5){fundDed=10;fundDetail=`Paying ${apr.toFixed(1)}% APR funding`;fundStatus='warn';}
+    else if (!isLong&&apr<-15){fundDed=20;fundDetail=`Paying ${Math.abs(apr).toFixed(1)}% APR funding`;fundStatus='fail';}
+    else if (!isLong&&apr< -5){fundDed=10;fundDetail=`Paying ${Math.abs(apr).toFixed(1)}% APR funding`;fundStatus='warn';}
+    else{const earn=isLong?apr<=0:apr>=0;fundDetail=earn?`Earning ${Math.abs(apr).toFixed(1)}% APR funding`:`Funding ${Math.abs(apr).toFixed(1)}% APR — neutral`;}
+  }else{fundDetail='Funding data unavailable';fundStatus='na';}
+  score-=fundDed; if(fundDed)flags.push(fundDetail);
+  factors.push({name:'Funding Rate',status:fundStatus,detail:fundDetail,deduction:fundDed});
+  // 5. MVRV zone
+  let mvrvDed=0, mvrvDetail, mvrvStatus='pass';
+  if(typeof _mvrvData!=='undefined'&&_mvrvData?.coins?.[p.coin]){
     const zone=_mvrvData.coins[p.coin].zone;
-    if      (isLong &&zone==='OVERHEATED') {score-=15;flags.push(`${p.coin} MVRV overheated`);}
-    else if (!isLong&&zone==='UNDERVALUED'){score-=15;flags.push(`${p.coin} MVRV undervalued`);}
-  }
-  if (typeof INTEL!=='undefined'){
+    if      (isLong &&zone==='OVERHEATED') {mvrvDed=15;mvrvDetail=`${p.coin} MVRV overheated — long risk`;mvrvStatus='fail';}
+    else if (!isLong&&zone==='UNDERVALUED'){mvrvDed=15;mvrvDetail=`${p.coin} MVRV undervalued — short risk`;mvrvStatus='warn';}
+    else{mvrvDetail=`${p.coin} MVRV zone: ${zone||'neutral'}`;}
+  }else{mvrvDetail='MVRV data unavailable';mvrvStatus='na';}
+  score-=mvrvDed; if(mvrvDed)flags.push(mvrvDetail);
+  factors.push({name:'MVRV Zone',status:mvrvStatus,detail:mvrvDetail,deduction:mvrvDed});
+  // 6. Smart money
+  let smDed=0, smDetail, smStatus='pass';
+  if(typeof INTEL!=='undefined'){
     const sm=(INTEL.macro?.cohorts||[]).find(c=>c.name==='Smart Money');
-    if (sm){
-      if      (isLong &&!sm.bull){score-=10;flags.push('smart money distributing');}
-      else if (!isLong&& sm.bull){score-=10;flags.push('smart money accumulating');}
-    }
-  }
-  if (p.liquidation_price>0&&markPx>0){
+    if(sm){
+      if      (isLong &&!sm.bull){smDed=10;smDetail='Smart money distributing — against long';smStatus='fail';}
+      else if (!isLong&& sm.bull){smDed=10;smDetail='Smart money accumulating — against short';smStatus='fail';}
+      else{smDetail=`Smart money ${sm.bull?'accumulating':'distributing'} — aligned`;}
+    }else{smDetail='Smart money data unavailable';smStatus='na';}
+  }else{smDetail='INTEL data unavailable';smStatus='na';}
+  score-=smDed; if(smDed)flags.push(smDetail);
+  factors.push({name:'Smart Money',status:smStatus,detail:smDetail,deduction:smDed});
+  // 7. Liquidation proximity
+  let liqDed=0, liqDetail, liqStatus='pass';
+  if(p.liquidation_price>0&&markPx>0){
     const liqPct=isLong?(markPx-p.liquidation_price)/markPx*100:(p.liquidation_price-markPx)/markPx*100;
-    if      (liqPct<5) {score-=25;flags.push(`liquidation ${liqPct.toFixed(1)}% away`);}
-    else if (liqPct<10){score-=15;flags.push(`liquidation ${liqPct.toFixed(1)}% away`);}
-  }
+    if      (liqPct<5) {liqDed=25;liqDetail=`Liquidation ${liqPct.toFixed(1)}% away — critical`;liqStatus='fail';}
+    else if (liqPct<10){liqDed=15;liqDetail=`Liquidation ${liqPct.toFixed(1)}% away — close`;liqStatus='warn';}
+    else               {liqDetail=`Liquidation ${liqPct.toFixed(1)}% away — safe`;}
+  }else{liqDetail='No liquidation risk (cross margin)';}
+  score-=liqDed; if(liqDed)flags.push(liqDetail);
+  factors.push({name:'Liq. Proximity',status:liqStatus,detail:liqDetail,deduction:liqDed});
   score=Math.max(0,Math.min(100,score));
   return { score, grade:score>=70?'OK':score>=40?'CAUTION':'RISKY',
-    cls:score>=70?'health-ok':score>=40?'health-caution':'health-risky', flags };
+    cls:score>=70?'health-ok':score>=40?'health-caution':'health-risky', flags, factors };
+}
+
+let _posHealthData={};
+function showHealthModal(coin){
+  const d=_posHealthData[coin]; if(!d)return;
+  let modal=document.getElementById('health-modal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='health-modal';
+    modal.className='health-modal-overlay';
+    modal.innerHTML=`<div class="health-modal-box" onclick="event.stopPropagation()">
+      <div class="health-modal-header">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span id="hm-coin" style="font-weight:700;font-size:16px"></span>
+          <span id="hm-side" class="side-badge"></span>
+        </div>
+        <button class="hm-close" onclick="document.getElementById('health-modal').style.display='none'">×</button>
+      </div>
+      <div class="health-modal-score-row">
+        <span id="hm-score" class="health-modal-big-score"></span>
+        <div><span id="hm-grade" class="health-badge" style="font-size:13px;padding:4px 10px"></span>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:4px">out of 100</div></div>
+      </div>
+      <div id="hm-factors"></div>
+    </div>`;
+    modal.onclick=()=>modal.style.display='none';
+    document.body.appendChild(modal);
+  }
+  document.getElementById('hm-coin').textContent=d.coin;
+  const sb=document.getElementById('hm-side');sb.textContent=d.side.toUpperCase();sb.className=`side-badge ${d.side}`;
+  const sc=document.getElementById('hm-score');sc.textContent=d.score;sc.className=`health-modal-big-score ${d.cls}`;
+  const gr=document.getElementById('hm-grade');gr.textContent=d.grade;gr.className=`health-badge ${d.cls}`;
+  document.getElementById('hm-factors').innerHTML=d.factors.map(f=>{
+    const icon=f.status==='pass'?'✓':f.status==='fail'?'✗':f.status==='warn'?'!':'—';
+    const dedStr=f.deduction>0?`−${f.deduction}`:f.status==='pass'?'✓':'—';
+    const dedCls=f.deduction>0?'hm-ded-neg':f.status==='pass'?'hm-ded-pos':'hm-ded-na';
+    return`<div class="hm-factor">
+      <div class="hm-factor-left"><span class="hm-icon hm-${f.status}">${icon}</span>
+        <div><div class="hm-factor-name">${f.name}</div><div class="hm-factor-detail">${f.detail}</div></div>
+      </div><div class="hm-ded ${dedCls}">${dedStr}</div></div>`;
+  }).join('');
+  modal.style.display='flex';
 }
 
 function riskSummaryHtml(positions, marketCtx) {
@@ -436,7 +520,7 @@ function renderOverviewTab() {
         ${positions.length===0?'<div class="empty-state">No open perp positions</div>':`
         <div class="table-wrap"><table>
           <thead><tr><th>Coin</th><th>Side</th><th>Size</th><th>Entry</th><th>Liq</th><th>PnL</th><th>Lev</th><th>Health</th></tr></thead>
-          <tbody>${positions.map(p=>{const h=scorePosition(p,marketCtx);return`<tr>
+          <tbody>${(()=>{_posHealthData={};return positions;})().map(p=>{const h=scorePosition(p,marketCtx);_posHealthData[p.coin]={coin:p.coin,side:p.side,...h};return`<tr>
             <td class="accent" style="font-weight:600">${p.coin}</td>
             <td><span class="side-badge ${p.side}">${p.side==='long'?'LONG':'SHORT'}</span></td>
             <td class="mono">${p.size}</td>
@@ -444,7 +528,7 @@ function renderOverviewTab() {
             <td class="${p.liquidation_price>0?'neg':'muted'} mono">${p.liquidation_price>0?fmt$(p.liquidation_price):'—'}</td>
             <td class="${p.unrealized_pnl>=0?'pos':'neg'} mono">${fmt$(p.unrealized_pnl)}</td>
             <td class="muted">${p.leverage_value}x</td>
-            <td><span class="health-badge ${h.cls}" title="${h.flags.join(' · ')}"><span class="health-score">${h.score}</span> ${h.grade}</span></td>
+            <td><span class="health-badge ${h.cls}" style="cursor:pointer" onclick="showHealthModal('${p.coin}')"><span class="health-score">${h.score}</span> ${h.grade}</span></td>
           </tr>`;}).join('')}</tbody>
         </table></div>`}
       </div>
