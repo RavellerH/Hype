@@ -113,10 +113,10 @@ function renderMVRV(data) {
       <div class="mvrv-ratio-label">MVRV Ratio</div>
       <div class="mvrv-sparkline">${mvrvSparkline(c.chart)}</div>
       <div class="mvrv-stats">
-        <div class="mvrv-stat"><div class="mvrv-stat-label">Price</div><div class="mvrv-stat-val">${fmt$(c.price)}</div></div>
-        <div class="mvrv-stat"><div class="mvrv-stat-label">24h</div><div class="mvrv-stat-val ${chgCls}">${chgStr}</div></div>
-        <div class="mvrv-stat"><div class="mvrv-stat-label">90d Avg</div><div class="mvrv-stat-val">${fmt$(c.avg_90d)}</div></div>
-        <div class="mvrv-stat"><div class="mvrv-stat-label">Mkt Cap</div><div class="mvrv-stat-val">${mcStr}</div></div>
+        <div><div class="mvrv-stat-label">Price</div><div class="mvrv-stat-val">${fmt$(c.price)}</div></div>
+        <div><div class="mvrv-stat-label">24h</div><div class="mvrv-stat-val ${chgCls}">${chgStr}</div></div>
+        <div><div class="mvrv-stat-label">90d Avg</div><div class="mvrv-stat-val">${fmt$(c.avg_90d)}</div></div>
+        <div><div class="mvrv-stat-label">Mkt Cap</div><div class="mvrv-stat-val">${mcStr}</div></div>
       </div>
       <div class="mvrv-desc">${meta.desc}</div>
     </div>`;
@@ -143,9 +143,119 @@ function renderMVRV(data) {
 
 // ── AI Knowledge Base ─────────────────────────────────────────────────────────
 
-let _aiSubTab = 'chat';
+let _aiSubTab = 'intel';
 let _chatHistory = [];
-let _aiNotes = JSON.parse(localStorage.getItem('hype_kb_notes') || '[]');
+let _intelLog = JSON.parse(localStorage.getItem('hype_intel_log') || '[]');
+
+// Migrate old notes to intel log (backward-compat)
+(function migrateOldNotes() {
+  try {
+    const old = JSON.parse(localStorage.getItem('hype_kb_notes') || '[]');
+    if (old.length && !_intelLog.some(e => e._migrated)) {
+      const migrated = old.map(n => ({
+        id: n.id || 'intel::' + Date.now() + Math.random(),
+        timestamp: Date.now(),
+        source: 'note',
+        raw: (n.title ? n.title + '\n' : '') + (n.content || ''),
+        coins: [], signals: [], phase: null, _migrated: true,
+      }));
+      _intelLog = [..._intelLog, ...migrated];
+      localStorage.setItem('hype_intel_log', JSON.stringify(_intelLog));
+    }
+  } catch(e) {}
+})();
+
+// ── Intel parsing ─────────────────────────────────────────────────────────────
+
+const KNOWN_COINS = ['BTC','ETH','SOL','HYPE','SUI','AVAX','DOGE','WIF','PEPE','ARB','OP','INJ','LINK','ATOM','DOT','ADA','BNB','XRP','TON','TRX','SEI','APT','NEAR','FTM','STX','RNDR'];
+
+const PHASE_KW = {
+  ACCUMULATION: ['accumulation','accumulate','accumulating','wyckoff bottom','spring','reaccumulation','phase b','phase c','shakeout','lps','last point of support'],
+  MARKUP:       ['markup','uptrend','breakout','break out','bull run','rally','pump','impulse','higher high','higher low','upside'],
+  DISTRIBUTION: ['distribution','distributing','lower high','lfh','wyckoff top','redistribution','phase d','buying climax','bcx','utad'],
+  MARKDOWN:     ['markdown','downtrend','breakdown','break down','bear','dump','capitulation','flush','lower low','lower high','downside'],
+};
+
+const SIGNAL_KW = [
+  'RSI','MACD','EMA','SMA','volume','OI','open interest','funding','dominance',
+  'support','resistance','divergence','golden cross','death cross','squeeze',
+  'oversold','overbought','bullish','bearish','consolidat','higher low',
+  'lower high','higher high','lower low','liquidity','order block','fair value gap',
+  'FVG','OB','imbalance','HTF','LTF','weekly','daily','4h','1h',
+];
+
+function parseIntel(text) {
+  const upper = text.toUpperCase();
+  const coins = KNOWN_COINS.filter(c => new RegExp(`\\b${c}\\b`).test(upper));
+  const signals = [...new Set(SIGNAL_KW.filter(s => text.toLowerCase().includes(s.toLowerCase())))];
+  let phase = null;
+  for (const [p, kws] of Object.entries(PHASE_KW)) {
+    if (kws.some(kw => text.toLowerCase().includes(kw))) { phase = p; break; }
+  }
+  return { coins, signals, phase };
+}
+
+function intelToMD(entry) {
+  const dt = new Date(entry.timestamp).toISOString().replace('T', ' ').slice(0, 19);
+  const tags = [
+    entry.coins.length ? `**Coins:** ${entry.coins.join(', ')}` : '',
+    entry.phase ? `**Phase:** ${entry.phase}` : '',
+    entry.signals.length ? `**Signals:** ${entry.signals.slice(0, 6).join(', ')}` : '',
+  ].filter(Boolean).join(' · ');
+  return `## [${entry.source}] ${dt} UTC\n\n${entry.raw}\n\n${tags ? `> ${tags}` : ''}`;
+}
+
+// ── Live prices (for graph) ───────────────────────────────────────────────────
+
+let _liveCache = null, _liveCacheTs = 0;
+
+async function fetchLivePricesForGraph() {
+  if (_liveCache && Date.now() - _liveCacheTs < 30000) return _liveCache;
+  // Try app.js WebSocket globals first
+  if (typeof livePrices !== 'undefined' && Object.keys(livePrices).length > 4) {
+    const pd = typeof livePrevDay !== 'undefined' ? livePrevDay : {};
+    _liveCache = { prices: { ...livePrices }, prevDay: { ...pd } };
+    _liveCacheTs = Date.now();
+    return _liveCache;
+  }
+  // Fallback: Hyperliquid REST
+  try {
+    const [mids, ctx] = await Promise.all([
+      fetch('https://api.hyperliquid.xyz/info', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'allMids' }) }).then(r => r.json()),
+      fetch('https://api.hyperliquid.xyz/info', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'metaAndAssetCtxs' }) }).then(r => r.json()),
+    ]);
+    const prices = {}, prevDay = {};
+    if (mids) for (const [c, p] of Object.entries(mids)) prices[c] = parseFloat(p);
+    if (ctx?.[0]?.universe && ctx?.[1]) {
+      ctx[0].universe.forEach((a, i) => {
+        if (ctx[1][i]?.prevDayPx) prevDay[a.name] = parseFloat(ctx[1][i].prevDayPx);
+      });
+    }
+    _liveCache = { prices, prevDay };
+    _liveCacheTs = Date.now();
+  } catch(e) {
+    _liveCache = { prices: {}, prevDay: {} };
+    _liveCacheTs = Date.now();
+  }
+  return _liveCache;
+}
+
+function pctChange(coin, prices, prevDay) {
+  const now = prices[coin], prev = prevDay[coin];
+  if (!now || !prev) return null;
+  return (now - prev) / prev * 100;
+}
+
+function coinNodeColor(pct) {
+  if (pct === null)  return '#6b7280';
+  if (pct >  3)      return '#4ade80';
+  if (pct >  0.5)    return '#86efac';
+  if (pct < -3)      return '#f87171';
+  if (pct < -0.5)    return '#fca5a5';
+  return '#6b7280';
+}
+
+// ── AI shell ──────────────────────────────────────────────────────────────────
 
 async function loadAI() {
   const el = document.getElementById('ai-content');
@@ -156,45 +266,390 @@ async function loadAI() {
 function renderAIShell() {
   const el = document.getElementById('ai-content');
   if (!el) return;
-  const apiKey = localStorage.getItem('hype_anthropic_key') || '';
+  const apiKey    = localStorage.getItem('hype_anthropic_key') || '';
+  const coinCount = [...new Set(_intelLog.flatMap(e => e.coins))].length;
+  const lastDate  = _intelLog.length ? new Date(_intelLog[0].timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—';
+
   el.innerHTML = `
-    <div class="stat-strip">
-      <div class="stat-cell"><div class="s-label">Notes</div><div class="s-value">${_aiNotes.length}</div><div class="s-sub">in browser</div></div>
-      <div class="stat-cell"><div class="s-label">AI Engine</div><div class="s-value" style="color:${apiKey?'var(--green)':'var(--text-muted)'}">${apiKey?'Claude':'Off'}</div><div class="s-sub">${apiKey?'Anthropic':'add key below'}</div></div>
-      <div class="stat-cell"><div class="s-label">Coins</div><div class="s-value">4</div><div class="s-sub">BTC ETH SOL HYPE</div></div>
-      <div class="stat-cell"><div class="s-label">Data</div><div class="s-value">Live</div><div class="s-sub">CoinGecko</div></div>
+    <div class="ai-stat-strip">
+      <div class="ai-stat-cell"><div class="ai-stat-label">Intel Entries</div><div class="ai-stat-val">${_intelLog.length}</div></div>
+      <div class="ai-stat-cell"><div class="ai-stat-label">Coins Tracked</div><div class="ai-stat-val">${coinCount}</div></div>
+      <div class="ai-stat-cell"><div class="ai-stat-label">AI Engine</div><div class="ai-stat-val" style="color:${apiKey ? 'var(--green)' : 'var(--text-muted)'}">${apiKey ? 'Claude' : 'Off'}</div></div>
+      <div class="ai-stat-cell"><div class="ai-stat-label">Last Intel</div><div class="ai-stat-val" style="font-size:12px">${lastDate}</div></div>
     </div>
     <div class="filter-bar" style="flex-wrap:wrap;gap:6px">
       <div style="display:flex;gap:6px">
-        ${['chat','graph','notes'].map(t=>`<button class="chip${_aiSubTab===t?' active':''}" onclick="setAITab('${t}')">${t.charAt(0).toUpperCase()+t.slice(1)}</button>`).join('')}
+        ${['intel', 'graph', 'chat'].map(t => {
+          const icons = { intel: '📋', graph: '🕸', chat: '💬' };
+          const labels = { intel: 'Intel Log', graph: 'Graph', chat: 'Chat' };
+          return `<button class="chip${_aiSubTab === t ? ' active' : ''}" onclick="setAITab('${t}')">${icons[t]} ${labels[t]}</button>`;
+        }).join('')}
       </div>
       <div class="filter-sep"></div>
-      <input class="input" id="ai-key-input" placeholder="Anthropic API key (sk-ant-…)" type="password" value="${aiEsc(apiKey)}" style="max-width:220px;padding:3px 10px;height:28px;font-size:12px">
-      <button class="btn btn-ghost btn-sm" onclick="saveAIKey()">Save Key</button>
+      <input class="input" id="ai-key-input" placeholder="Anthropic key (sk-ant-…)" type="password" value="${aiEsc(apiKey)}" style="max-width:190px;padding:3px 10px;height:28px;font-size:12px">
+      <button class="btn btn-ghost btn-sm" onclick="saveAIKey()">Save</button>
     </div>
     <div id="ai-sub-content"></div>`;
-  if (_aiSubTab === 'chat')  renderChatTab();
+
+  if (_aiSubTab === 'intel') renderIntelTab();
   if (_aiSubTab === 'graph') renderKGraph();
-  if (_aiSubTab === 'notes') renderNotes();
+  if (_aiSubTab === 'chat')  renderChatTab();
 }
 
 function setAITab(tab) { _aiSubTab = tab; renderAIShell(); }
 
 function saveAIKey() {
   const key = document.getElementById('ai-key-input')?.value?.trim();
-  if (key) { localStorage.setItem('hype_anthropic_key', key); }
-  else     { localStorage.removeItem('hype_anthropic_key'); }
+  if (key) localStorage.setItem('hype_anthropic_key', key);
+  else     localStorage.removeItem('hype_anthropic_key');
   renderAIShell();
 }
 
-// ── Chat ──────────────────────────────────────────────────────────────────────
+// ── Intel Log tab ─────────────────────────────────────────────────────────────
+
+function renderIntelTab() {
+  const el = document.getElementById('ai-sub-content');
+  if (!el) return;
+
+  const rows = _intelLog.length === 0
+    ? '<div class="chat-empty" style="padding:32px">No intel yet.<br><br>Paste analysis from cryptowatch.id or anywhere else.<br>Coins, phases and signals are auto-detected.</div>'
+    : _intelLog.map(entry => {
+        const dt = new Date(entry.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const coinBadges = entry.coins.map(c =>
+          `<span style="background:rgba(56,189,248,0.10);color:var(--accent);border:1px solid rgba(56,189,248,0.2);border-radius:100px;font-size:10px;font-weight:700;padding:1px 7px">${c}</span>`
+        ).join('');
+        const phaseBadge = entry.phase
+          ? `<span class="phase-badge phase-${entry.phase}" style="font-size:10px;padding:1px 7px">${entry.phase}</span>`
+          : '';
+        const preview = entry.raw.slice(0, 300).replace(/\n+/g, ' ');
+        const hasMore = entry.raw.length > 300;
+        return `<div class="note-card" style="margin-bottom:8px">
+          <div class="note-header" style="align-items:flex-start">
+            <div style="display:flex;flex-direction:column;gap:5px;flex:1;min-width:0">
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                <span style="font-size:12px;font-weight:700;color:var(--text)">${aiEsc(entry.source)}</span>
+                <span style="font-size:10px;color:var(--text-faint);font-family:var(--mono)">${dt}</span>
+                ${phaseBadge}
+              </div>
+              ${coinBadges ? `<div style="display:flex;gap:4px;flex-wrap:wrap">${coinBadges}</div>` : ''}
+              ${entry.signals.length ? `<div style="font-size:10px;color:var(--text-muted)">${aiEsc(entry.signals.slice(0, 6).join(' · '))}</div>` : ''}
+            </div>
+            <button class="btn btn-danger btn-sm" style="flex-shrink:0;margin-left:8px" onclick="deleteIntel('${aiEsc(entry.id)}')" title="Delete">✕</button>
+          </div>
+          <div id="intel-preview-${entry.id}" class="note-body" style="font-size:12px;margin-top:6px;cursor:${hasMore?'pointer':''}" ${hasMore ? `onclick="toggleIntelExpand('${aiEsc(entry.id)}')"` : ''}>${aiEsc(preview)}${hasMore ? ' <span style="color:var(--accent);font-size:11px">[more]</span>' : ''}</div>
+          <div id="intel-full-${entry.id}" style="display:none;margin-top:8px">
+            <pre style="white-space:pre-wrap;font-size:11px;color:var(--text-muted);font-family:var(--mono);line-height:1.6;background:var(--bg);border-radius:var(--radius-md);padding:10px 12px;border:1px solid var(--border)">${aiEsc(entry.raw)}</pre>
+            <details style="margin-top:6px">
+              <summary style="font-size:10px;color:var(--text-faint);cursor:pointer;padding:4px 0">View as Markdown</summary>
+              <pre style="white-space:pre-wrap;font-size:10px;color:var(--text-faint);font-family:var(--mono);margin-top:4px;padding:8px 10px;background:var(--surface2);border-radius:var(--radius-sm)">${aiEsc(intelToMD(entry))}</pre>
+            </details>
+          </div>
+        </div>`;
+      }).join('');
+
+  el.innerHTML = `
+    <div class="notes-wrap">
+      <div class="note-add">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input class="input" id="intel-source" placeholder="Source (e.g. cryptowatch.id)" value="cryptowatch.id" style="max-width:220px">
+          <span style="font-size:11px;color:var(--text-faint)">Coins, phases & signals auto-extracted</span>
+        </div>
+        <textarea class="input note-textarea" id="intel-text"
+          placeholder="Paste market analysis, narratives, macro intel, setups…
+
+Example:
+BTC showing accumulation signs with RSI divergence at the $90k support. Volume declining on each retest = bullish. ETH EMA200 reclaimed on daily — watch for breakout above $3.5k. SOL distribution detected near ATH, funding elevated. HYPE showing markup phase characteristics."
+          rows="6" style="min-height:120px"></textarea>
+        <button class="btn btn-primary" onclick="addIntel()" style="align-self:flex-start">📋 Save Intel</button>
+      </div>
+
+      ${_intelLog.length > 0 ? `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0 4px">
+        <span style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">${_intelLog.length} entries · newest first</span>
+        <button class="btn btn-ghost btn-sm" onclick="exportIntel()">⬇ Export MD</button>
+      </div>` : ''}
+
+      <div class="notes-list">${rows}</div>
+    </div>`;
+}
+
+function toggleIntelExpand(id) {
+  const full    = document.getElementById(`intel-full-${id}`);
+  const preview = document.getElementById(`intel-preview-${id}`);
+  if (!full) return;
+  const open = full.style.display !== 'none';
+  full.style.display    = open ? 'none' : 'block';
+  if (preview) preview.style.display = open ? '' : 'none';
+}
+
+function addIntel() {
+  const source = document.getElementById('intel-source')?.value?.trim() || 'manual';
+  const raw    = document.getElementById('intel-text')?.value?.trim();
+  if (!raw) return;
+  const parsed = parseIntel(raw);
+  const entry  = { id: 'intel::' + Date.now(), timestamp: Date.now(), source, raw, ...parsed };
+  _intelLog.unshift(entry);
+  localStorage.setItem('hype_intel_log', JSON.stringify(_intelLog));
+  document.getElementById('intel-text').value = '';
+  renderIntelTab();
+}
+
+function deleteIntel(id) {
+  if (!confirm('Delete this intel entry? It cannot be recovered.')) return;
+  _intelLog = _intelLog.filter(e => e.id !== id);
+  localStorage.setItem('hype_intel_log', JSON.stringify(_intelLog));
+  renderIntelTab();
+}
+
+function exportIntel() {
+  const md = _intelLog.map(intelToMD).join('\n\n---\n\n');
+  const blob = new Blob([md], { type: 'text/markdown' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `hype-intel-${new Date().toISOString().slice(0,10)}.md`;
+  a.click();
+}
+
+// ── Knowledge Graph with live prices ─────────────────────────────────────────
+
+async function renderKGraph() {
+  const el = document.getElementById('ai-sub-content');
+  if (!el) return;
+  el.innerHTML = '<div class="loading"><div class="spinner"></div> Loading live prices…</div>';
+
+  let prices = {}, prevDay = {};
+  try { ({ prices, prevDay } = await fetchLivePricesForGraph()); } catch(e) {}
+
+  const W = Math.min(el.clientWidth || 900, window.innerWidth - 16);
+  const H = 520;
+
+  const GRAPH_COINS = ['BTC', 'ETH', 'SOL', 'HYPE'];
+  const TYPE_COLOR  = { coin: null, intel: '#818cf8', phase: '#fbbf24', signal: '#fb923c' };
+  const TYPE_R      = { coin: 20,   intel: 10,        phase: 12,        signal: 8 };
+
+  // ── Build nodes ──
+  const nodes = [];
+  const idMap = {};
+
+  // Coin nodes
+  for (const coin of GRAPH_COINS) {
+    const pct   = pctChange(coin, prices, prevDay);
+    const color = coinNodeColor(pct);
+    const price = prices[coin];
+    nodes.push({
+      id: `c:${coin}`, label: coin, type: 'coin', color,
+      price, pct,
+      priceStr: price ? fmt$(price) : '—',
+      pctStr:   pct !== null ? (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%' : '',
+      r: TYPE_R.coin,
+      x: W / 2 + (Math.random() - .5) * 160,
+      y: H / 2 + (Math.random() - .5) * 120,
+      vx: 0, vy: 0,
+    });
+  }
+
+  // Intel nodes (last 20 entries)
+  const recentIntel = _intelLog.slice(0, 20);
+  for (const entry of recentIntel) {
+    const dt = new Date(entry.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    nodes.push({
+      id: entry.id, label: dt, sublabel: entry.source.slice(0, 14),
+      type: 'intel', color: TYPE_COLOR.intel, r: TYPE_R.intel,
+      x: W / 2 + (Math.random() - .5) * W * .65,
+      y: H / 2 + (Math.random() - .5) * H * .55,
+      vx: 0, vy: 0, _entry: entry,
+    });
+  }
+
+  // Phase nodes (only phases present in intel)
+  const PHASE_COLORS = { ACCUMULATION: '#38bdf8', MARKUP: '#4ade80', DISTRIBUTION: '#fbbf24', MARKDOWN: '#f87171' };
+  const phasesUsed = [...new Set(_intelLog.map(e => e.phase).filter(Boolean))];
+  for (const phase of phasesUsed) {
+    nodes.push({
+      id: `p:${phase}`, label: phase.slice(0, 5), sublabel: phase,
+      type: 'phase', color: PHASE_COLORS[phase] || '#6b7280', r: TYPE_R.phase,
+      x: W / 2 + (Math.random() - .5) * W * .4,
+      y: H / 2 + (Math.random() - .5) * H * .4,
+      vx: 0, vy: 0,
+    });
+  }
+
+  // Signal nodes (top 8 most-mentioned across all intel)
+  const sigCount = {};
+  for (const entry of _intelLog) for (const s of entry.signals) sigCount[s] = (sigCount[s] || 0) + 1;
+  const topSignals = Object.entries(sigCount).sort((a, b) => b[1] - a[1]).slice(0, 8).map(e => e[0]);
+  for (const sig of topSignals) {
+    nodes.push({
+      id: `s:${sig}`, label: sig.slice(0, 9), sublabel: `${sig} ×${sigCount[sig]}`,
+      type: 'signal', color: TYPE_COLOR.signal, r: TYPE_R.signal,
+      x: W / 2 + (Math.random() - .5) * W * .55,
+      y: H / 2 + (Math.random() - .5) * H * .5,
+      vx: 0, vy: 0,
+    });
+  }
+
+  for (const n of nodes) idMap[n.id] = n;
+
+  // ── Build edges ──
+  const edges = [];
+  const edgeSet = new Set();
+  function addEdge(a, b, strength = 1) {
+    const key = [a, b].sort().join('||');
+    if (!edgeSet.has(key) && idMap[a] && idMap[b]) {
+      edgeSet.add(key);
+      edges.push({ source: idMap[a], target: idMap[b], strength });
+    }
+  }
+
+  for (const entry of recentIntel) {
+    // Intel → coins it mentions
+    for (const coin of entry.coins.filter(c => GRAPH_COINS.includes(c))) {
+      addEdge(entry.id, `c:${coin}`, 2);
+    }
+    // Intel → phase
+    if (entry.phase) addEdge(entry.id, `p:${entry.phase}`, 1.2);
+    // Intel → top signals
+    for (const sig of entry.signals.filter(s => topSignals.includes(s))) {
+      addEdge(entry.id, `s:${sig}`, 0.6);
+    }
+    // Intel ↔ Intel: share 2+ tracked coins
+    for (const other of recentIntel) {
+      if (other.id <= entry.id) continue;
+      const shared = entry.coins.filter(c => other.coins.includes(c) && GRAPH_COINS.includes(c));
+      if (shared.length >= 2) addEdge(entry.id, other.id, 0.4);
+    }
+  }
+
+  // Coin → phase (from most recent intel mentioning that coin + phase)
+  for (const coin of GRAPH_COINS) {
+    const match = recentIntel.find(e => e.coins.includes(coin) && e.phase);
+    if (match) addEdge(`c:${coin}`, `p:${match.phase}`, 1.8);
+  }
+
+  // Coin → top signals (from most recent intel mentioning coin)
+  for (const coin of GRAPH_COINS) {
+    const matches = recentIntel.filter(e => e.coins.includes(coin));
+    const coinSigs = [...new Set(matches.flatMap(e => e.signals).filter(s => topSignals.includes(s)))].slice(0, 2);
+    for (const sig of coinSigs) addEdge(`c:${coin}`, `s:${sig}`, 1);
+  }
+
+  // ── Force-directed layout ──
+  const k = Math.sqrt(W * H / Math.max(nodes.length, 1)) * 0.95;
+  for (let iter = 0; iter < 160; iter++) {
+    for (const n of nodes) { n.fx = 0; n.fy = 0; }
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const dx = nodes[i].x - nodes[j].x || .1, dy = nodes[i].y - nodes[j].y || .1;
+        const d = Math.sqrt(dx * dx + dy * dy) || 1, f = (k * k) / d;
+        nodes[i].fx += dx / d * f; nodes[i].fy += dy / d * f;
+        nodes[j].fx -= dx / d * f; nodes[j].fy -= dy / d * f;
+      }
+    }
+    for (const e of edges) {
+      const dx = e.target.x - e.source.x, dy = e.target.y - e.source.y;
+      const d = Math.sqrt(dx * dx + dy * dy) || 1, f = (d * d) / k * 0.07 * e.strength;
+      e.source.fx += dx / d * f; e.source.fy += dy / d * f;
+      e.target.fx -= dx / d * f; e.target.fy -= dy / d * f;
+    }
+    for (const n of nodes) {
+      n.fx += (W / 2 - n.x) * .013; n.fy += (H / 2 - n.y) * .013;
+      n.vx = (n.vx + n.fx) * .78;   n.vy = (n.vy + n.fy) * .78;
+      n.x = Math.max(n.r + 6, Math.min(W - n.r - 6, n.x + n.vx));
+      n.y = Math.max(n.r + 6, Math.min(H - n.r - 6, n.y + n.vy));
+    }
+  }
+
+  // ── Render SVG ──
+  const edgeSvg = edges.map(e => {
+    const w  = e.strength >= 1.5 ? '1.8' : e.strength >= 1 ? '1.2' : '0.7';
+    const op = e.strength >= 1.5 ? '0.6' : e.strength >= 1 ? '0.45' : '0.25';
+    return `<line x1="${e.source.x.toFixed(0)}" y1="${e.source.y.toFixed(0)}" x2="${e.target.x.toFixed(0)}" y2="${e.target.y.toFixed(0)}" stroke="#383838" stroke-width="${w}" opacity="${op}"/>`;
+  }).join('');
+
+  const nodesSvg = nodes.map(n => {
+    const x = n.x.toFixed(0), y = n.y.toFixed(0), r = n.r;
+    if (n.type === 'coin') {
+      const pctClass = n.pct !== null ? (n.pct >= 0 ? '+' : '-') : '';
+      return `<g onclick="kgClick(this)" data-id="${aiEsc(n.id)}" data-label="${aiEsc(n.label)}" data-type="coin" data-price="${aiEsc(n.priceStr)}" data-pct="${aiEsc(n.pctStr)}" style="cursor:pointer">
+        <circle cx="${x}" cy="${y}" r="${r}" fill="${n.color}" fill-opacity="0.18" stroke="${n.color}" stroke-width="2.5"/>
+        <text x="${x}" y="${(+y + 4).toFixed(0)}" fill="${n.color}" font-size="11" font-weight="700" text-anchor="middle" font-family="monospace">${aiEsc(n.label)}</text>
+        <text x="${x}" y="${(+y + r + 11).toFixed(0)}" fill="${n.color}" font-size="8.5" text-anchor="middle" font-family="monospace">${aiEsc(n.priceStr)}</text>
+        <text x="${x}" y="${(+y + r + 21).toFixed(0)}" fill="${n.color}" font-size="8" text-anchor="middle" font-family="monospace">${aiEsc(n.pctStr)}</text>
+      </g>`;
+    }
+    const lbl = (n.label || '').slice(0, 10);
+    return `<g onclick="kgClick(this)" data-id="${aiEsc(n.id)}" data-label="${aiEsc(n.sublabel || n.label)}" data-type="${n.type}" style="cursor:pointer">
+      <circle cx="${x}" cy="${y}" r="${r}" fill="${n.color}" fill-opacity="0.15" stroke="${n.color}" stroke-width="1.5"/>
+      <text x="${x}" y="${(+y + 3.5).toFixed(0)}" fill="${n.color}" font-size="${n.type === 'phase' ? '8' : '7'}" text-anchor="middle" font-family="monospace" font-weight="600">${aiEsc(lbl)}</text>
+    </g>`;
+  }).join('');
+
+  const legend = [
+    { c: '#38bdf8',           l: 'Coin (live price)' },
+    { c: TYPE_COLOR.intel,    l: 'Intel entry' },
+    { c: TYPE_COLOR.phase,    l: 'Phase' },
+    { c: TYPE_COLOR.signal,   l: 'Signal / indicator' },
+  ].map(({ c, l }) => `<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-muted)"><svg width="10" height="10"><circle cx="5" cy="5" r="4" fill="${c}" fill-opacity=".2" stroke="${c}" stroke-width="1.5"/></svg>${l}</div>`).join('');
+
+  el.innerHTML = `
+    <svg id="kg-svg" width="${W}" height="${H}" style="display:block;background:var(--surface);border-bottom:1px solid var(--border)">${edgeSvg}${nodesSvg}</svg>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;padding:8px 16px;background:var(--surface);border-bottom:1px solid var(--border);align-items:center">
+      ${legend}
+      <span style="margin-left:auto;font-size:11px;color:var(--text-faint)">${nodes.length} nodes · ${edges.length} edges</span>
+      <button class="btn btn-ghost btn-sm" onclick="_liveCacheTs=0;setAITab('graph')">↺ Prices</button>
+    </div>
+    <div id="kg-detail" style="padding:10px 16px;background:var(--surface2);font-size:12px;color:var(--text-muted);min-height:40px;line-height:1.6">Click a node to inspect</div>`;
+}
+
+function kgClick(el) {
+  const type  = el.dataset.type;
+  const label = el.dataset.label;
+  let html = `<strong style="color:var(--text)">${aiEsc(label)}</strong> <span class="chat-source-type" style="margin-left:6px">${type}</span>`;
+
+  if (type === 'coin') {
+    html += ` <span style="font-family:var(--mono);font-size:12px;color:var(--text);margin-left:8px">${aiEsc(el.dataset.price)}</span>`;
+    const pct = parseFloat(el.dataset.pct);
+    if (!isNaN(pct)) html += ` <span class="${pct >= 0 ? 'pos' : 'neg'}" style="font-family:var(--mono);font-size:12px">${aiEsc(el.dataset.pct)}</span>`;
+    const coinIntel = _intelLog.filter(e => e.coins.includes(label)).slice(0, 3);
+    if (coinIntel.length) {
+      html += '<div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">' +
+        coinIntel.map(e => `<div style="font-size:11px;padding:4px 8px;background:var(--surface);border-radius:var(--radius-sm);border:1px solid var(--border)"><span style="color:var(--text-faint);font-size:10px">${new Date(e.timestamp).toLocaleDateString()} · ${aiEsc(e.source)}</span><br>${aiEsc(e.raw.slice(0, 120))}…</div>`).join('') +
+        '</div>';
+    } else {
+      html += '<span style="color:var(--text-faint);font-size:11px;margin-left:12px">No intel saved for this coin yet</span>';
+    }
+  }
+
+  if (type === 'intel') {
+    const id    = el.dataset.id;
+    const entry = _intelLog.find(e => e.id === id);
+    if (entry) {
+      const dt = new Date(entry.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      html += `<div style="margin-top:6px;font-size:11px;color:var(--text-muted)">${dt} · ${aiEsc(entry.source)}</div>`;
+      html += `<div style="margin-top:4px;font-size:11px">${aiEsc(entry.raw.slice(0, 200))}${entry.raw.length > 200 ? '…' : ''}</div>`;
+    }
+  }
+
+  if (type === 'phase' || type === 'signal') {
+    const related = _intelLog.filter(e =>
+      type === 'phase' ? e.phase === label.toUpperCase() : e.signals.some(s => s.toLowerCase() === label.toLowerCase())
+    ).slice(0, 3);
+    if (related.length) {
+      html += `<div style="margin-top:6px;font-size:11px;color:var(--text-faint)">${related.length} intel entr${related.length > 1 ? 'ies' : 'y'} reference this</div>`;
+    }
+  }
+
+  document.getElementById('kg-detail').innerHTML = html;
+}
+
+// ── Chat tab ──────────────────────────────────────────────────────────────────
 
 function renderChatTab() {
   const el = document.getElementById('ai-sub-content');
   if (!el) return;
   const histHtml = _chatHistory.length === 0
-    ? `<div class="chat-empty">Ask anything about market conditions, MVRV signals, or your notes.<br><br><span style="color:var(--text-faint)">Examples: &quot;What does MVRV &gt; 1.4 mean?&quot; · &quot;Summarize my notes&quot; · &quot;Is BTC overheated?&quot;</span></div>`
-    : _chatHistory.map(m => m.role==='user'
+    ? `<div class="chat-empty">Ask anything about your saved intel, MVRV signals, or market conditions.<br><br><span style="color:var(--text-faint)">Your intel log is used as context · Add API key above to enable Claude</span></div>`
+    : _chatHistory.map(m => m.role === 'user'
         ? `<div class="chat-bubble user">${aiEsc(m.content)}</div>`
         : `<div class="chat-bubble assistant"><div class="chat-answer">${mdToHtml(m.content)}</div></div>`
       ).join('');
@@ -202,9 +657,9 @@ function renderChatTab() {
     <div class="chat-wrap">
       <div class="chat-history" id="chat-history">${histHtml}</div>
       <div class="chat-input-row">
-        <input class="input chat-input" id="chat-input" placeholder="Ask about crypto, MVRV, phases…" onkeydown="if(event.key==='Enter')sendChat()">
+        <input class="input chat-input" id="chat-input" placeholder="Ask about your intel, MVRV, market phases…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}">
         <button class="btn btn-primary" onclick="sendChat()">Send</button>
-        ${_chatHistory.length?`<button class="btn btn-ghost btn-sm" onclick="_chatHistory=[];renderChatTab()">Clear</button>`:''}
+        ${_chatHistory.length ? `<button class="btn btn-ghost btn-sm" onclick="_chatHistory=[];renderChatTab()">Clear</button>` : ''}
       </div>
     </div>`;
   const h = document.getElementById('chat-history');
@@ -221,23 +676,48 @@ async function sendChat() {
 
   const apiKey = localStorage.getItem('hype_anthropic_key') || '';
   if (!apiKey) {
-    _chatHistory.push({ role: 'assistant', content: '**No Anthropic API key set.** Enter your key in the field above and click Save Key.\n\nGet a free key at **console.anthropic.com**' });
+    _chatHistory.push({ role: 'assistant', content: '**No Anthropic API key set.** Enter your key in the field above and click Save.\n\nGet a free key at **console.anthropic.com**' });
     renderChatTab();
     if (input) input.disabled = false;
     return;
   }
 
-  const notesCtx = _aiNotes.length ? 'Research notes:\n' + _aiNotes.map(n=>`[${n.title}]: ${n.content}`).join('\n\n') : '';
-  const mvrvCtx  = _mvrvCache ? 'Latest MVRV:\n' + JSON.stringify(_mvrvCache.coins, null, 1).slice(0, 600) : '';
-  const system   = `You are an AI assistant for the Hype crypto trading dashboard. Help analyze BTC, ETH, SOL, HYPE.\nMVRV zones: >1.4 overheated, 1.15-1.4 bullish, 0.85-1.15 neutral, <0.85 undervalued.\n${notesCtx}\n${mvrvCtx}\nBe concise.`;
+  // Build context from intel log (newest first, capped at ~2000 chars)
+  let intelCtx = '';
+  let ctxLen = 0;
+  for (const entry of _intelLog) {
+    const line = `[${new Date(entry.timestamp).toLocaleDateString()} · ${entry.source}] ${entry.raw}\n`;
+    if (ctxLen + line.length > 2200) break;
+    intelCtx += line;
+    ctxLen += line.length;
+  }
+
+  const mvrvCtx = _mvrvCache
+    ? 'MVRV: ' + MVRV_ORDER.map(s => { const c = _mvrvCache.coins[s]; return c ? `${s}=${c.mvrv.toFixed(3)}(${c.zone})` : ''; }).join(' ')
+    : '';
+
+  const system = [
+    'You are an AI trading research assistant for the Hype crypto dashboard.',
+    'Help analyze BTC, ETH, SOL, HYPE using saved intel and market data.',
+    'MVRV zones: >1.4 overheated, 1.15–1.4 bullish, 0.85–1.15 neutral, <0.85 undervalued.',
+    mvrvCtx,
+    intelCtx ? `\nSaved Intel Log (newest first):\n${intelCtx}` : '',
+    '\nBe concise and direct. Reference specific intel entries when relevant.',
+  ].filter(Boolean).join('\n');
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
-                 'anthropic-version': '2023-06-01', 'anthropic-dangerous-client-side-use': 'true' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-client-side-use': 'true',
+      },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001', max_tokens: 1024, system,
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1024,
+        system,
         messages: _chatHistory.map(m => ({ role: m.role, content: m.content })),
       }),
     });
@@ -250,147 +730,18 @@ async function sendChat() {
   if (input) input.disabled = false;
 }
 
-// ── Knowledge Graph ───────────────────────────────────────────────────────────
-
-function renderKGraph() {
-  const el = document.getElementById('ai-sub-content');
-  if (!el) return;
-  const W = el.clientWidth || 900, H = 520;
-  const TC = { file:'#38bdf8', coin:'#4ade80', phase:'#fbbf24', indicator:'#818cf8', note:'#fb923c' };
-  const TR = { file:9, coin:14, phase:9, indicator:7, note:7 };
-
-  const rawNodes = [
-    {id:'main.py',            label:'main.py',            type:'file'},
-    {id:'phase_detector.py',  label:'phase_detector.py',  type:'file'},
-    {id:'hyperliquid.py',     label:'hyperliquid.py',     type:'file'},
-    {id:'knowledge_base.py',  label:'knowledge_base.py',  type:'file'},
-    {id:'backtest.py',        label:'backtest.py',        type:'file'},
-    {id:'phase_analyzer.py',  label:'phase_analyzer.py',  type:'file'},
-    {id:'indicators.py',      label:'indicators.py',      type:'file'},
-    {id:'app.js',             label:'app.js',             type:'file'},
-    {id:'c:BTC',  label:'BTC',  type:'coin'}, {id:'c:ETH',  label:'ETH',  type:'coin'},
-    {id:'c:SOL',  label:'SOL',  type:'coin'}, {id:'c:HYPE', label:'HYPE', type:'coin'},
-    {id:'p:ACCUM',  label:'Accumulation',  type:'phase'}, {id:'p:MARKUP', label:'Markup',   type:'phase'},
-    {id:'p:DIST',   label:'Distribution', type:'phase'}, {id:'p:DOWN',   label:'Markdown', type:'phase'},
-    {id:'p:NEUT',   label:'Neutral',      type:'phase'},
-    {id:'i:MVRV',   label:'MVRV',   type:'indicator'}, {id:'i:RSI',    label:'RSI',    type:'indicator'},
-    {id:'i:MACD',   label:'MACD',   type:'indicator'}, {id:'i:EMA',    label:'EMA',    type:'indicator'},
-    {id:'i:VOL',    label:'Volume', type:'indicator'},
-  ];
-  _aiNotes.forEach(n => rawNodes.push({ id: n.id, label: n.title.slice(0,14), type:'note' }));
-
-  const rawLinks = [
-    {s:'hyperliquid.py',s2:'c:BTC'}, {s:'hyperliquid.py',s2:'c:ETH'}, {s:'hyperliquid.py',s2:'c:SOL'}, {s:'hyperliquid.py',s2:'c:HYPE'},
-    {s:'phase_detector.py',s2:'p:ACCUM'},{s:'phase_detector.py',s2:'p:MARKUP'},{s:'phase_detector.py',s2:'p:DIST'},{s:'phase_detector.py',s2:'p:DOWN'},{s:'phase_detector.py',s2:'p:NEUT'},
-    {s:'indicators.py',s2:'i:RSI'},{s:'indicators.py',s2:'i:MACD'},{s:'indicators.py',s2:'i:EMA'},{s:'indicators.py',s2:'i:VOL'},
-    {s:'i:MVRV',s2:'p:ACCUM'},{s:'i:MVRV',s2:'p:MARKUP'},{s:'i:RSI',s2:'p:DIST'},{s:'i:MACD',s2:'p:DOWN'},{s:'i:VOL',s2:'p:MARKUP'},
-    {s:'main.py',s2:'phase_detector.py'},{s:'main.py',s2:'hyperliquid.py'},{s:'main.py',s2:'i:MVRV'},
-    {s:'phase_analyzer.py',s2:'c:BTC'},{s:'phase_analyzer.py',s2:'c:ETH'},
-    {s:'app.js',s2:'main.py'},{s:'knowledge_base.py',s2:'c:BTC'},{s:'knowledge_base.py',s2:'c:ETH'},
-  ];
-
-  const nodes = rawNodes.map(n => ({ ...n, x: W/2+(Math.random()-.5)*W*.7, y: H/2+(Math.random()-.5)*H*.6, vx:0, vy:0 }));
-  const idMap = Object.fromEntries(nodes.map(n => [n.id, n]));
-  const links = rawLinks.map(l => ({ source: idMap[l.s], target: idMap[l.s2] })).filter(l => l.source && l.target);
-
-  const k = Math.sqrt(W * H / Math.max(nodes.length, 1)) * 0.85;
-  for (let iter = 0; iter < 130; iter++) {
-    for (const n of nodes) { n.fx = 0; n.fy = 0; }
-    for (let i = 0; i < nodes.length; i++) {
-      for (let j = i+1; j < nodes.length; j++) {
-        const dx=nodes[i].x-nodes[j].x||.1, dy=nodes[i].y-nodes[j].y||.1;
-        const d=Math.sqrt(dx*dx+dy*dy)||1, f=(k*k)/d;
-        nodes[i].fx+=dx/d*f; nodes[i].fy+=dy/d*f; nodes[j].fx-=dx/d*f; nodes[j].fy-=dy/d*f;
-      }
-    }
-    for (const l of links) {
-      const dx=l.target.x-l.source.x, dy=l.target.y-l.source.y, d=Math.sqrt(dx*dx+dy*dy)||1, f=(d*d)/k*.09;
-      l.source.fx+=dx/d*f; l.source.fy+=dy/d*f; l.target.fx-=dx/d*f; l.target.fy-=dy/d*f;
-    }
-    for (const n of nodes) {
-      n.fx+=(W/2-n.x)*.014; n.fy+=(H/2-n.y)*.014;
-      n.vx=(n.vx+n.fx)*.8; n.vy=(n.vy+n.fy)*.8;
-      n.x=Math.max(18,Math.min(W-18,n.x+n.vx)); n.y=Math.max(18,Math.min(H-18,n.y+n.vy));
-    }
-  }
-
-  const edges = links.map(l=>`<line x1="${l.source.x.toFixed(0)}" y1="${l.source.y.toFixed(0)}" x2="${l.target.x.toFixed(0)}" y2="${l.target.y.toFixed(0)}" stroke="#383838" stroke-width="1" opacity="0.5"/>`).join('');
-  const nodesSvg = nodes.map(n=>{
-    const c=TC[n.type]||'#6b7280', r=TR[n.type]||6;
-    const lbl=(n.label||'').length>14?n.label.slice(0,13)+'…':n.label;
-    return `<g onclick="kgClick(this)" data-label="${aiEsc(n.label)}" data-type="${n.type}" style="cursor:pointer">
-      <circle cx="${n.x.toFixed(0)}" cy="${n.y.toFixed(0)}" r="${r}" fill="${c}" fill-opacity="0.18" stroke="${c}" stroke-width="1.5"/>
-      <text x="${n.x.toFixed(0)}" y="${(n.y+r+9).toFixed(0)}" fill="#6b7280" font-size="8.5" text-anchor="middle" font-family="monospace">${aiEsc(lbl)}</text>
-    </g>`;
-  }).join('');
-
-  const legend = Object.entries(TC).map(([t,c])=>`<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-muted)"><svg width="10" height="10"><circle cx="5" cy="5" r="4" fill="${c}" fill-opacity=".25" stroke="${c}" stroke-width="1.5"/></svg>${t}</div>`).join('');
-  el.innerHTML = `
-    <svg width="${W}" height="${H}" style="display:block;background:var(--surface)">${edges}${nodesSvg}</svg>
-    <div style="display:flex;gap:14px;flex-wrap:wrap;padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--border)">${legend}<span style="margin-left:auto;font-size:11px;color:var(--text-faint)">${nodes.length} nodes · ${links.length} links</span></div>
-    <div id="kg-detail" style="padding:10px 16px;background:var(--surface2);font-size:12px;color:var(--text-muted)">Click a node to see details</div>`;
-}
-
-function kgClick(el) {
-  document.getElementById('kg-detail').innerHTML =
-    `<strong style="color:var(--text)">${aiEsc(el.dataset.label)}</strong> <span style="background:var(--surface2);color:var(--text-muted);padding:1px 6px;border-radius:var(--radius-pill);font-size:10px;font-weight:600;margin-left:6px">${el.dataset.type}</span>`;
-}
-
-// ── Notes ─────────────────────────────────────────────────────────────────────
-
-function renderNotes() {
-  const el = document.getElementById('ai-sub-content');
-  if (!el) return;
-  const rows = _aiNotes.length === 0
-    ? '<div class="chat-empty">No notes yet.</div>'
-    : _aiNotes.map(n=>`
-        <div class="note-card">
-          <div class="note-header">
-            <strong class="note-title">${aiEsc(n.title)}</strong>
-            <span style="font-size:10px;color:var(--text-faint)">${n.created||''}</span>
-            <button class="btn btn-danger btn-sm" onclick="deleteAINote('${aiEsc(n.id)}')">✕</button>
-          </div>
-          <div class="note-body">${aiEsc(n.content)}</div>
-        </div>`).join('');
-  el.innerHTML = `
-    <div class="notes-wrap">
-      <div class="note-add">
-        <input class="input" id="ai-note-title" placeholder="Title" style="max-width:280px">
-        <textarea class="input note-textarea" id="ai-note-content" placeholder="Research, thesis, observations…" rows="3"></textarea>
-        <button class="btn btn-primary btn-sm" onclick="addAINote()">Add Note</button>
-      </div>
-      <div class="notes-list">${rows}</div>
-    </div>`;
-}
-
-function addAINote() {
-  const title   = document.getElementById('ai-note-title')?.value?.trim();
-  const content = document.getElementById('ai-note-content')?.value?.trim();
-  if (!title || !content) return;
-  _aiNotes.unshift({ id:'note::'+Date.now(), title, content, created: new Date().toLocaleString() });
-  localStorage.setItem('hype_kb_notes', JSON.stringify(_aiNotes));
-  renderNotes();
-}
-
-function deleteAINote(id) {
-  if (!confirm('Delete this note?')) return;
-  _aiNotes = _aiNotes.filter(n => n.id !== id);
-  localStorage.setItem('hype_kb_notes', JSON.stringify(_aiNotes));
-  renderNotes();
-}
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function aiEsc(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function mdToHtml(md) {
-  return String(md||'')
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
-    .replace(/`([^`]+)`/g,'<code style="background:var(--surface2);padding:1px 4px;border-radius:3px;font-family:var(--mono);font-size:12px">$1</code>')
-    .replace(/\n/g,'<br>');
+  return String(md || '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`([^`]+)`/g, '<code style="background:var(--surface2);padding:1px 4px;border-radius:3px;font-family:var(--mono);font-size:12px">$1</code>')
+    .replace(/\n/g, '<br>');
 }
 
 // ── Patch navigate() to trigger loaders for new pages ────────────────────────
