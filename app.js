@@ -458,7 +458,7 @@ function navigate(page) {
     pageEl.classList.add('active');
     document.querySelectorAll(`[data-page="${page}"]`).forEach(el=>el.classList.add('active'));
     currentPage = page;
-    const loaders={overview:loadOverview,trades:loadTrades,funding:loadFunding,flows:loadFlows,monitor:loadMonitor,markets:loadMarkets,phases:loadPhases,intel:typeof loadIntel!=='undefined'?loadIntel:null,watchlist:loadWatchlist};
+    const loaders={overview:loadOverview,trades:loadTrades,funding:loadFunding,flows:loadFlows,monitor:loadMonitor,markets:loadMarkets,phases:loadPhases,intel:typeof loadIntel!=='undefined'?loadIntel:null,watchlist:loadWatchlist,journal:typeof loadJournal!=='undefined'?loadJournal:null};
     if(loaders[page]) loaders[page]();
   } catch(e) { console.error('navigate error:', e); }
 }
@@ -519,15 +519,16 @@ function renderOverviewTab() {
         <div class="card-title">Open Positions (${positions.length})</div>
         ${positions.length===0?'<div class="empty-state">No open perp positions</div>':`
         <div class="table-wrap"><table>
-          <thead><tr><th>Coin</th><th>Side</th><th>Size</th><th>Entry</th><th>Liq</th><th>PnL</th><th>Lev</th><th>Health</th></tr></thead>
+          <thead><tr><th>Coin</th><th>Side</th><th>Size</th><th>Entry</th><th>Liq</th><th>PnL</th><th>Lev</th><th>Age</th><th>Health</th></tr></thead>
           <tbody>${(()=>{_posHealthData={};return positions;})().map(p=>{const h=scorePosition(p,marketCtx);_posHealthData[p.coin]={coin:p.coin,side:p.side,...h};return`<tr>
-            <td class="accent" style="font-weight:600">${p.coin}</td>
+            <td class="accent" style="font-weight:600;cursor:pointer" onclick="openPositionDetail('${p.coin}')">${p.coin}</td>
             <td><span class="side-badge ${p.side}">${p.side==='long'?'LONG':'SHORT'}</span></td>
             <td class="mono">${p.size}</td>
             <td class="mono">${fmt$(p.entry_price)}</td>
             <td class="${p.liquidation_price>0?'neg':'muted'} mono">${p.liquidation_price>0?fmt$(p.liquidation_price):'—'}</td>
             <td class="${p.unrealized_pnl>=0?'pos':'neg'} mono">${fmt$(p.unrealized_pnl)}</td>
             <td class="muted">${p.leverage_value}x</td>
+            <td>${typeof posAgeBadge==='function'?posAgeBadge(p.coin):''}</td>
             <td><span class="health-badge ${h.cls}" style="cursor:pointer" onclick="showHealthModal('${p.coin}')"><span class="health-score">${h.score}</span> ${h.grade}</span></td>
           </tr>`;}).join('')}</tbody>
         </table></div>`}
@@ -596,6 +597,7 @@ async function loadOverview(){
     ]);
     checkOrderFills(orders);
     const s = parseAccountSummary(state), positions = parsePositions(state);
+    if (typeof pmClearStale === 'function') pmClearStale(positions.map(p => p.coin));
     const marketCtx = buildMarketCtx(perpMetaRaw);
     const {balances:spotBals, usdcBalance} = parseSpotBalances(spotStateRaw, spotMetaRaw);
     const spotTotalValue = spotBals.reduce((a,b)=>a+b.value,0) + usdcBalance;

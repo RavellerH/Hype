@@ -33,6 +33,7 @@
       <button class="topbar-tab"        data-page="mvrv"      onclick="navigate('mvrv')">MVRV</button>
       <button class="topbar-tab"        data-page="ai"        onclick="navigate('ai')">AI</button>
       <button class="topbar-tab"        data-page="watchlist" onclick="navigate('watchlist')">Watchlist</button>
+      <button class="topbar-tab"        data-page="journal"   onclick="navigate('journal')">Journal</button>
     </nav>
 
     <div class="topbar-right">
@@ -60,6 +61,7 @@
     <a class="nav-item"        data-page="mvrv"      onclick="navigate('mvrv')"      title="MVRV"><span class="icon">📈</span></a>
     <a class="nav-item"        data-page="ai"        onclick="navigate('ai')"        title="AI"><span class="icon">🤖</span></a>
     <a class="nav-item"        data-page="watchlist" onclick="navigate('watchlist')" title="Watchlist"><span class="icon">👛</span></a>
+    <a class="nav-item"        data-page="journal"   onclick="navigate('journal')"   title="Journal"><span class="icon">📓</span></a>
   </nav>
 
   <!-- Mobile bottom nav -->
@@ -105,9 +107,12 @@
     <div class="page"         id="page-mvrv"><div id="mvrv-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page"         id="page-ai"><div id="ai-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page"         id="page-watchlist"><div id="watchlist-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
+    <div class="page"         id="page-journal"><div id="journal-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
   </main>
 
 <script src="intel.js"></script>
+<script src="position-meta.js"></script>
+<script src="journal.js"></script>
 <script src="app.js"></script>
 <script src="mvrv-ai.js"></script>
 <script>
