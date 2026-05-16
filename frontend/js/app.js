@@ -46,7 +46,7 @@ function navigate(page) {
   const activeIcon = document.querySelector(`.nav-icon-btn[data-page="${page}"]`);
   if (activeIcon) activeIcon.classList.add('active');
 
-  const loaders = { overview: loadOverview, trades: loadTrades, funding: loadFunding, flows: loadFlows, phases: loadPhases, intel: loadIntel, watchlist: loadWatchlist, settings: loadSettings };
+  const loaders = { overview: loadOverview, trades: loadTrades, funding: loadFunding, flows: loadFlows, phases: loadPhases, intel: loadIntel, watchlist: loadWatchlist, mvrv: loadMVRV, settings: loadSettings };
   if (loaders[page]) loaders[page]();
 }
 
@@ -879,6 +879,151 @@ function fmt$(n) {
 function fmtTime(ms) {
   if (!ms) return '—';
   return new Date(ms).toLocaleString('en-US', {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'});
+}
+
+// ── MVRV Monitor ─────────────────────────────────────────────────────────────
+
+const MVRV_ZONE_META = {
+  OVERHEATED:  { label: 'Overheated',  cls: 'mvrv-zone-hot',     color: 'var(--red)',    desc: 'Price well above 90d avg — elevated risk' },
+  BULLISH:     { label: 'Bullish',     cls: 'mvrv-zone-bull',    color: 'var(--yellow)', desc: 'Above average — uptrend, watch for reversal' },
+  NEUTRAL:     { label: 'Neutral',     cls: 'mvrv-zone-neutral', color: 'var(--text-muted)', desc: 'Near 90d avg — fair value range' },
+  UNDERVALUED: { label: 'Undervalued', cls: 'mvrv-zone-under',   color: 'var(--green)',  desc: 'Below 90d avg — potential accumulation zone' },
+};
+
+const COIN_NAMES = { BTC: 'Bitcoin', ETH: 'Ethereum', SOL: 'Solana', HYPE: 'Hyperliquid' };
+
+let _mvrvData = null;
+
+async function loadMVRV() {
+  const el = document.getElementById('mvrv-content');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div> Fetching MVRV data…</div>';
+  try {
+    const data = await fetch(`${API}/api/mvrv`).then(r => r.json());
+    _mvrvData = data;
+    renderMVRV(data);
+  } catch(e) {
+    el.innerHTML = `<div class="loading" style="color:var(--red)">Error: ${e.message}</div>`;
+  }
+}
+
+function mvrvSparkline(chart) {
+  if (!chart || chart.length < 2) return '<span class="muted" style="font-size:11px">—</span>';
+  const vals = chart.map(p => p.v);
+  const W = 120, H = 36, pad = 3;
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const range = max - min || 0.01;
+  const pts = vals.map((v, i) => {
+    const x = pad + (i / (vals.length - 1)) * (W - pad * 2);
+    const y = pad + (1 - (v - min) / range) * (H - pad * 2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  const last = vals[vals.length - 1];
+  const first = vals[0];
+  const color = last >= first ? 'var(--green)' : 'var(--red)';
+  // baseline at MVRV=1
+  const baseY = pad + (1 - (1 - min) / range) * (H - pad * 2);
+  const baseClipped = Math.max(pad, Math.min(H - pad, baseY));
+  return `<svg width="${W}" height="${H}" style="display:block">
+    <line x1="${pad}" y1="${baseClipped.toFixed(1)}" x2="${W - pad}" y2="${baseClipped.toFixed(1)}" stroke="var(--border-strong)" stroke-width="1" stroke-dasharray="3,3"/>
+    <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+}
+
+function renderMVRV(data) {
+  const coins = data.coins || {};
+  const ORDER = ['BTC', 'ETH', 'SOL', 'HYPE'];
+
+  const stripCells = ORDER.map(sym => {
+    const c = coins[sym];
+    if (!c) return { label: sym, value: '—' };
+    const meta = MVRV_ZONE_META[c.zone] || MVRV_ZONE_META.NEUTRAL;
+    return {
+      label: sym,
+      value: `<span style="color:${meta.color}">${c.mvrv.toFixed(3)}</span>`,
+      sub: meta.label,
+    };
+  });
+
+  const cards = ORDER.map(sym => {
+    const c = coins[sym];
+    if (!c) return `<div class="mvrv-card"><div class="muted">No data for ${sym}</div></div>`;
+    const meta = MVRV_ZONE_META[c.zone] || MVRV_ZONE_META.NEUTRAL;
+    const chg = c.change_24h;
+    const chgCls = chg >= 0 ? 'pos' : 'neg';
+    const chgStr = (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%';
+    const mcStr = c.market_cap >= 1e9
+      ? '$' + (c.market_cap / 1e9).toFixed(2) + 'B'
+      : c.market_cap >= 1e6 ? '$' + (c.market_cap / 1e6).toFixed(0) + 'M' : '—';
+
+    return `
+      <div class="mvrv-card">
+        <div class="mvrv-card-header">
+          <div>
+            <div class="mvrv-coin">${sym}</div>
+            <div class="mvrv-coin-name">${COIN_NAMES[sym] || sym}</div>
+          </div>
+          <span class="mvrv-zone-badge ${meta.cls}">${meta.label}</span>
+        </div>
+
+        <div class="mvrv-ratio" style="color:${meta.color}">${c.mvrv.toFixed(3)}</div>
+        <div class="mvrv-ratio-label">MVRV Ratio</div>
+
+        <div class="mvrv-sparkline">${mvrvSparkline(c.chart)}</div>
+
+        <div class="mvrv-stats">
+          <div class="mvrv-stat">
+            <div class="mvrv-stat-label">Price</div>
+            <div class="mvrv-stat-val">${fmt$(c.price)}</div>
+          </div>
+          <div class="mvrv-stat">
+            <div class="mvrv-stat-label">24h</div>
+            <div class="mvrv-stat-val ${chgCls}">${chgStr}</div>
+          </div>
+          <div class="mvrv-stat">
+            <div class="mvrv-stat-label">90d Avg</div>
+            <div class="mvrv-stat-val">${fmt$(c.avg_90d)}</div>
+          </div>
+          <div class="mvrv-stat">
+            <div class="mvrv-stat-label">Mkt Cap</div>
+            <div class="mvrv-stat-val">${mcStr}</div>
+          </div>
+        </div>
+
+        <div class="mvrv-desc">${meta.desc}</div>
+      </div>`;
+  }).join('');
+
+  const updatedStr = data.updated
+    ? new Date(data.updated * 1000).toLocaleString('en-US', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})
+    : '—';
+
+  document.getElementById('mvrv-content').innerHTML = `
+    ${statStrip(stripCells)}
+
+    <div class="filter-bar" style="justify-content:space-between">
+      <span style="font-size:12px;color:var(--text-muted)">Source: ${data.source || 'CoinGecko'}</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:11px;color:var(--text-faint)">Updated ${updatedStr}</span>
+        <button class="btn btn-ghost btn-sm" onclick="loadMVRV()">↺ Refresh</button>
+      </div>
+    </div>
+
+    <div class="mvrv-grid">${cards}</div>
+
+    <div class="mvrv-legend">
+      ${Object.entries(MVRV_ZONE_META).map(([k, m]) =>
+        `<div class="mvrv-legend-item">
+          <span class="mvrv-zone-badge ${m.cls}">${m.label}</span>
+          <span class="mvrv-legend-desc">${m.desc}</span>
+        </div>`
+      ).join('')}
+      <div class="mvrv-legend-item" style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px;grid-column:1/-1">
+        <span style="font-size:11px;color:var(--text-faint)">
+          ⓘ Approx MVRV = Current Price ÷ 90-day rolling average price. Not the true on-chain realized cap. Chart shows 30-day rolling window MVRV.
+        </span>
+      </div>
+    </div>
+  `;
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────

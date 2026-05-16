@@ -32,6 +32,7 @@
       <button class="topbar-tab"        data-page="phases"    onclick="navigate('phases')">Phases</button>
       <button class="topbar-tab"        data-page="intel"     onclick="navigate('intel')">Intel</button>
       <button class="topbar-tab"        data-page="watchlist" onclick="navigate('watchlist')">Watchlist</button>
+      <button class="topbar-tab"        data-page="mvrv"      onclick="navigate('mvrv')">MVRV</button>
       <button class="topbar-tab"        data-page="settings"  onclick="navigate('settings')">Settings</button>
     </nav>
 
@@ -81,6 +82,9 @@
     <button class="nav-icon-btn" data-page="watchlist" onclick="navigate('watchlist')" title="Watchlist">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
     </button>
+    <button class="nav-icon-btn" data-page="mvrv" onclick="navigate('mvrv')" title="MVRV Monitor">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20h20"/><path d="M5 20V10l4-4 4 6 4-8 4 4v12"/></svg>
+    </button>
     <button class="nav-icon-btn" data-page="settings" onclick="navigate('settings')" title="Settings">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     </button>
@@ -127,6 +131,12 @@
 
     <div class="page" id="page-watchlist">
       <div id="watchlist-content">
+        <div class="loading"><div class="spinner"></div> Loading…</div>
+      </div>
+    </div>
+
+    <div class="page" id="page-mvrv">
+      <div id="mvrv-content">
         <div class="loading"><div class="spinner"></div> Loading…</div>
       </div>
     </div>

@@ -734,12 +734,136 @@ tbody tr:hover td       { background: var(--surface-hover); }
 .intel-desk-stat-label { font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
 .intel-desk-stat-value { font-family: var(--mono); font-size: 13px; font-weight: 600; margin-bottom: 2px; }
 
-/* ── Scrollbar ───────────────────────────────────────────────────────────────── */
+/* ── MVRV Monitor ────────────────────────────────────────────────────────────── */
 
-::-webkit-scrollbar         { width: 5px; height: 5px; }
-::-webkit-scrollbar-track   { background: transparent; }
-::-webkit-scrollbar-thumb   { background: var(--border-strong); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+.mvrv-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.mvrv-card {
+  background: var(--surface);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mvrv-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.mvrv-coin {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.3px;
+}
+
+.mvrv-coin-name {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+.mvrv-ratio {
+  font-family: var(--mono);
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.mvrv-ratio-label {
+  font-size: 10px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-top: -6px;
+}
+
+.mvrv-sparkline {
+  margin: 2px 0;
+}
+
+.mvrv-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+.mvrv-stat-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.mvrv-stat-val {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.mvrv-desc {
+  font-size: 11px;
+  color: var(--text-faint);
+  line-height: 1.4;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+
+/* Zone badges */
+
+.mvrv-zone-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
+.mvrv-zone-hot    { background: var(--red-bg);    color: var(--red); }
+.mvrv-zone-bull   { background: var(--yellow-bg); color: var(--yellow); }
+.mvrv-zone-neutral{ background: var(--surface2);  color: var(--text-muted); }
+.mvrv-zone-under  { background: var(--green-bg);  color: var(--green); }
+
+/* Legend */
+
+.mvrv-legend {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  padding: 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.mvrv-legend-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.mvrv-legend-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.4;
+  padding-top: 2px;
+}
 
 /* ── Responsive ──────────────────────────────────────────────────────────────── */
 
@@ -756,4 +880,6 @@ tbody tr:hover td       { background: var(--surface-hover); }
   .settings-row { grid-template-columns: 1fr; }
   .intel-posture-verdict { font-size: 15px !important; }
   .intel-radar-score { font-size: 36px; }
+  .mvrv-grid { grid-template-columns: repeat(2, 1fr); }
+  .mvrv-legend { grid-template-columns: 1fr; }
 }
