@@ -75,8 +75,8 @@ async def get_open_orders(wallet: str) -> list:
     return await _post({"type": "openOrders", "user": wallet})
 
 
-async def get_token_balances(wallet: str) -> list:
-    return await _post({"type": "tokenBalances", "user": wallet})
+async def get_meta_and_asset_ctxs() -> list:
+    return await _post({"type": "metaAndAssetCtxs"})
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -91,17 +91,21 @@ def parse_positions(state: dict) -> list[dict]:
         entry = float(p.get("entryPx", 0) or 0)
         unrealized_pnl = float(p.get("unrealizedPnl", 0) or 0)
         leverage = p.get("leverage", {})
+        pos_value = float(p.get("positionValue", 0) or 0)
+        size = abs(szi)
+        mark_price = pos_value / size if size > 0 else entry
         positions.append({
             "coin": p.get("coin"),
             "side": "long" if szi > 0 else "short",
-            "size": abs(szi),
+            "size": size,
             "entry_price": entry,
+            "mark_price": round(mark_price, 6),
             "unrealized_pnl": unrealized_pnl,
             "leverage_type": leverage.get("type", "cross"),
             "leverage_value": leverage.get("value", 1),
             "liquidation_price": float(p.get("liquidationPx") or 0),
             "margin_used": float(p.get("marginUsed", 0) or 0),
-            "position_value": float(p.get("positionValue", 0) or 0),
+            "position_value": pos_value,
             "cum_funding": float((p.get("cumFunding") or {}).get("sinceOpen", 0) or 0),
         })
     return positions

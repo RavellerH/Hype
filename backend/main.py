@@ -277,6 +277,47 @@ async def get_candles_endpoint(coin: str, interval: str = "1h", days: int = 7):
     return {"coin": coin, "interval": interval, "candles": candles}
 
 
+# ── Live market context (funding rates + mark prices, 60s cache) ──────────────
+
+_mkt_ctx_cache: dict = {}
+_mkt_ctx_ts: float = 0.0
+_MKT_CTX_TTL = 60
+
+
+@app.get("/api/market-ctx")
+async def get_market_ctx():
+    global _mkt_ctx_cache, _mkt_ctx_ts
+    if _mkt_ctx_cache and (time.time() - _mkt_ctx_ts) < _MKT_CTX_TTL:
+        return _mkt_ctx_cache
+
+    try:
+        raw = await hl.get_meta_and_asset_ctxs()
+        meta, ctxs = raw[0], raw[1]
+        universe = meta.get("universe", [])
+        result: dict[str, Any] = {}
+        for i, asset in enumerate(universe):
+            if i >= len(ctxs):
+                break
+            ctx = ctxs[i]
+            name = asset.get("name", "")
+            if not name:
+                continue
+            funding_8h = float(ctx.get("funding", 0) or 0)
+            mark_px    = float(ctx.get("markPx", 0) or 0)
+            oi         = float(ctx.get("openInterest", 0) or 0)
+            result[name] = {
+                "funding_rate_8h": round(funding_8h, 8),
+                "funding_apr":     round(funding_8h * 3 * 365 * 100, 4),  # %
+                "mark_price":      mark_px,
+                "open_interest":   oi,
+            }
+        _mkt_ctx_cache = result
+        _mkt_ctx_ts    = time.time()
+        return result
+    except Exception as e:
+        return _mkt_ctx_cache or {}
+
+
 # ── MVRV Monitor (approx via CoinGecko free API) ──────────────────────────────
 
 import httpx as _httpx

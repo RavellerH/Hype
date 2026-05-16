@@ -109,21 +109,158 @@ function sparkline(data, isPos) {
   return `<svg width="${W}" height="${H}" style="display:block"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 }
 
+// ── Position Health Scoring ────────────────────────────────────────────────────
+
+// Score a single position 0–100. Deducts for: high leverage, macro misalignment,
+// funding against you, MVRV zone, smart money opposition, liquidation proximity.
+function scorePosition(p, marketCtx) {
+  let score = 100;
+  const flags = [];
+  const isLong = p.side === 'long';
+
+  // Mark price: derived from position_value/size (backend already does this),
+  // fall back to market ctx, then entry price.
+  const markPx = p.mark_price > 0
+    ? p.mark_price
+    : (marketCtx[p.coin]?.mark_price || p.entry_price);
+
+  // 1. Leverage
+  const lev = p.leverage_value || 1;
+  if      (lev > 15) { score -= 25; flags.push(`${lev}× leverage is very high`); }
+  else if (lev > 10) { score -= 15; flags.push(`${lev}× leverage is elevated`); }
+  else if (lev > 7)  { score -= 8;  flags.push(`${lev}× leverage`); }
+
+  // 2. Macro phase + posture alignment (reads the global INTEL snapshot)
+  if (typeof INTEL !== 'undefined' && INTEL.macro) {
+    const phase   = (INTEL.macro.cycle_phase || '').toLowerCase();
+    const posture = INTEL.macro.posture || '';
+    const bearPhases = ['distribution', 'markdown'];
+    const bullPhases = ['accumulation', 'markup'];
+
+    if (isLong  && bearPhases.some(ph => phase.includes(ph))) {
+      score -= 25; flags.push(`LONG in ${INTEL.macro.cycle_phase} phase`);
+    } else if (!isLong && bullPhases.some(ph => phase.includes(ph))) {
+      score -= 25; flags.push(`SHORT in ${INTEL.macro.cycle_phase} phase`);
+    }
+    if      (isLong  && (posture === 'SELL' || posture === 'BEAR')) {
+      score -= 15; flags.push(`macro posture is ${posture}`);
+    } else if (!isLong && (posture === 'BUY'  || posture === 'BULL')) {
+      score -= 15; flags.push(`macro posture is ${posture}`);
+    }
+  }
+
+  // 3. Live funding rate from market context
+  const ctx = marketCtx[p.coin];
+  if (ctx) {
+    const apr = ctx.funding_apr;  // annualised %, positive = longs pay
+    if      (isLong  && apr >  15) { score -= 20; flags.push(`paying ${apr.toFixed(1)}% APR funding`); }
+    else if (isLong  && apr >   5) { score -= 10; flags.push(`paying ${apr.toFixed(1)}% APR funding`); }
+    else if (!isLong && apr < -15) { score -= 20; flags.push(`paying ${Math.abs(apr).toFixed(1)}% APR funding`); }
+    else if (!isLong && apr <  -5) { score -= 10; flags.push(`paying ${Math.abs(apr).toFixed(1)}% APR funding`); }
+  }
+
+  // 4. MVRV zone (reads the global _mvrvData if already loaded)
+  if (typeof _mvrvData !== 'undefined' && _mvrvData?.coins?.[p.coin]) {
+    const zone = _mvrvData.coins[p.coin].zone;
+    if      (isLong  && zone === 'OVERHEATED')  { score -= 15; flags.push(`${p.coin} MVRV overheated`); }
+    else if (!isLong && zone === 'UNDERVALUED') { score -= 15; flags.push(`${p.coin} MVRV undervalued`); }
+  }
+
+  // 5. Smart money cohort from INTEL
+  if (typeof INTEL !== 'undefined') {
+    const sm = (INTEL.macro?.cohorts || []).find(c => c.name === 'Smart Money');
+    if (sm) {
+      if      (isLong  && !sm.bull) { score -= 10; flags.push('smart money distributing'); }
+      else if (!isLong &&  sm.bull) { score -= 10; flags.push('smart money accumulating'); }
+    }
+  }
+
+  // 6. Liquidation proximity
+  if (p.liquidation_price > 0 && markPx > 0) {
+    const liqPct = isLong
+      ? (markPx - p.liquidation_price) / markPx * 100
+      : (p.liquidation_price - markPx) / markPx * 100;
+    if      (liqPct < 5)  { score -= 25; flags.push(`liquidation ${liqPct.toFixed(1)}% away`); }
+    else if (liqPct < 10) { score -= 15; flags.push(`liquidation ${liqPct.toFixed(1)}% away`); }
+  }
+
+  score = Math.max(0, Math.min(100, score));
+  return {
+    score,
+    grade: score >= 70 ? 'OK' : score >= 40 ? 'CAUTION' : 'RISKY',
+    cls:   score >= 70 ? 'health-ok' : score >= 40 ? 'health-caution' : 'health-risky',
+    flags,
+    top:   flags[0] || null,
+  };
+}
+
+function _riskSummaryHtml(positions, marketCtx) {
+  if (!positions.length) return '';
+
+  const scored = positions.map(p => ({ ...p, h: scorePosition(p, marketCtx) }));
+  const risky   = scored.filter(p => p.h.grade === 'RISKY');
+  const caution = scored.filter(p => p.h.grade === 'CAUTION');
+
+  // Only show the card when at least one position has a flag
+  if (!risky.length && !caution.length) return '';
+
+  const totalNtl = scored.reduce((a, p) => a + (p.position_value || 0), 0);
+  const portScore = totalNtl > 0
+    ? Math.round(scored.reduce((a, p) => a + p.h.score * (p.position_value || 0), 0) / totalNtl)
+    : Math.round(scored.reduce((a, p) => a + p.h.score, 0) / scored.length);
+  const portCls = portScore >= 70 ? 'health-ok' : portScore >= 40 ? 'health-caution' : 'health-risky';
+
+  // Top flags across all positions (worst first)
+  const allFlags = scored
+    .sort((a, b) => a.h.score - b.h.score)
+    .flatMap(p => p.h.flags.map(f => `${p.coin} ${p.side.toUpperCase()}: ${f}`))
+    .slice(0, 4);
+
+  return `
+  <div class="risk-summary">
+    <div class="risk-summary-left">
+      <div class="risk-score-wrap">
+        <div class="risk-score-big ${portCls}">${portScore}</div>
+        <div class="risk-score-label">Portfolio<br>Health</div>
+      </div>
+      <div class="risk-chips">
+        ${scored.map(p => `
+        <span class="health-chip ${p.h.cls}" title="${p.h.flags.join(' · ') || 'No flags'}">
+          ${p.coin} <span style="font-family:var(--mono);font-weight:700">${p.h.score}</span>
+        </span>`).join('')}
+      </div>
+    </div>
+    <div class="risk-flags">
+      ${allFlags.map(f => `<div class="risk-flag-row">⚠ ${f}</div>`).join('')}
+    </div>
+  </div>`;
+}
+
 // ── Overview ──────────────────────────────────────────────────────────────────
 
 let _overviewFilter = 'all';
+let _marketCtx = {};
 
 async function loadOverview() {
   const el = document.getElementById('overview-content');
   el.innerHTML = `<div class="stat-strip">${[...Array(4)].map(() => `<div class="stat-cell"><div class="skeleton" style="height:11px;width:60%;margin-bottom:6px"></div><div class="skeleton" style="height:20px;width:80%"></div></div>`).join('')}</div>
-    <div class="table-wrap">${'<div style="padding:12px 16px;border-bottom:1px solid var(--border)"><div class="skeleton" style="height:11px;width:30%"></div></div>'}<table><tbody>${skeletonRows(8)}</tbody></table></div>`;
+    <div class="table-wrap"><table><tbody>${skeletonRows(8, 9)}</tbody></table></div>`;
   try {
-    const data = await fetch(`${API}/api/positions?wallet=${PRIMARY_WALLET}`).then(r => r.json());
-    renderOverview(data.summary, data.positions);
+    const [posData, mktCtx] = await Promise.all([
+      fetch(`${API}/api/positions?wallet=${PRIMARY_WALLET}`).then(r => r.json()),
+      fetch(`${API}/api/market-ctx`).then(r => r.json()).catch(() => ({})),
+    ]);
+    _marketCtx = mktCtx;
+    // Lazily warm MVRV cache for scoring
+    if (typeof _mvrvData === 'undefined' || !_mvrvData) {
+      fetch(`${API}/api/mvrv`).then(r => r.json()).then(d => { _mvrvData = d; }).catch(() => {});
+    }
+    renderOverview(posData.summary, posData.positions, mktCtx);
   } catch(e) { el.innerHTML = `<div class="loading">Error: ${e.message}</div>`; }
 }
 
-function renderOverview(summary, positions) {
+function renderOverview(summary, positions, marketCtx) {
+  marketCtx = marketCtx || _marketCtx || {};
   const totalPnl = positions.reduce((a, p) => a + p.unrealized_pnl, 0);
   const marginPct = summary.account_value > 0
     ? ((summary.total_margin_used / summary.account_value) * 100).toFixed(1) + '%'
@@ -140,26 +277,39 @@ function renderOverview(summary, positions) {
   ];
 
   const rows = filtered.length === 0
-    ? `<tr><td colspan="8">${emptyState('No open positions')}</td></tr>`
-    : filtered.map(p => `
-      <tr>
-        <td class="coin-cell">${p.coin}</td>
-        <td><span class="side-badge ${p.side}">${p.side.toUpperCase()}</span></td>
-        <td class="num">${p.size}</td>
-        <td class="num">${fmt$(p.entry_price)}</td>
-        <td class="num ${p.liquidation_price > 0 ? 'neg' : 'muted'}">${p.liquidation_price > 0 ? fmt$(p.liquidation_price) : '—'}</td>
-        <td class="num ${p.unrealized_pnl >= 0 ? 'pos' : 'neg'}">${fmt$(p.unrealized_pnl)}</td>
-        <td class="num ${p.cum_funding >= 0 ? 'pos' : 'neg'}">${p.cum_funding.toFixed(4)}</td>
-        <td class="num muted">${p.leverage_value}× ${p.leverage_type}</td>
-      </tr>`).join('');
+    ? `<tr><td colspan="9">${emptyState('No open positions')}</td></tr>`
+    : filtered.map(p => {
+        const h = scorePosition(p, marketCtx);
+        const liqPct = p.liquidation_price > 0 && p.mark_price > 0
+          ? Math.abs((p.mark_price - p.liquidation_price) / p.mark_price * 100).toFixed(1) + '%'
+          : null;
+        const tooltip = h.flags.length ? h.flags.join(' · ') : 'No risk flags';
+        return `<tr>
+          <td class="coin-cell">${p.coin}</td>
+          <td><span class="side-badge ${p.side}">${p.side.toUpperCase()}</span></td>
+          <td class="num">${p.size}</td>
+          <td class="num">${fmt$(p.entry_price)}</td>
+          <td class="num ${p.liquidation_price > 0 ? 'neg' : 'muted'}" title="${liqPct ? liqPct + ' away' : ''}">${p.liquidation_price > 0 ? fmt$(p.liquidation_price) : '—'}</td>
+          <td class="num ${p.unrealized_pnl >= 0 ? 'pos' : 'neg'}">${fmt$(p.unrealized_pnl)}</td>
+          <td class="num ${p.cum_funding >= 0 ? 'pos' : 'neg'}">${p.cum_funding.toFixed(4)}</td>
+          <td class="num muted">${p.leverage_value}× ${p.leverage_type}</td>
+          <td>
+            <span class="health-badge ${h.cls}" title="${tooltip}">
+              <span class="health-score">${h.score}</span>
+              <span class="health-grade">${h.grade}</span>
+            </span>
+          </td>
+        </tr>`;
+      }).join('');
 
   document.getElementById('overview-content').innerHTML = `
     ${statStrip([
-      {label: 'Account Value',   value: fmt$(summary.account_value),      sub: `Withdrawable: ${fmt$(summary.withdrawable)}`},
-      {label: 'Total Notional',  value: fmt$(summary.total_ntl_pos),      sub: `${positions.length} position${positions.length !== 1 ? 's' : ''}`},
-      {label: 'Margin Used',     value: fmt$(summary.total_margin_used),  sub: marginPct + ' of account'},
+      {label: 'Account Value',   value: fmt$(summary.account_value),     sub: `Withdrawable: ${fmt$(summary.withdrawable)}`},
+      {label: 'Total Notional',  value: fmt$(summary.total_ntl_pos),     sub: `${positions.length} position${positions.length !== 1 ? 's' : ''}`},
+      {label: 'Margin Used',     value: fmt$(summary.total_margin_used), sub: marginPct + ' of account'},
       {label: 'Unrealized PnL',  value: fmt$(totalPnl), cls: totalPnl >= 0 ? 'pos' : 'neg'},
     ])}
+    ${_riskSummaryHtml(positions, marketCtx)}
     <div class="filter-bar">
       ${chips.map(c => `<button class="chip${c.active?' active':''}" onclick="setOverviewFilter('${c.value}')">${c.label}</button>`).join('')}
     </div>
@@ -170,6 +320,7 @@ function renderOverview(summary, positions) {
           <th class="num">Size</th><th class="num">Entry</th>
           <th class="num">Liq. Price</th><th class="num">Unr. PnL</th>
           <th class="num">Funding</th><th class="num">Leverage</th>
+          <th>Health</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
@@ -179,7 +330,6 @@ function renderOverview(summary, positions) {
 
 function setOverviewFilter(val) {
   _overviewFilter = val;
-  // Re-fetch is lightweight since data is already in the WS; just reload
   loadOverview();
 }
 
