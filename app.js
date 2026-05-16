@@ -76,13 +76,98 @@ function parsePositions(state) {
     const p=pos.position||{}; const szi=parseFloat(p.szi||0);
     if(szi===0) return null;
     const lev=p.leverage||{};
-    return { coin:p.coin, side:szi>0?'long':'short', size:Math.abs(szi),
-      entry_price:parseFloat(p.entryPx||0), unrealized_pnl:parseFloat(p.unrealizedPnl||0),
+    const posVal=parseFloat(p.positionValue||0), size=Math.abs(szi);
+    return { coin:p.coin, side:szi>0?'long':'short', size,
+      entry_price:parseFloat(p.entryPx||0),
+      mark_price: size>0 ? posVal/size : parseFloat(p.entryPx||0),
+      unrealized_pnl:parseFloat(p.unrealizedPnl||0),
       leverage_type:lev.type||'cross', leverage_value:lev.value||1,
       liquidation_price:parseFloat(p.liquidationPx||0),
-      margin_used:parseFloat(p.marginUsed||0), position_value:parseFloat(p.positionValue||0),
+      margin_used:parseFloat(p.marginUsed||0), position_value:posVal,
       cum_funding:parseFloat((p.cumFunding||{}).sinceOpen||0) };
   }).filter(Boolean);
+}
+
+function buildMarketCtx(raw) {
+  if (!raw || !Array.isArray(raw)) return {};
+  const [meta, ctxs=[]] = raw;
+  const result = {};
+  (meta?.universe||[]).forEach((asset,i)=>{
+    const ctx=ctxs[i]||{}, name=asset.name||'';
+    if (!name) return;
+    const f=parseFloat(ctx.funding||0);
+    result[name]={ funding_rate_8h:f, funding_apr:f*3*365*100, mark_price:parseFloat(ctx.markPx||0) };
+  });
+  return result;
+}
+
+function scorePosition(p, marketCtx) {
+  let score=100; const flags=[]; const isLong=p.side==='long';
+  const markPx=p.mark_price>0?p.mark_price:(marketCtx[p.coin]?.mark_price||p.entry_price);
+  const lev=p.leverage_value||1;
+  if      (lev>15){score-=25;flags.push(`${lev}× leverage is very high`);}
+  else if (lev>10){score-=15;flags.push(`${lev}× leverage is elevated`);}
+  else if (lev>7) {score-=8; flags.push(`${lev}× leverage`);}
+  if (typeof INTEL!=='undefined'&&INTEL.macro){
+    const phase=(INTEL.macro.cycle_phase||'').toLowerCase(), posture=INTEL.macro.posture||'';
+    if      (isLong &&['distribution','markdown'].some(ph=>phase.includes(ph))){score-=25;flags.push(`LONG in ${INTEL.macro.cycle_phase} phase`);}
+    else if (!isLong&&['accumulation','markup'].some(ph=>phase.includes(ph)))  {score-=25;flags.push(`SHORT in ${INTEL.macro.cycle_phase} phase`);}
+    if      (isLong &&(posture==='SELL'||posture==='BEAR')){score-=15;flags.push(`macro posture: ${posture}`);}
+    else if (!isLong&&(posture==='BUY' ||posture==='BULL')){score-=15;flags.push(`macro posture: ${posture}`);}
+  }
+  const ctx=marketCtx[p.coin];
+  if (ctx){
+    const apr=ctx.funding_apr;
+    if      (isLong &&apr> 15){score-=20;flags.push(`paying ${apr.toFixed(1)}% APR funding`);}
+    else if (isLong &&apr>  5){score-=10;flags.push(`paying ${apr.toFixed(1)}% APR funding`);}
+    else if (!isLong&&apr<-15){score-=20;flags.push(`paying ${Math.abs(apr).toFixed(1)}% APR funding`);}
+    else if (!isLong&&apr< -5){score-=10;flags.push(`paying ${Math.abs(apr).toFixed(1)}% APR funding`);}
+  }
+  if (typeof _mvrvData!=='undefined'&&_mvrvData?.coins?.[p.coin]){
+    const zone=_mvrvData.coins[p.coin].zone;
+    if      (isLong &&zone==='OVERHEATED') {score-=15;flags.push(`${p.coin} MVRV overheated`);}
+    else if (!isLong&&zone==='UNDERVALUED'){score-=15;flags.push(`${p.coin} MVRV undervalued`);}
+  }
+  if (typeof INTEL!=='undefined'){
+    const sm=(INTEL.macro?.cohorts||[]).find(c=>c.name==='Smart Money');
+    if (sm){
+      if      (isLong &&!sm.bull){score-=10;flags.push('smart money distributing');}
+      else if (!isLong&& sm.bull){score-=10;flags.push('smart money accumulating');}
+    }
+  }
+  if (p.liquidation_price>0&&markPx>0){
+    const liqPct=isLong?(markPx-p.liquidation_price)/markPx*100:(p.liquidation_price-markPx)/markPx*100;
+    if      (liqPct<5) {score-=25;flags.push(`liquidation ${liqPct.toFixed(1)}% away`);}
+    else if (liqPct<10){score-=15;flags.push(`liquidation ${liqPct.toFixed(1)}% away`);}
+  }
+  score=Math.max(0,Math.min(100,score));
+  return { score, grade:score>=70?'OK':score>=40?'CAUTION':'RISKY',
+    cls:score>=70?'health-ok':score>=40?'health-caution':'health-risky', flags };
+}
+
+function riskSummaryHtml(positions, marketCtx) {
+  if (!positions.length) return '';
+  const scored=positions.map(p=>({...p,h:scorePosition(p,marketCtx)}));
+  if (!scored.some(p=>p.h.grade!=='OK')) return '';
+  const totalNtl=scored.reduce((a,p)=>a+(p.position_value||0),0);
+  const portScore=totalNtl>0
+    ?Math.round(scored.reduce((a,p)=>a+p.h.score*(p.position_value||0),0)/totalNtl)
+    :Math.round(scored.reduce((a,p)=>a+p.h.score,0)/scored.length);
+  const portCls=portScore>=70?'health-ok':portScore>=40?'health-caution':'health-risky';
+  const allFlags=scored.sort((a,b)=>a.h.score-b.h.score)
+    .flatMap(p=>p.h.flags.map(f=>`${p.coin} ${p.side.toUpperCase()}: ${f}`)).slice(0,4);
+  return `<div class="risk-summary">
+    <div class="risk-summary-left">
+      <div class="risk-score-wrap">
+        <div class="risk-score-big ${portCls}">${portScore}</div>
+        <div class="risk-score-label">Portfolio<br>Health</div>
+      </div>
+      <div class="risk-chips">
+        ${scored.map(p=>`<span class="health-chip ${p.h.cls}" title="${p.h.flags.join(' · ')||'No flags'}">${p.coin} <b>${p.h.score}</b></span>`).join('')}
+      </div>
+    </div>
+    <div class="risk-flags">${allFlags.map(f=>`<div class="risk-flag-row">⚠ ${f}</div>`).join('')}</div>
+  </div>`;
 }
 function parseAccountSummary(state) {
   const m=state.marginSummary||{};
@@ -308,7 +393,7 @@ function setOverviewTab(tab) {
 function renderOverviewTab() {
   const el = document.getElementById('ov-tab-body');
   if (!el || !_ovData) return;
-  const {s, positions, spotBals, usdcBalance, orders, totalPortfolio, spotTotalValue, spotUnrPnl, totalUnr} = _ovData;
+  const {s, positions, spotBals, usdcBalance, orders, totalPortfolio, spotTotalValue, spotUnrPnl, totalUnr, marketCtx={}} = _ovData;
 
   if (overviewTab === 'summary') {
     el.innerHTML = `
@@ -345,12 +430,13 @@ function renderOverviewTab() {
         <div class="stat-card"><div class="stat-label">Margin Used</div><div class="stat-value">${fmt$(s.total_margin_used)}</div><div class="stat-sub">${s.account_value>0?((s.total_margin_used/s.account_value)*100).toFixed(1):0}%</div></div>
         <div class="stat-card"><div class="stat-label">Unr. PnL</div><div class="stat-value ${positions.reduce((a,p)=>a+p.unrealized_pnl,0)>=0?'pos':'neg'}">${fmt$(positions.reduce((a,p)=>a+p.unrealized_pnl,0))}</div></div>
       </div>
+      ${riskSummaryHtml(positions, marketCtx)}
       <div class="card" style="margin-bottom:14px">
         <div class="card-title">Open Positions (${positions.length})</div>
         ${positions.length===0?'<div class="empty-state">No open perp positions</div>':`
         <div class="table-wrap"><table>
-          <thead><tr><th>Coin</th><th>Side</th><th>Size</th><th>Entry</th><th>Liq</th><th>PnL</th><th>Lev</th></tr></thead>
-          <tbody>${positions.map(p=>`<tr>
+          <thead><tr><th>Coin</th><th>Side</th><th>Size</th><th>Entry</th><th>Liq</th><th>PnL</th><th>Lev</th><th>Health</th></tr></thead>
+          <tbody>${positions.map(p=>{const h=scorePosition(p,marketCtx);return`<tr>
             <td class="accent" style="font-weight:600">${p.coin}</td>
             <td><span class="side-badge ${p.side}">${p.side==='long'?'LONG':'SHORT'}</span></td>
             <td class="mono">${p.size}</td>
@@ -358,7 +444,8 @@ function renderOverviewTab() {
             <td class="${p.liquidation_price>0?'neg':'muted'} mono">${p.liquidation_price>0?fmt$(p.liquidation_price):'—'}</td>
             <td class="${p.unrealized_pnl>=0?'pos':'neg'} mono">${fmt$(p.unrealized_pnl)}</td>
             <td class="muted">${p.leverage_value}x</td>
-          </tr>`).join('')}</tbody>
+            <td><span class="health-badge ${h.cls}" title="${h.flags.join(' · ')}"><span class="health-score">${h.score}</span> ${h.grade}</span></td>
+          </tr>`;}).join('')}</tbody>
         </table></div>`}
       </div>
       ${orders.length>0?`<div class="card">
@@ -417,20 +504,22 @@ async function loadOverview(){
   el.innerHTML=loading();
   try{
     setStatus(true);
-    const [state, orders, spotStateRaw, spotMetaRaw] = await Promise.all([
+    const [state, orders, spotStateRaw, spotMetaRaw, perpMetaRaw] = await Promise.all([
       getClearinghouseState(currentWallet), getOpenOrders(currentWallet),
       getSpotState(currentWallet).catch(()=>null),
-      getSpotMeta().catch(()=>null)
+      getSpotMeta().catch(()=>null),
+      getMetaAndAssetCtxs().catch(()=>null)
     ]);
     checkOrderFills(orders);
     const s = parseAccountSummary(state), positions = parsePositions(state);
+    const marketCtx = buildMarketCtx(perpMetaRaw);
     const {balances:spotBals, usdcBalance} = parseSpotBalances(spotStateRaw, spotMetaRaw);
     const spotTotalValue = spotBals.reduce((a,b)=>a+b.value,0) + usdcBalance;
     const spotUnrPnl = spotBals.reduce((a,b)=>a+b.unrealizedPnl,0);
     const totalUnr = positions.reduce((a,p)=>a+p.unrealized_pnl,0) + spotUnrPnl;
     const totalPortfolio = s.account_value + spotTotalValue;
 
-    _ovData = {s, positions, spotBals, usdcBalance, orders, totalPortfolio, spotTotalValue, spotUnrPnl, totalUnr};
+    _ovData = {s, positions, spotBals, usdcBalance, orders, totalPortfolio, spotTotalValue, spotUnrPnl, totalUnr, marketCtx};
 
     el.innerHTML = `
       <div class="section-header" style="margin-bottom:14px">

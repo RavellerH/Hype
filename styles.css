@@ -214,6 +214,17 @@ tr:hover td { background: var(--surface-hover); }
 .side-badge.inflow  { background: var(--green-bg); color: var(--green); }
 .side-badge.outflow { background: var(--red-bg);   color: var(--red); }
 
+.health-badge { display:inline-flex; align-items:center; gap:4px; padding:2px 7px; border-radius:var(--radius-pill); font-size:10px; font-weight:600; border:1px solid transparent; }
+.health-score { font-family:var(--mono); font-size:11px; }
+.health-ok      { background:var(--green-bg);  color:var(--green);  border-color:rgba(74,222,128,0.2); }
+.health-caution { background:var(--yellow-bg); color:var(--yellow); border-color:rgba(251,191,36,0.2); }
+.health-risky   { background:var(--red-bg);    color:var(--red);    border-color:rgba(248,113,113,0.2); }
+.risk-summary { display:flex; align-items:flex-start; gap:16px; padding:12px 16px; background:var(--surface); border-bottom:1px solid var(--border); border-radius:var(--radius); margin-bottom:10px; }
+.risk-score-big { font-family:var(--mono); font-size:28px; font-weight:800; }
+.risk-chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+.health-chip { display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:var(--radius-pill); font-size:11px; }
+.risk-flag-row { font-size:11px; color:var(--yellow); padding:3px 8px; background:var(--yellow-bg); border-radius:var(--radius-sm); margin-top:6px; }
+
 .phase-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: var(--radius-pill); font-size: 11px; font-weight: 600; }
 .phase-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
 .phase-ACCUMULATION { background: var(--blue-bg);   color: var(--phase-accum); }
