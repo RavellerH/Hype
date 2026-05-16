@@ -1,55 +1,56 @@
 :root {
   /* Backgrounds */
-  --bg:            #F7F8FA;
-  --surface:       #FFFFFF;
-  --surface2:      #F3F4F6;
-  --surface-hover: #F9FAFB;
+  --bg:            #0a0a0a;
+  --surface:       #111111;
+  --surface2:      #1a1a1a;
+  --surface-hover: #1e1e1e;
 
   /* Borders */
-  --border:        #EBEBEB;
-  --border-strong: #D1D5DB;
+  --border:        #242424;
+  --border-strong: #383838;
 
   /* Text */
-  --text:          #111827;
-  --text-muted:    #6B7280;
-  --text-faint:    #9CA3AF;
+  --text:          #e2e2e2;
+  --text-muted:    #6b7280;
+  --text-faint:    #4b5563;
 
-  /* Accent */
-  --accent:        #2563EB;
-  --accent-bg:     #2563EB;
-  --accent-text:   #FFFFFF;
+  /* Accent — light blue */
+  --accent:        #38bdf8;
+  --accent-bg:     #38bdf8;
+  --accent-text:   #0a0a0a;
+  --accent-subtle: rgba(56, 189, 248, 0.10);
 
-  /* Semantic */
-  --green:         #16A34A;
-  --green-bg:      rgba(22, 163, 74, 0.08);
-  --red:           #DC2626;
-  --red-bg:        rgba(220, 38, 38, 0.08);
-  --yellow:        #D97706;
-  --yellow-bg:     rgba(217, 119, 6, 0.08);
-  --blue:          #2563EB;
-  --blue-bg:       rgba(37, 99, 235, 0.08);
-  --orange:        #EA580C;
+  /* Semantic — terminal green + light palette */
+  --green:         #4ade80;
+  --green-bg:      rgba(74, 222, 128, 0.08);
+  --red:           #f87171;
+  --red-bg:        rgba(248, 113, 113, 0.08);
+  --yellow:        #fbbf24;
+  --yellow-bg:     rgba(251, 191, 36, 0.08);
+  --blue:          #38bdf8;
+  --blue-bg:       rgba(56, 189, 248, 0.10);
+  --orange:        #fb923c;
 
   /* Phase palette */
-  --phase-accum:   #2563EB;
-  --phase-markup:  #16A34A;
-  --phase-dist:    #D97706;
-  --phase-down:    #DC2626;
-  --phase-neutral: #6B7280;
+  --phase-accum:   #38bdf8;
+  --phase-markup:  #4ade80;
+  --phase-dist:    #fbbf24;
+  --phase-down:    #f87171;
+  --phase-neutral: #6b7280;
 
   /* Typography */
   --font:          'Inter', system-ui, sans-serif;
   --mono:          'JetBrains Mono', 'Fira Code', monospace;
 
   /* Shadows */
-  --shadow-sm:     0 1px 4px rgba(0,0,0,0.06);
-  --shadow-md:     0 4px 16px rgba(0,0,0,0.08);
-  --shadow-lg:     0 8px 32px rgba(0,0,0,0.14);
+  --shadow-sm:     0 1px 4px rgba(0,0,0,0.40);
+  --shadow-md:     0 4px 16px rgba(0,0,0,0.50);
+  --shadow-lg:     0 8px 32px rgba(0,0,0,0.60);
 
   /* Radius */
   --radius-sm:     4px;
-  --radius-md:     8px;
-  --radius-lg:     12px;
+  --radius-md:     6px;
+  --radius-lg:     8px;
   --radius-pill:   100px;
 
   /* Dimensions */
@@ -67,6 +68,7 @@ body {
   font-size: 13px;
   line-height: 1.4;
   font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
 }
 
 /* ── Layout ─────────────────────────────────────────────────────────────────── */
@@ -102,8 +104,8 @@ body {
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 14px;
-  color: var(--text);
+  font-size: 15px;
+  color: var(--accent);
   border-right: 1px solid var(--border);
   height: 100%;
   flex-shrink: 0;
@@ -137,7 +139,6 @@ body {
   white-space: nowrap;
   border-bottom: 2px solid transparent;
   transition: color 0.12s, border-color 0.12s;
-  text-decoration: none;
   font-family: var(--font);
 }
 .topbar-tab:hover  { color: var(--text); }
@@ -229,8 +230,7 @@ body {
   position: relative;
 }
 .nav-icon-btn:hover  { background: var(--surface2); color: var(--text); }
-.nav-icon-btn.active { background: var(--blue-bg); color: var(--accent); }
-
+.nav-icon-btn.active { background: var(--accent-subtle); color: var(--accent); }
 .nav-icon-btn svg { width: 15px; height: 15px; pointer-events: none; }
 
 /* ── Pages ───────────────────────────────────────────────────────────────────── */
@@ -309,15 +309,15 @@ body {
   font-size: 12px;
   font-weight: 500;
   border: 1px solid var(--border);
-  background: var(--surface);
+  background: var(--surface2);
   color: var(--text-muted);
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.12s;
   font-family: var(--font);
 }
-.chip:hover         { border-color: var(--border-strong); color: var(--text); }
-.chip.active        { background: var(--accent-bg); color: var(--accent-text); border-color: var(--accent-bg); }
+.chip:hover  { border-color: var(--border-strong); color: var(--text); }
+.chip.active { background: var(--accent-subtle); color: var(--accent); border-color: var(--accent); }
 
 .filter-sep {
   width: 1px;
@@ -346,7 +346,6 @@ thead th {
   user-select: none;
   text-align: left;
 }
-
 thead th.num { text-align: right; }
 
 tbody td {
@@ -425,7 +424,7 @@ tbody tr:hover td       { background: var(--surface-hover); }
   overflow: hidden;
   flex-shrink: 0;
 }
-.conf-fill { height: 100%; background: var(--text-muted); border-radius: 2px; }
+.conf-fill { height: 100%; background: var(--accent); border-radius: 2px; }
 .conf-label {
   font-family: var(--mono);
   font-size: 11px;
@@ -449,22 +448,22 @@ tbody tr:hover td       { background: var(--surface-hover); }
   transition: all 0.12s;
   font-family: var(--font);
 }
-.btn-primary { background: var(--accent-bg); color: var(--accent-text); }
+.btn-primary { background: var(--accent-bg); color: var(--accent-text); font-weight: 600; }
 .btn-primary:hover { opacity: 0.85; }
 .btn-ghost {
-  background: var(--surface);
+  background: var(--surface2);
   color: var(--text-muted);
   border: 1px solid var(--border);
 }
 .btn-ghost:hover { border-color: var(--border-strong); color: var(--text); }
-.btn-danger { background: var(--red-bg); color: var(--red); border: 1px solid rgba(220,38,38,0.2); }
-.btn-danger:hover { background: rgba(220,38,38,0.15); }
+.btn-danger { background: var(--red-bg); color: var(--red); border: 1px solid rgba(248,113,113,0.2); }
+.btn-danger:hover { background: rgba(248,113,113,0.15); }
 .btn-sm { padding: 4px 9px; font-size: 12px; }
 
 /* ── Inputs ──────────────────────────────────────────────────────────────────── */
 
 .input {
-  background: var(--surface);
+  background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 7px 11px;
@@ -475,11 +474,12 @@ tbody tr:hover td       { background: var(--surface-hover); }
   transition: border 0.12s;
   font-family: var(--font);
 }
-.input:focus { border-color: var(--border-strong); }
+.input:focus { border-color: var(--accent); }
+.input::placeholder { color: var(--text-faint); }
 
 .input-group { display: flex; gap: 8px; }
 
-/* ── Add-wallet bar ──────────────────────────────────────────────────────────── */
+/* ── Add-bar ─────────────────────────────────────────────────────────────────── */
 
 .add-bar {
   display: flex;
@@ -551,16 +551,9 @@ tbody tr:hover td       { background: var(--surface-hover); }
   100% { background-position: -200% 0; }
 }
 
-.skeleton-row td {
-  padding: 12px;
-  border-bottom: 1px solid var(--border);
-}
-.skeleton-cell {
-  height: 11px;
-  border-radius: var(--radius-sm);
-}
+.skeleton-cell { height: 11px; border-radius: var(--radius-sm); }
 
-/* ── Loading fallback ────────────────────────────────────────────────────────── */
+/* ── Loading ─────────────────────────────────────────────────────────────────── */
 
 .loading {
   display: flex;
@@ -575,7 +568,7 @@ tbody tr:hover td       { background: var(--surface-hover); }
   width: 15px;
   height: 15px;
   border: 2px solid var(--border);
-  border-top-color: var(--text-muted);
+  border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
   flex-shrink: 0;
@@ -618,7 +611,7 @@ tbody tr:hover td       { background: var(--surface-hover); }
 }
 .notif-item:hover { background: var(--surface2); }
 .notif-item.unread { border-left: 3px solid var(--accent); }
-.notif-type  { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 2px; font-weight: 600; }
+.notif-type  { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--accent); margin-bottom: 2px; font-weight: 600; }
 .notif-msg   { font-size: 12px; color: var(--text); word-break: break-all; }
 .notif-time  { font-size: 10px; color: var(--text-faint); margin-top: 3px; }
 .notif-empty { padding: 24px; text-align: center; color: var(--text-muted); font-size: 13px; }
@@ -633,16 +626,7 @@ tbody tr:hover td       { background: var(--surface-hover); }
 /* ── Progress bar ────────────────────────────────────────────────────────────── */
 
 .progress-bar  { height: 4px; background: var(--surface2); border-radius: 2px; overflow: hidden; }
-.progress-fill { height: 100%; border-radius: 2px; background: var(--text-muted); transition: width 0.3s; }
-
-/* ── Sparkline ───────────────────────────────────────────────────────────────── */
-
-.sparkline-cell { padding: 6px 12px; width: 80px; }
-.sparkline-cell svg { display: block; }
-
-/* ── Section divider ─────────────────────────────────────────────────────────── */
-
-.section-divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+.progress-fill { height: 100%; border-radius: 2px; background: var(--accent); transition: width 0.3s; }
 
 /* ── Phase legend strip ──────────────────────────────────────────────────────── */
 
@@ -655,21 +639,21 @@ tbody tr:hover td       { background: var(--surface-hover); }
   background: var(--surface);
 }
 
-/* ── Tabs (legacy — used in phase history coin selector) ─────────────────────── */
+/* ── Tabs ────────────────────────────────────────────────────────────────────── */
 
 .tabs { display: flex; gap: 2px; }
-.tab {
+.tab  {
   padding: 4px 10px;
   border-radius: var(--radius-pill);
   cursor: pointer;
   font-size: 12px;
   color: var(--text-muted);
   border: 1px solid var(--border);
-  background: var(--surface);
+  background: var(--surface2);
   transition: all 0.12s;
   font-family: var(--font);
 }
-.tab.active { background: var(--accent-bg); color: var(--accent-text); border-color: var(--accent-bg); }
+.tab.active { background: var(--accent-subtle); color: var(--accent); border-color: var(--accent); }
 .tab:hover:not(.active) { border-color: var(--border-strong); color: var(--text); }
 
 /* ── Scrollbar ───────────────────────────────────────────────────────────────── */
