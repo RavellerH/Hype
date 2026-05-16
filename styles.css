@@ -476,10 +476,408 @@ tr:hover td { background: var(--surface-hover); }
   .intel-main-grid { grid-template-columns: 1fr; }
   .intel-posture-verdict { font-size: 15px !important; }
   .intel-radar-score { font-size: 36px; }
+  .mvrv-grid { grid-template-columns: repeat(2, 1fr); }
+  .mvrv-legend { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 380px) {
   .stat-value { font-size: 14px; }
   .bottom-nav-item { min-width: 44px; font-size: 8px; }
   .bnav-icon { font-size: 15px; }
+  .mvrv-grid { grid-template-columns: 1fr; }
+}
+
+/* ── MVRV Monitor ────────────────────────────────────────────────────────────── */
+
+.mvrv-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.mvrv-card {
+  background: var(--surface);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mvrv-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.mvrv-coin {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.3px;
+}
+
+.mvrv-coin-name {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+.mvrv-ratio {
+  font-family: var(--mono);
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.mvrv-ratio-label {
+  font-size: 10px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-top: -6px;
+}
+
+.mvrv-sparkline {
+  margin: 2px 0;
+}
+
+.mvrv-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+.mvrv-stat-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.mvrv-stat-val {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.mvrv-desc {
+  font-size: 11px;
+  color: var(--text-faint);
+  line-height: 1.4;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+
+.mvrv-zone-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
+.mvrv-zone-hot     { background: var(--red-bg);    color: var(--red); }
+.mvrv-zone-bull    { background: var(--yellow-bg); color: var(--yellow); }
+.mvrv-zone-neutral { background: var(--surface2);  color: var(--text-muted); }
+.mvrv-zone-under   { background: var(--green-bg);  color: var(--green); }
+
+.mvrv-legend {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  padding: 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.mvrv-legend-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.mvrv-legend-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.4;
+  padding-top: 2px;
+}
+
+/* ── AI Knowledge Base ───────────────────────────────────────────────────────── */
+
+.chat-wrap {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - var(--topbar-h) - 120px);
+  min-height: 320px;
+}
+
+.chat-history {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--bg);
+}
+
+.chat-empty {
+  margin: auto;
+  color: var(--text-faint);
+  font-size: 13px;
+  text-align: center;
+}
+
+.chat-bubble {
+  max-width: 80%;
+  padding: 10px 14px;
+  border-radius: var(--radius-lg);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.chat-bubble.user {
+  align-self: flex-end;
+  background: var(--accent-subtle);
+  color: var(--accent);
+  border: 1px solid rgba(56,189,248,0.2);
+}
+.chat-bubble.assistant {
+  align-self: flex-start;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  max-width: 92%;
+}
+
+.chat-answer code {
+  background: var(--surface2);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.chat-sources {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.chat-sources-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-faint);
+  margin-bottom: 6px;
+}
+
+.chat-source {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  font-size: 11px;
+}
+
+.chat-source-type {
+  background: var(--surface2);
+  color: var(--text-muted);
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.chat-source-title { color: var(--text-muted); font-family: var(--mono); }
+.chat-source-score { color: var(--text-faint); margin-left: auto; }
+
+.chat-powered-by {
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--text-faint);
+  text-align: right;
+}
+
+.chat-input-row {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+
+.chat-input { flex: 1; }
+
+.kgraph-node circle  { transition: fill-opacity 0.15s; }
+.kgraph-node:hover circle { fill-opacity: 0.45; }
+
+.wiki-list { background: var(--surface); }
+
+.wiki-file { border-bottom: 1px solid var(--border); }
+
+.wiki-file-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  cursor: pointer;
+  user-select: none;
+  gap: 12px;
+}
+.wiki-file-header:hover { background: var(--surface-hover); }
+
+.wiki-filename {
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--mono);
+  color: var(--text);
+}
+
+.wiki-lang {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-subtle);
+  color: var(--accent);
+  margin-left: 6px;
+  font-weight: 600;
+}
+
+.wiki-path {
+  display: block;
+  font-size: 10px;
+  color: var(--text-faint);
+  font-family: var(--mono);
+  margin-top: 2px;
+}
+
+.wiki-chevron { font-size: 10px; color: var(--text-faint); flex-shrink: 0; }
+
+.wiki-entries { background: var(--bg); }
+
+.wiki-entry {
+  padding: 10px 16px 10px 32px;
+  border-top: 1px solid var(--border);
+}
+
+.wiki-entry-type {
+  display: inline-flex;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-weight: 600;
+  margin-right: 6px;
+}
+.wiki-entry-type.function { background: rgba(129,140,248,0.12); color: #818cf8; }
+.wiki-entry-type.class    { background: rgba(251,191,36,0.12);  color: var(--yellow); }
+
+.wiki-entry-name {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.wiki-entry-line {
+  font-size: 10px;
+  color: var(--text-faint);
+  margin-left: 6px;
+}
+
+.wiki-snippet {
+  margin-top: 6px;
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  overflow: hidden;
+  max-height: 80px;
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+}
+
+.notes-wrap {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--bg);
+  min-height: 400px;
+}
+
+.note-add {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.note-textarea {
+  resize: vertical;
+  min-height: 72px;
+  font-family: var(--font);
+}
+
+.notes-list { display: flex; flex-direction: column; gap: 8px; }
+
+.note-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+}
+
+.note-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+
+.note-title { flex: 1; font-size: 13px; color: var(--text); }
+
+.note-body {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+.ai-stat-strip {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.ai-stat-cell {
+  flex: 1;
+  padding: 10px 14px;
+  border-right: 1px solid var(--border);
+}
+.ai-stat-cell:last-child { border-right: none; }
+
+.ai-stat-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 3px;
+}
+
+.ai-stat-val {
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
 }

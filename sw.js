@@ -1,9 +1,10 @@
-const CACHE = 'hype-v1';
+const CACHE = 'hype-v2';
 const STATIC = [
   './',
   './styles.css',
   './app.js',
   './intel.js',
+  './mvrv-ai.js',
   './icons/icon.svg',
   './manifest.json',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap',

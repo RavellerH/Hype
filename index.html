@@ -30,6 +30,8 @@
       <button class="topbar-tab"        data-page="markets"   onclick="navigate('markets')">Markets</button>
       <button class="topbar-tab"        data-page="phases"    onclick="navigate('phases')">Phases</button>
       <button class="topbar-tab"        data-page="intel"     onclick="navigate('intel')">Intel</button>
+      <button class="topbar-tab"        data-page="mvrv"      onclick="navigate('mvrv')">MVRV</button>
+      <button class="topbar-tab"        data-page="ai"        onclick="navigate('ai')">AI</button>
       <button class="topbar-tab"        data-page="watchlist" onclick="navigate('watchlist')">Watchlist</button>
     </nav>
 
@@ -55,6 +57,8 @@
     <a class="nav-item"        data-page="markets"   onclick="navigate('markets')"   title="Markets"><span class="icon">🌊</span></a>
     <a class="nav-item"        data-page="phases"    onclick="navigate('phases')"    title="Phases"><span class="icon">🔵</span></a>
     <a class="nav-item"        data-page="intel"     onclick="navigate('intel')"     title="Intel"><span class="icon">📡</span></a>
+    <a class="nav-item"        data-page="mvrv"      onclick="navigate('mvrv')"      title="MVRV"><span class="icon">📈</span></a>
+    <a class="nav-item"        data-page="ai"        onclick="navigate('ai')"        title="AI"><span class="icon">🤖</span></a>
     <a class="nav-item"        data-page="watchlist" onclick="navigate('watchlist')" title="Watchlist"><span class="icon">👛</span></a>
   </nav>
 
@@ -68,6 +72,12 @@
     </button>
     <button class="bottom-nav-item" data-page="intel" onclick="navigate('intel')">
       <span class="bnav-icon">📡</span><span>Intel</span>
+    </button>
+    <button class="bottom-nav-item" data-page="mvrv" onclick="navigate('mvrv')">
+      <span class="bnav-icon">📈</span><span>MVRV</span>
+    </button>
+    <button class="bottom-nav-item" data-page="ai" onclick="navigate('ai')">
+      <span class="bnav-icon">🤖</span><span>AI</span>
     </button>
     <button class="bottom-nav-item" data-page="markets" onclick="navigate('markets')">
       <span class="bnav-icon">🌊</span><span>Markets</span>
@@ -92,11 +102,14 @@
     <div class="page"         id="page-markets"><div id="markets-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page"         id="page-phases"><div id="phases-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page"         id="page-intel"><div id="intel-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
+    <div class="page"         id="page-mvrv"><div id="mvrv-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
+    <div class="page"         id="page-ai"><div id="ai-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page"         id="page-watchlist"><div id="watchlist-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
   </main>
 
 <script src="intel.js"></script>
 <script src="app.js"></script>
+<script src="mvrv-ai.js"></script>
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW:', err));
