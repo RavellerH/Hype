@@ -149,8 +149,8 @@ let _intelLog = [];
 let _intelLoaded = false;
 
 // Supabase — fill in your project URL and anon key from supabase.com → Project Settings → API
-const _SUPABASE_URL      = 'YOUR_SUPABASE_URL';
-const _SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const _SUPABASE_URL      = 'https://eiqlvbylkcmgvksrxqld.supabase.co';
+const _SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpcWx2Ynlsa2NtZ3Zrc3J4cWxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5NTI4NjgsImV4cCI6MjA5NDUyODg2OH0.PcGDHYlajqwnZ7c3ZPtssG534kd3sKwE8aT1ROlFpo8';
 const _db = (_SUPABASE_URL.startsWith('https://') && window.supabase)
   ? window.supabase.createClient(_SUPABASE_URL, _SUPABASE_ANON_KEY)
   : null;
