@@ -145,28 +145,73 @@ function renderMVRV(data) {
 
 let _aiSubTab = 'intel';
 let _chatHistory = [];
-let _intelLog = JSON.parse(localStorage.getItem('hype_intel_log') || '[]');
+let _intelLog = [];
+let _intelLoaded = false;
 
-// Migrate old notes (backward-compat)
-(function migrateOldNotes() {
+// Supabase — fill in your project URL and anon key from supabase.com → Project Settings → API
+const _SUPABASE_URL      = 'YOUR_SUPABASE_URL';
+const _SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const _db = (_SUPABASE_URL.startsWith('https://') && window.supabase)
+  ? window.supabase.createClient(_SUPABASE_URL, _SUPABASE_ANON_KEY)
+  : null;
+
+async function loadIntelFromDB() {
+  if (_intelLoaded) return;
+  _intelLoaded = true;
   try {
-    const old = JSON.parse(localStorage.getItem('hype_kb_notes') || '[]');
-    if (old.length && !_intelLog.some(e => e._migrated)) {
-      const migrated = old.map(n => ({
+    // Migrate hype_kb_notes → hype_intel_log (legacy one-time)
+    const oldNotes = JSON.parse(localStorage.getItem('hype_kb_notes') || '[]');
+    if (oldNotes.length) {
+      const migrated = oldNotes.map(n => ({
         id: n.id || 'intel::' + Date.now() + Math.random(),
         timestamp: Date.now(), source: 'note',
         raw: (n.title ? n.title + '\n' : '') + (n.content || ''),
-        coins: [], signals: [], phase: null, _migrated: true,
+        coins: [], signals: [], phase: null,
       }));
-      _intelLog = [..._intelLog, ...migrated];
-      localStorage.setItem('hype_intel_log', JSON.stringify(_intelLog));
+      const prev = JSON.parse(localStorage.getItem('hype_intel_log') || '[]');
+      localStorage.setItem('hype_intel_log', JSON.stringify([...prev, ...migrated]));
+      localStorage.removeItem('hype_kb_notes');
     }
-  } catch(e) {}
-})();
+
+    if (_db) {
+      // One-time migration: push any localStorage intel → Supabase
+      const local = JSON.parse(localStorage.getItem('hype_intel_log') || '[]');
+      if (local.length > 0) {
+        await _db.from('intel_log').upsert(
+          local.map(e => ({ id: e.id, timestamp: e.timestamp, source: e.source || 'manual',
+            raw: e.raw || '', coins: e.coins || [], signals: e.signals || [], phase: e.phase || null })),
+          { onConflict: 'id' }
+        );
+        localStorage.removeItem('hype_intel_log');
+      }
+      const { data } = await _db.from('intel_log')
+        .select('id,timestamp,source,raw,coins,signals,phase')
+        .order('timestamp', { ascending: false });
+      _intelLog = data || [];
+      if (_intelLog.length === 0) await _seedDefaultIntel();
+    } else {
+      _intelLog = JSON.parse(localStorage.getItem('hype_intel_log') || '[]');
+      if (_intelLog.length === 0) await _seedDefaultIntel();
+    }
+  } catch(e) {
+    console.error('Intel load:', e);
+    _intelLog = JSON.parse(localStorage.getItem('hype_intel_log') || '[]');
+  }
+}
+
+async function _saveIntel(entry) {
+  if (_db) {
+    await _db.from('intel_log').upsert({
+      id: entry.id, timestamp: entry.timestamp, source: entry.source,
+      raw: entry.raw, coins: entry.coins, signals: entry.signals, phase: entry.phase || null,
+    });
+  } else {
+    localStorage.setItem('hype_intel_log', JSON.stringify(_intelLog));
+  }
+}
 
 // Pre-seed with Cryptowatch intel on first load
-(function seedDefaultIntel() {
-  if (_intelLog.length > 0) return;
+async function _seedDefaultIntel() {
   const T = 1778942400000; // 2026-05-16 14:44 UTC
   const seeds = [
     {
@@ -342,8 +387,15 @@ RISK TO THESIS: Smart money stays idle + BTC.D grinds higher without follow-thro
     },
   ];
   _intelLog = seeds;
-  localStorage.setItem('hype_intel_log', JSON.stringify(_intelLog));
-})();
+  if (_db) {
+    await _db.from('intel_log').upsert(
+      seeds.map(e => ({ id: e.id, timestamp: e.timestamp, source: e.source,
+        raw: e.raw, coins: e.coins, signals: e.signals, phase: e.phase || null }))
+    );
+  } else {
+    localStorage.setItem('hype_intel_log', JSON.stringify(_intelLog));
+  }
+}
 
 // ── Intel parsing ─────────────────────────────────────────────────────────────
 
@@ -438,13 +490,14 @@ function coinNodeColor(pct) {
 async function loadAI() {
   const el = document.getElementById('ai-content');
   if (!el) return;
+  el.innerHTML = '<div class="loading"><div class="spinner"></div> Loading intel…</div>';
+  await loadIntelFromDB();
   renderAIShell();
 }
 
 function renderAIShell() {
   const el = document.getElementById('ai-content');
   if (!el) return;
-  const apiKey    = localStorage.getItem('hype_anthropic_key') || '';
   const coinCount = [...new Set(_intelLog.flatMap(e => e.coins))].length;
   const lastDate  = _intelLog.length ? new Date(_intelLog[0].timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—';
 
@@ -452,7 +505,7 @@ function renderAIShell() {
     <div class="ai-stat-strip">
       <div class="ai-stat-cell"><div class="ai-stat-label">Intel Entries</div><div class="ai-stat-val">${_intelLog.length}</div></div>
       <div class="ai-stat-cell"><div class="ai-stat-label">Coins Tracked</div><div class="ai-stat-val">${coinCount}</div></div>
-      <div class="ai-stat-cell"><div class="ai-stat-label">AI Engine</div><div class="ai-stat-val" style="color:${apiKey ? 'var(--green)' : 'var(--text-muted)'}">${apiKey ? 'Claude' : 'Off'}</div></div>
+      <div class="ai-stat-cell"><div class="ai-stat-label">AI Engine</div><div class="ai-stat-val" style="color:var(--green)">Claude</div></div>
       <div class="ai-stat-cell"><div class="ai-stat-label">Last Intel</div><div class="ai-stat-val" style="font-size:12px">${lastDate}</div></div>
     </div>
     <div class="filter-bar" style="flex-wrap:wrap;gap:6px">
@@ -464,8 +517,7 @@ function renderAIShell() {
         }).join('')}
       </div>
       <div class="filter-sep"></div>
-      <input class="input" id="ai-key-input" placeholder="Anthropic key (sk-ant-…)" type="password" value="${aiEsc(apiKey)}" style="max-width:190px;padding:3px 10px;height:28px;font-size:12px">
-      <button class="btn btn-ghost btn-sm" onclick="saveAIKey()">Save</button>
+      <span style="font-size:11px;color:var(--text-muted)">Powered by Claude · key secured server-side</span>
     </div>
     <div id="ai-sub-content"></div>`;
 
@@ -475,13 +527,6 @@ function renderAIShell() {
 }
 
 function setAITab(tab) { _aiSubTab = tab; renderAIShell(); }
-
-function saveAIKey() {
-  const key = document.getElementById('ai-key-input')?.value?.trim();
-  if (key) localStorage.setItem('hype_anthropic_key', key);
-  else     localStorage.removeItem('hype_anthropic_key');
-  renderAIShell();
-}
 
 // ── Intel Log tab ─────────────────────────────────────────────────────────────
 
@@ -555,22 +600,26 @@ function toggleIntelExpand(id) {
   if (preview) preview.style.display = open ? '' : 'none';
 }
 
-function addIntel() {
+async function addIntel() {
   const source = document.getElementById('intel-source')?.value?.trim() || 'manual';
   const raw    = document.getElementById('intel-text')?.value?.trim();
   if (!raw) return;
   const parsed = parseIntel(raw);
   const entry  = { id: 'intel::' + Date.now(), timestamp: Date.now(), source, raw, ...parsed };
   _intelLog.unshift(entry);
-  localStorage.setItem('hype_intel_log', JSON.stringify(_intelLog));
+  await _saveIntel(entry);
   document.getElementById('intel-text').value = '';
   renderIntelTab();
 }
 
-function deleteIntel(id) {
+async function deleteIntel(id) {
   if (!confirm('Delete this intel entry? It cannot be recovered.')) return;
   _intelLog = _intelLog.filter(e => e.id !== id);
-  localStorage.setItem('hype_intel_log', JSON.stringify(_intelLog));
+  if (_db) {
+    await _db.from('intel_log').delete().eq('id', id);
+  } else {
+    localStorage.setItem('hype_intel_log', JSON.stringify(_intelLog));
+  }
   renderIntelTab();
 }
 
@@ -868,14 +917,6 @@ async function sendChat() {
   _chatHistory.push({ role: 'user', content: q });
   renderChatTab();
 
-  const apiKey = localStorage.getItem('hype_anthropic_key') || '';
-  if (!apiKey) {
-    _chatHistory.push({ role: 'assistant', content: '**No Anthropic API key set.** Enter your key above and click Save.\n\nGet a free key at **console.anthropic.com**' });
-    renderChatTab();
-    if (input) input.disabled = false;
-    return;
-  }
-
   let intelCtx = '', ctxLen = 0;
   for (const entry of _intelLog) {
     const line = `[${new Date(entry.timestamp).toLocaleDateString()} · ${entry.source}]\n${entry.raw}\n\n`;
@@ -897,15 +938,16 @@ async function sendChat() {
   ].filter(Boolean).join('\n');
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('/api/chat', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-client-side-use': 'true' },
-      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1024, system, messages: _chatHistory.map(m => ({ role: m.role, content: m.content })) }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ system, messages: _chatHistory.map(m => ({ role: m.role, content: m.content })) }),
     });
     const d = await res.json();
-    _chatHistory.push({ role: 'assistant', content: d.content?.[0]?.text || JSON.stringify(d.error || d) });
+    if (!res.ok) throw new Error(d.error || `HTTP ${res.status}`);
+    _chatHistory.push({ role: 'assistant', content: d.content || JSON.stringify(d) });
   } catch(e) {
-    _chatHistory.push({ role: 'assistant', content: `Network error: ${e.message}` });
+    _chatHistory.push({ role: 'assistant', content: `Error: ${e.message}` });
   }
   renderChatTab();
   if (input) input.disabled = false;
