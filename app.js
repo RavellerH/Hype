@@ -283,7 +283,7 @@ function navigate(page) {
   try {
     if (currentPage === 'monitor' && page !== 'monitor') disconnectWS();
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-    document.querySelectorAll('.nav-item,.bottom-nav-item').forEach(n=>n.classList.remove('active'));
+    document.querySelectorAll('.nav-item,.bottom-nav-item,.topbar-tab').forEach(n=>n.classList.remove('active'));
     const pageEl = document.getElementById(`page-${page}`);
     if (!pageEl) return;
     pageEl.classList.add('active');
