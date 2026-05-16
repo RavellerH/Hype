@@ -15,8 +15,8 @@
   --text-faint:    #9CA3AF;
 
   /* Accent */
-  --accent:        #111827;
-  --accent-bg:     #111827;
+  --accent:        #2563EB;
+  --accent-bg:     #2563EB;
   --accent-text:   #FFFFFF;
 
   /* Semantic */
@@ -141,7 +141,7 @@ body {
   font-family: var(--font);
 }
 .topbar-tab:hover  { color: var(--text); }
-.topbar-tab.active { color: var(--text); border-bottom-color: var(--accent); }
+.topbar-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
 .topbar-right {
   display: flex;
@@ -229,7 +229,7 @@ body {
   position: relative;
 }
 .nav-icon-btn:hover  { background: var(--surface2); color: var(--text); }
-.nav-icon-btn.active { background: var(--surface2); color: var(--text); }
+.nav-icon-btn.active { background: var(--blue-bg); color: var(--accent); }
 
 .nav-icon-btn svg { width: 15px; height: 15px; pointer-events: none; }
 
