@@ -46,7 +46,7 @@ function navigate(page) {
   const activeIcon = document.querySelector(`.nav-icon-btn[data-page="${page}"]`);
   if (activeIcon) activeIcon.classList.add('active');
 
-  const loaders = { overview: loadOverview, trades: loadTrades, funding: loadFunding, flows: loadFlows, phases: loadPhases, intel: loadIntel, watchlist: loadWatchlist, mvrv: loadMVRV, settings: loadSettings, journal: typeof loadJournal !== 'undefined' ? loadJournal : null };
+  const loaders = { overview: loadOverview, trades: loadTrades, funding: loadFunding, flows: loadFlows, phases: loadPhases, intel: loadIntel, watchlist: loadWatchlist, mvrv: loadMVRV, settings: loadSettings, journal: typeof loadJournal !== 'undefined' ? loadJournal : null, indicators: typeof loadIndicators !== 'undefined' ? loadIndicators : null };
   if (loaders[page]) loaders[page]();
 }
 
@@ -209,6 +209,40 @@ function scorePosition(p, marketCtx) {
   score -= liqDed; if (liqDed) flags.push(liqDetail);
   factors.push({ name: 'Liq. Proximity', status: liqStatus, detail: liqDetail, deduction: liqDed });
 
+  // 8. BMSB
+  let bmsbDed = 0, bmsbDetail, bmsbStatus = 'pass';
+  if (window._indData?.bmsb) {
+    const b = window._indData.bmsb;
+    if      (isLong  && b.signal === 'BEAR')    { bmsbDed = 15; bmsbDetail = `Price below BMSB — bear regime against long`;   bmsbStatus = 'fail'; }
+    else if (isLong  && b.signal === 'NEUTRAL') { bmsbDed =  5; bmsbDetail = `Price at BMSB edge — weak support`;             bmsbStatus = 'warn'; }
+    else if (!isLong && b.signal === 'BULL')    { bmsbDed = 10; bmsbDetail = `Price above BMSB — bull regime against short`;  bmsbStatus = 'warn'; }
+    else { bmsbDetail = b.signal === 'BULL' ? `Price above BMSB — bull regime` : `Price below BMSB — bear regime`; }
+  } else { bmsbDetail = 'BMSB data unavailable'; bmsbStatus = 'na'; }
+  score -= bmsbDed; if (bmsbDed) flags.push(bmsbDetail);
+  factors.push({ name: 'BMSB', status: bmsbStatus, detail: bmsbDetail, deduction: bmsbDed });
+
+  // 9. Fear & Greed
+  let fgDed = 0, fgDetail, fgStatus = 'pass';
+  if (window._indData?.fear_greed) {
+    const fg = window._indData.fear_greed;
+    if      (isLong  && fg.zone === 'EXTREME_GREED') { fgDed = 10; fgDetail = `F&G ${fg.value} — extreme greed, longs crowded`;  fgStatus = 'warn'; }
+    else if (!isLong && fg.zone === 'EXTREME_FEAR')  { fgDed = 10; fgDetail = `F&G ${fg.value} — extreme fear, shorts crowded`; fgStatus = 'warn'; }
+    else { fgDetail = `F&G ${fg.value} (${fg.classification})`; }
+  } else { fgDetail = 'F&G data unavailable'; fgStatus = 'na'; }
+  score -= fgDed; if (fgDed) flags.push(fgDetail);
+  factors.push({ name: 'Fear & Greed', status: fgStatus, detail: fgDetail, deduction: fgDed });
+
+  // 10. Pi Cycle Top
+  let piDed = 0, piDetail, piStatus = 'pass';
+  if (window._indData?.pi_cycle) {
+    const pi = window._indData.pi_cycle;
+    if      (isLong && pi.signal === 'TOP')     { piDed = 20; piDetail = `Pi Cycle Top fired — major distribution zone`;            piStatus = 'fail'; }
+    else if (isLong && pi.signal === 'WARNING') {             piDetail = `Pi Cycle ${pi.proximity}% to top — approaching distribution`; piStatus = 'warn'; }
+    else { piDetail = `Pi Cycle ${pi.proximity}% to top`; }
+  } else { piDetail = 'Pi Cycle data unavailable'; piStatus = 'na'; }
+  score -= piDed; if (piDed) flags.push(piDetail);
+  factors.push({ name: 'Pi Cycle', status: piStatus, detail: piDetail, deduction: piDed });
+
   score = Math.max(0, Math.min(100, score));
   return {
     score,
@@ -330,6 +364,7 @@ async function loadOverview() {
     if (typeof _mvrvData === 'undefined' || !_mvrvData) {
       fetch(`${API}/api/mvrv`).then(r => r.json()).then(d => { _mvrvData = d; }).catch(() => {});
     }
+    if (typeof fetchIndicators === 'function') fetchIndicators().catch(() => {});
     if (typeof pmClearStale === 'function') pmClearStale((posData.positions || []).map(p => p.coin));
     renderOverview(posData.summary, posData.positions, mktCtx);
   } catch(e) { el.innerHTML = `<div class="loading">Error: ${e.message}</div>`; }

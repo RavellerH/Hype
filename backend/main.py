@@ -524,3 +524,36 @@ async def configure_telegram(body: TelegramConfig):
 async def telegram_status():
     from config import TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
     return {"enabled": bool(TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID)}
+
+
+# ── On-chain / Macro Indicators ───────────────────────────────────────────────
+
+_ind_cache: dict = {}
+_ind_cache_ts: float = 0.0
+_IND_TTL = 300
+
+
+@app.get("/api/indicators")
+async def get_indicators():
+    global _ind_cache, _ind_cache_ts
+    now = time.time()
+    if _ind_cache and now - _ind_cache_ts < _IND_TTL:
+        return _ind_cache
+
+    async with _httpx.AsyncClient(timeout=15) as client:
+        fg_resp, weekly_resp, daily_resp = await asyncio.gather(
+            client.get("https://api.alternative.me/fng/?limit=30"),
+            client.get("https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1w&limit=160"),
+            client.get("https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=400"),
+            return_exceptions=True,
+        )
+
+    result = {
+        "fear_greed": fg_resp.json() if not isinstance(fg_resp, Exception) else None,
+        "btc_weekly": weekly_resp.json() if not isinstance(weekly_resp, Exception) else None,
+        "btc_daily": daily_resp.json() if not isinstance(daily_resp, Exception) else None,
+        "floors": {"realized": 72000, "balanced": 41000, "cvdd": 45000, "terminal": 290000},
+    }
+    _ind_cache = result
+    _ind_cache_ts = now
+    return result
