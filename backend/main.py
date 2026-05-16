@@ -277,6 +277,104 @@ async def get_candles_endpoint(coin: str, interval: str = "1h", days: int = 7):
     return {"coin": coin, "interval": interval, "candles": candles}
 
 
+# ── MVRV Monitor (approx via CoinGecko free API) ──────────────────────────────
+
+import httpx as _httpx
+
+_mvrv_cache: dict = {}
+_mvrv_cache_ts: float = 0.0
+_MVRV_TTL = 300  # 5-minute cache to stay within CoinGecko free-tier rate limits
+
+_MVRV_COINS = {
+    "BTC":  "bitcoin",
+    "ETH":  "ethereum",
+    "SOL":  "solana",
+    "HYPE": "hyperliquid",
+}
+
+
+def _mvrv_zone(ratio: float) -> str:
+    if ratio >= 1.4:  return "OVERHEATED"
+    if ratio >= 1.15: return "BULLISH"
+    if ratio >= 0.85: return "NEUTRAL"
+    return "UNDERVALUED"
+
+
+@app.get("/api/mvrv")
+async def get_mvrv():
+    global _mvrv_cache, _mvrv_cache_ts
+    if _mvrv_cache and (time.time() - _mvrv_cache_ts) < _MVRV_TTL:
+        return _mvrv_cache
+
+    results: dict[str, Any] = {}
+    cg_base = "https://api.coingecko.com/api/v3"
+
+    async with _httpx.AsyncClient(timeout=20.0) as client:
+        try:
+            ids_str = ",".join(_MVRV_COINS.values())
+            r = await client.get(
+                f"{cg_base}/simple/price",
+                params={"ids": ids_str, "vs_currencies": "usd",
+                        "include_market_cap": "true", "include_24hr_change": "true"},
+            )
+            prices_now = r.json() if r.status_code == 200 else {}
+        except Exception:
+            prices_now = {}
+
+        for symbol, cg_id in _MVRV_COINS.items():
+            now = prices_now.get(cg_id, {})
+            current_price = now.get("usd") or 0.0
+            market_cap    = now.get("usd_market_cap") or 0.0
+            change_24h    = now.get("usd_24h_change") or 0.0
+
+            chart: list[dict] = []
+            mvrv    = 1.0
+            avg_90d = current_price
+
+            try:
+                rh = await client.get(
+                    f"{cg_base}/coins/{cg_id}/market_chart",
+                    params={"vs_currency": "usd", "days": "90", "interval": "daily"},
+                )
+                if rh.status_code == 200:
+                    raw = rh.json().get("prices", [])  # [[ts_ms, price], ...]
+                    if len(raw) >= 10:
+                        tss    = [p[0] for p in raw]
+                        prices = [p[1] for p in raw]
+                        avg_90d = sum(prices) / len(prices)
+                        mvrv    = prices[-1] / avg_90d if avg_90d else 1.0
+                        # Rolling 30-day window MVRV for the chart
+                        for i in range(30, len(prices)):
+                            window = prices[i - 30: i]
+                            avg_w  = sum(window) / len(window)
+                            chart.append({
+                                "t": tss[i],
+                                "v": round(prices[i] / avg_w, 4) if avg_w else 1.0,
+                            })
+            except Exception:
+                pass
+
+            results[symbol] = {
+                "symbol":     symbol,
+                "price":      current_price,
+                "market_cap": market_cap,
+                "change_24h": round(change_24h, 2),
+                "mvrv":       round(mvrv, 4),
+                "avg_90d":    round(avg_90d, 4),
+                "zone":       _mvrv_zone(mvrv),
+                "chart":      chart,
+            }
+
+    payload: dict[str, Any] = {
+        "coins":   results,
+        "source":  "CoinGecko · approx MVRV = price ÷ 90-day avg",
+        "updated": int(time.time()),
+    }
+    _mvrv_cache    = payload
+    _mvrv_cache_ts = time.time()
+    return payload
+
+
 # ── Watchlist ────────────────────────────────────────────────────────────────
 
 class WalletBody(BaseModel):
