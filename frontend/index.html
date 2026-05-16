@@ -30,6 +30,7 @@
       <button class="topbar-tab"        data-page="funding"   onclick="navigate('funding')">Funding</button>
       <button class="topbar-tab"        data-page="flows"     onclick="navigate('flows')">Flows</button>
       <button class="topbar-tab"        data-page="phases"    onclick="navigate('phases')">Phases</button>
+      <button class="topbar-tab"        data-page="intel"     onclick="navigate('intel')">Intel</button>
       <button class="topbar-tab"        data-page="watchlist" onclick="navigate('watchlist')">Watchlist</button>
       <button class="topbar-tab"        data-page="settings"  onclick="navigate('settings')">Settings</button>
     </nav>
@@ -74,6 +75,9 @@
     <button class="nav-icon-btn" data-page="phases" onclick="navigate('phases')" title="Phase Detector">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
     </button>
+    <button class="nav-icon-btn" data-page="intel" onclick="navigate('intel')" title="Intel">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z"/><path d="M12 8v4"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg>
+    </button>
     <button class="nav-icon-btn" data-page="watchlist" onclick="navigate('watchlist')" title="Watchlist">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
     </button>
@@ -115,6 +119,12 @@
       </div>
     </div>
 
+    <div class="page" id="page-intel">
+      <div id="intel-content">
+        <div class="loading"><div class="spinner"></div> Loading…</div>
+      </div>
+    </div>
+
     <div class="page" id="page-watchlist">
       <div id="watchlist-content">
         <div class="loading"><div class="spinner"></div> Loading…</div>
@@ -130,6 +140,8 @@
   </main>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="/static/js/intel.js"></script>
 <script src="/static/js/app.js"></script>
 <script>
   if ('serviceWorker' in navigator) {
