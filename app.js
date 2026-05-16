@@ -182,6 +182,21 @@ function scorePosition(p, marketCtx) {
   }else{liqDetail='No liquidation risk (cross margin)';}
   score-=liqDed; if(liqDed)flags.push(liqDetail);
   factors.push({name:'Liq. Proximity',status:liqStatus,detail:liqDetail,deduction:liqDed});
+  // 8. BMSB
+  let bmsbDed=0,bmsbDetail,bmsbStatus='pass';
+  if(window._indData?.bmsb){const b=window._indData.bmsb;if(isLong&&b.signal==='BEAR'){bmsbDed=15;bmsbDetail=`Price below BMSB — bear regime against long`;bmsbStatus='fail';}else if(isLong&&b.signal==='NEUTRAL'){bmsbDed=5;bmsbDetail=`Price at BMSB edge — weak support`;bmsbStatus='warn';}else if(!isLong&&b.signal==='BULL'){bmsbDed=10;bmsbDetail=`Price above BMSB — bull regime against short`;bmsbStatus='warn';}else{bmsbDetail=b.signal==='BULL'?`Price above BMSB — bull regime`:`Price below BMSB — bear regime`;}}else{bmsbDetail='BMSB data unavailable';bmsbStatus='na';}
+  score-=bmsbDed;if(bmsbDed)flags.push(bmsbDetail);
+  factors.push({name:'BMSB',status:bmsbStatus,detail:bmsbDetail,deduction:bmsbDed});
+  // 9. Fear & Greed
+  let fgDed=0,fgDetail,fgStatus='pass';
+  if(window._indData?.fear_greed){const fg=window._indData.fear_greed;if(isLong&&fg.zone==='EXTREME_GREED'){fgDed=10;fgDetail=`F&G ${fg.value} — extreme greed, longs crowded`;fgStatus='warn';}else if(!isLong&&fg.zone==='EXTREME_FEAR'){fgDed=10;fgDetail=`F&G ${fg.value} — extreme fear, shorts crowded`;fgStatus='warn';}else{fgDetail=`F&G ${fg.value} (${fg.classification})`;}}else{fgDetail='F&G data unavailable';fgStatus='na';}
+  score-=fgDed;if(fgDed)flags.push(fgDetail);
+  factors.push({name:'Fear & Greed',status:fgStatus,detail:fgDetail,deduction:fgDed});
+  // 10. Pi Cycle Top
+  let piDed=0,piDetail,piStatus='pass';
+  if(window._indData?.pi_cycle){const pi=window._indData.pi_cycle;if(isLong&&pi.signal==='TOP'){piDed=20;piDetail=`Pi Cycle Top fired — major distribution zone`;piStatus='fail';}else if(isLong&&pi.signal==='WARNING'){piDetail=`Pi Cycle ${pi.proximity}% to top — approaching distribution`;piStatus='warn';}else{piDetail=`Pi Cycle ${pi.proximity}% to top`;}}else{piDetail='Pi Cycle data unavailable';piStatus='na';}
+  score-=piDed;if(piDed)flags.push(piDetail);
+  factors.push({name:'Pi Cycle',status:piStatus,detail:piDetail,deduction:piDed});
   score=Math.max(0,Math.min(100,score));
   return { score, grade:score>=70?'OK':score>=40?'CAUTION':'RISKY',
     cls:score>=70?'health-ok':score>=40?'health-caution':'health-risky', flags, factors };
@@ -458,7 +473,7 @@ function navigate(page) {
     pageEl.classList.add('active');
     document.querySelectorAll(`[data-page="${page}"]`).forEach(el=>el.classList.add('active'));
     currentPage = page;
-    const loaders={overview:loadOverview,trades:loadTrades,funding:loadFunding,flows:loadFlows,monitor:loadMonitor,markets:loadMarkets,phases:loadPhases,intel:typeof loadIntel!=='undefined'?loadIntel:null,watchlist:loadWatchlist,journal:typeof loadJournal!=='undefined'?loadJournal:null};
+    const loaders={overview:loadOverview,trades:loadTrades,funding:loadFunding,flows:loadFlows,monitor:loadMonitor,markets:loadMarkets,phases:loadPhases,intel:typeof loadIntel!=='undefined'?loadIntel:null,watchlist:loadWatchlist,journal:typeof loadJournal!=='undefined'?loadJournal:null,indicators:typeof loadIndicators!=='undefined'?loadIndicators:null};
     if(loaders[page]) loaders[page]();
   } catch(e) { console.error('navigate error:', e); }
 }
@@ -606,6 +621,7 @@ async function loadOverview(){
     const totalPortfolio = s.account_value + spotTotalValue;
 
     _ovData = {s, positions, spotBals, usdcBalance, orders, totalPortfolio, spotTotalValue, spotUnrPnl, totalUnr, marketCtx};
+    if(typeof fetchIndicators==='function')fetchIndicators().catch(()=>{});
 
     el.innerHTML = `
       <div class="section-header" style="margin-bottom:14px">
@@ -772,7 +788,8 @@ function renderMarkets(){
   const gainers=allMarketData.filter(d=>d.change_pct>0).length;
   const losers=allMarketData.filter(d=>d.change_pct<0).length;
 
-  el.innerHTML=`
+  const indRow=(()=>{const ind=window._indData;if(!ind)return'';const fg=ind.fear_greed,bmsb=ind.bmsb;const fgCls=fg?(fg.value<30?'neg':fg.value>70?'pos':'muted'):'muted';const bmsbCls=bmsb?(bmsb.signal==='BULL'?'pos':bmsb.signal==='BEAR'?'neg':'yellow'):'muted';return`<div class="ind-strip" style="margin-bottom:14px">${fg?`<div class="ind-chip"><span class="ind-label">F&G</span><span class="${fgCls} mono">${fg.value}</span><span class="ind-badge ind-${fg.zone.toLowerCase()}">${fg.classification}</span></div>`:''}${bmsb?`<div class="ind-chip"><span class="ind-label">BMSB</span><span class="${bmsbCls} mono">${bmsb.signal}</span><span class="ind-badge ind-${bmsb.signal.toLowerCase()}">${bmsb.signal}</span></div>`:''}${ind.pi_cycle?`<div class="ind-chip"><span class="ind-label">Pi Cycle</span><span class="mono">${ind.pi_cycle.proximity}%</span><span class="ind-badge ind-${ind.pi_cycle.signal.toLowerCase()}">${ind.pi_cycle.signal}</span></div>`:''}</div>`;})();
+  el.innerHTML=`${indRow}
     <!-- Summary stats -->
     <div class="grid-3" style="margin-bottom:14px">
       <div class="stat-card"><div class="stat-label">Total OI</div><div class="stat-value">${fmtB(totalOI)}</div><div class="stat-sub">Open Interest</div></div>

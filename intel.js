@@ -164,6 +164,21 @@ function _verdictCls(v) {
 
 // ── Render Intel Page ─────────────────────────────────────────────────────────
 
+function intelIndicatorStrip() {
+  const ind = window._indData;
+  if (!ind) return `<div class="ind-strip-loading">Loading indicators… <span class="muted">(visit Indicators tab first or wait)</span></div>`;
+  const fg = ind.fear_greed, bmsb = ind.bmsb, pi = ind.pi_cycle;
+  const fgCls = fg ? (fg.value < 30 ? 'neg' : fg.value > 70 ? 'pos' : 'muted') : 'muted';
+  const bmsbCls = bmsb ? (bmsb.signal === 'BULL' ? 'pos' : bmsb.signal === 'BEAR' ? 'neg' : 'yellow') : 'muted';
+  const piCls = pi ? (pi.signal === 'TOP' ? 'neg' : pi.signal === 'WARNING' ? 'yellow' : 'pos') : 'muted';
+  return `<div class="ind-strip">
+    <div class="ind-chip"><span class="ind-label">F&G</span><span class="${fgCls} mono">${fg ? fg.value : '—'}</span><span class="ind-badge ind-${fg?.zone?.toLowerCase()||'neutral'}">${fg ? fg.classification : 'N/A'}</span></div>
+    <div class="ind-chip"><span class="ind-label">BMSB</span><span class="${bmsbCls} mono">${bmsb ? bmsb.signal : '—'}</span></div>
+    <div class="ind-chip"><span class="ind-label">Pi Cycle</span><span class="${piCls} mono">${pi ? pi.proximity+'%' : '—'}</span><span class="ind-badge ind-${pi?.signal?.toLowerCase()||'normal'}">${pi ? pi.signal : 'N/A'}</span></div>
+    <div class="ind-chip"><span class="ind-label">MVRV Z</span><span class="mono">${typeof _mvrvData !== 'undefined' && _mvrvData?.summary?.z_score ? _mvrvData.summary.z_score.toFixed(2) : '—'}</span></div>
+  </div>`;
+}
+
 function loadIntel() {
   const el = document.getElementById('intel-content');
   if (!el) return;
@@ -184,6 +199,7 @@ function loadIntel() {
   const evPct   = Math.round((evTotal / evMax) * 100);
 
   el.innerHTML = `
+    ${intelIndicatorStrip()}
 
     <!-- ─── Portfolio Posture Banner ──────────────────────────────────── -->
     <div class="intel-posture-banner">
