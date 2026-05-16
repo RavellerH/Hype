@@ -46,7 +46,7 @@ function navigate(page) {
   const activeIcon = document.querySelector(`.nav-icon-btn[data-page="${page}"]`);
   if (activeIcon) activeIcon.classList.add('active');
 
-  const loaders = { overview: loadOverview, trades: loadTrades, funding: loadFunding, flows: loadFlows, phases: loadPhases, intel: loadIntel, watchlist: loadWatchlist, mvrv: loadMVRV, settings: loadSettings };
+  const loaders = { overview: loadOverview, trades: loadTrades, funding: loadFunding, flows: loadFlows, phases: loadPhases, intel: loadIntel, watchlist: loadWatchlist, mvrv: loadMVRV, settings: loadSettings, journal: typeof loadJournal !== 'undefined' ? loadJournal : null };
   if (loaders[page]) loaders[page]();
 }
 
@@ -330,6 +330,7 @@ async function loadOverview() {
     if (typeof _mvrvData === 'undefined' || !_mvrvData) {
       fetch(`${API}/api/mvrv`).then(r => r.json()).then(d => { _mvrvData = d; }).catch(() => {});
     }
+    if (typeof pmClearStale === 'function') pmClearStale((posData.positions || []).map(p => p.coin));
     renderOverview(posData.summary, posData.positions, mktCtx);
   } catch(e) { el.innerHTML = `<div class="loading">Error: ${e.message}</div>`; }
 }
@@ -353,7 +354,7 @@ function renderOverview(summary, positions, marketCtx) {
   ];
 
   const rows = filtered.length === 0
-    ? `<tr><td colspan="9">${emptyState('No open positions')}</td></tr>`
+    ? `<tr><td colspan="10">${emptyState('No open positions')}</td></tr>`
     : filtered.map(p => {
         const h = scorePosition(p, marketCtx);
         _posHealthData[p.coin] = { coin: p.coin, side: p.side, ...h };
@@ -361,7 +362,7 @@ function renderOverview(summary, positions, marketCtx) {
           ? Math.abs((p.mark_price - p.liquidation_price) / p.mark_price * 100).toFixed(1) + '%'
           : null;
         return `<tr>
-          <td class="coin-cell">${p.coin}</td>
+          <td class="coin-cell" style="cursor:pointer" onclick="typeof openPositionDetail==='function'&&openPositionDetail('${p.coin}')">${p.coin}</td>
           <td><span class="side-badge ${p.side}">${p.side.toUpperCase()}</span></td>
           <td class="num">${p.size}</td>
           <td class="num">${fmt$(p.entry_price)}</td>
@@ -369,6 +370,7 @@ function renderOverview(summary, positions, marketCtx) {
           <td class="num ${p.unrealized_pnl >= 0 ? 'pos' : 'neg'}">${fmt$(p.unrealized_pnl)}</td>
           <td class="num ${p.cum_funding >= 0 ? 'pos' : 'neg'}">${p.cum_funding.toFixed(4)}</td>
           <td class="num muted">${p.leverage_value}× ${p.leverage_type}</td>
+          <td>${typeof posAgeBadge === 'function' ? posAgeBadge(p.coin) : ''}</td>
           <td>
             <span class="health-badge ${h.cls}" style="cursor:pointer" onclick="showHealthModal('${p.coin}')">
               <span class="health-score">${h.score}</span>
@@ -396,7 +398,7 @@ function renderOverview(summary, positions, marketCtx) {
           <th class="num">Size</th><th class="num">Entry</th>
           <th class="num">Liq. Price</th><th class="num">Unr. PnL</th>
           <th class="num">Funding</th><th class="num">Leverage</th>
-          <th>Health</th>
+          <th>Age</th><th>Health</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
