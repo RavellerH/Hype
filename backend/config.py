@@ -8,6 +8,13 @@ TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
 POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "30"))
 
+# WhatsApp via CallMeBot (free — add +34 644 59 78 53 on WhatsApp and send: I allow callmebot to send me messages)
+WHATSAPP_PHONE  = os.getenv("WHATSAPP_PHONE", "")   # international format: +1234567890
+WHATSAPP_APIKEY = os.getenv("WHATSAPP_APIKEY", "")  # received from CallMeBot after above step
+
+# Anthropic API — optional, enables LLM-powered answers in the AI/KB tab
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+
 HL_API_URL = "https://api.hyperliquid.xyz/info"
 HL_WS_URL = "wss://api.hyperliquid.xyz/ws"
 

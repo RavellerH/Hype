@@ -663,6 +663,271 @@ tbody tr:hover td       { background: var(--surface-hover); }
 ::-webkit-scrollbar-thumb   { background: var(--border-strong); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
 
+/* ── AI Knowledge Base ───────────────────────────────────────────────────────── */
+
+/* Chat */
+.chat-wrap {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - var(--topbar-h) - 120px);
+  min-height: 320px;
+}
+
+.chat-history {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--bg);
+}
+
+.chat-empty {
+  margin: auto;
+  color: var(--text-faint);
+  font-size: 13px;
+  text-align: center;
+}
+
+.chat-bubble {
+  max-width: 80%;
+  padding: 10px 14px;
+  border-radius: var(--radius-lg);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.chat-bubble.user {
+  align-self: flex-end;
+  background: var(--accent-subtle);
+  color: var(--accent);
+  border: 1px solid rgba(56,189,248,0.2);
+}
+.chat-bubble.assistant {
+  align-self: flex-start;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  max-width: 92%;
+}
+
+.chat-answer code {
+  background: var(--surface2);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.chat-sources {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.chat-sources-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-faint);
+  margin-bottom: 6px;
+}
+
+.chat-source {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  font-size: 11px;
+}
+
+.chat-source-type {
+  background: var(--surface2);
+  color: var(--text-muted);
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.chat-source-title { color: var(--text-muted); font-family: var(--mono); }
+.chat-source-score { color: var(--text-faint); margin-left: auto; }
+
+.chat-powered-by {
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--text-faint);
+  text-align: right;
+}
+
+.chat-input-row {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+
+.chat-input { flex: 1; }
+
+/* Graph */
+.kgraph-node circle  { transition: fill-opacity 0.15s; }
+.kgraph-node:hover circle { fill-opacity: 0.45; }
+
+/* Wiki */
+.wiki-list {
+  background: var(--surface);
+}
+
+.wiki-file {
+  border-bottom: 1px solid var(--border);
+}
+
+.wiki-file-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  cursor: pointer;
+  user-select: none;
+  gap: 12px;
+}
+.wiki-file-header:hover { background: var(--surface-hover); }
+
+.wiki-filename {
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--mono);
+  color: var(--text);
+}
+
+.wiki-lang {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-subtle);
+  color: var(--accent);
+  margin-left: 6px;
+  font-weight: 600;
+}
+
+.wiki-path {
+  display: block;
+  font-size: 10px;
+  color: var(--text-faint);
+  font-family: var(--mono);
+  margin-top: 2px;
+}
+
+.wiki-chevron {
+  font-size: 10px;
+  color: var(--text-faint);
+  flex-shrink: 0;
+}
+
+.wiki-entries { background: var(--bg); }
+
+.wiki-entry {
+  padding: 10px 16px 10px 32px;
+  border-top: 1px solid var(--border);
+}
+
+.wiki-entry-type {
+  display: inline-flex;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-weight: 600;
+  margin-right: 6px;
+}
+.wiki-entry-type.function { background: rgba(129,140,248,0.12); color: #818cf8; }
+.wiki-entry-type.class    { background: rgba(251,191,36,0.12);  color: var(--yellow); }
+
+.wiki-entry-name {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.wiki-entry-line {
+  font-size: 10px;
+  color: var(--text-faint);
+  margin-left: 6px;
+}
+
+.wiki-snippet {
+  margin-top: 6px;
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  overflow: hidden;
+  max-height: 80px;
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+}
+
+/* Notes */
+.notes-wrap {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--bg);
+  min-height: 400px;
+}
+
+.note-add {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.note-textarea {
+  resize: vertical;
+  min-height: 72px;
+  font-family: var(--font);
+}
+
+.notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.note-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+}
+
+.note-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.note-title {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.note-body {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
 /* ── MVRV Monitor ────────────────────────────────────────────────────────────── */
 
 .mvrv-grid {

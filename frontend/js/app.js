@@ -46,7 +46,7 @@ function navigate(page) {
   const activeIcon = document.querySelector(`.nav-icon-btn[data-page="${page}"]`);
   if (activeIcon) activeIcon.classList.add('active');
 
-  const loaders = { overview: loadOverview, trades: loadTrades, funding: loadFunding, flows: loadFlows, phases: loadPhases, watchlist: loadWatchlist, mvrv: loadMVRV, settings: loadSettings };
+  const loaders = { overview: loadOverview, trades: loadTrades, funding: loadFunding, flows: loadFlows, phases: loadPhases, watchlist: loadWatchlist, mvrv: loadMVRV, ai: loadAI, settings: loadSettings };
   if (loaders[page]) loaders[page]();
 }
 
@@ -746,7 +746,10 @@ async function refreshWallet(addr) {
 
 async function loadSettings() {
   const el = document.getElementById('settings-content');
-  const tgStatus = await fetch(`${API}/api/telegram/status`).then(r => r.json());
+  const [tgStatus, waStatus] = await Promise.all([
+    fetch(`${API}/api/telegram/status`).then(r => r.json()),
+    fetch(`${API}/api/whatsapp/status`).then(r => r.json()).catch(() => ({enabled: false, phone: ''})),
+  ]);
   el.innerHTML = `
     <div class="settings-section">
       <div class="settings-section-title">Telegram Alerts</div>
@@ -776,6 +779,36 @@ async function loadSettings() {
         <div></div>
         <div>
           <button class="btn btn-primary btn-sm" onclick="saveTelegram()">Save & Test</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">WhatsApp Alerts (CallMeBot)</div>
+      <div class="settings-row">
+        <div><div class="settings-row-label">Status</div></div>
+        <div><span class="tg-status ${waStatus.enabled ? 'on' : 'off'}">${waStatus.enabled ? '✓ Connected · ' + waStatus.phone : '✗ Not configured'}</span></div>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">Setup</div>
+          <div class="settings-row-desc">Add +34 644 59 78 53 on WhatsApp, then send:<br><code style="font-size:11px">I allow callmebot to send me messages</code></div>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);padding-top:8px">You'll receive your API key by WhatsApp within seconds</div>
+      </div>
+      <div class="settings-row">
+        <div><div class="settings-row-label">Your Phone</div><div class="settings-row-desc">International format</div></div>
+        <input class="input" id="wa-phone" placeholder="+1234567890" value="${waStatus.phone||''}">
+      </div>
+      <div class="settings-row">
+        <div><div class="settings-row-label">API Key</div><div class="settings-row-desc">Received from CallMeBot</div></div>
+        <input class="input" id="wa-key" placeholder="1234567" type="password">
+      </div>
+      <div class="settings-row">
+        <div></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary btn-sm" onclick="saveWhatsApp()">Save</button>
+          <button class="btn btn-ghost btn-sm" onclick="testWhatsApp()">Send Test</button>
         </div>
       </div>
     </div>
@@ -814,6 +847,20 @@ async function saveTelegram() {
     const data = await res.json();
     if (data.configured) { alert('Telegram configured!'); loadSettings(); }
   } catch(e) { alert('Error: ' + e.message); }
+}
+
+async function saveWhatsApp() {
+  const phone = document.getElementById('wa-phone')?.value?.trim();
+  const key   = document.getElementById('wa-key')?.value?.trim();
+  if (!phone || !key) { alert('Enter phone and API key'); return; }
+  const res  = await fetch(`${API}/api/whatsapp/configure`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({phone, apikey: key})});
+  const data = await res.json();
+  if (data.configured) { alert('WhatsApp saved!'); loadSettings(); }
+}
+
+async function testWhatsApp() {
+  const res  = await fetch(`${API}/api/whatsapp/test`, {method:'POST'}).then(r => r.json());
+  alert(res.ok ? '✅ Test message sent!' : `❌ Failed: ${res.status}`);
 }
 
 // ── Notifications ─────────────────────────────────────────────────────────────
@@ -879,6 +926,408 @@ function fmt$(n) {
 function fmtTime(ms) {
   if (!ms) return '—';
   return new Date(ms).toLocaleString('en-US', {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'});
+}
+
+// ── AI Knowledge Base ─────────────────────────────────────────────────────────
+
+let _aiSubTab = 'chat';
+let _chatHistory = [];
+let _kbStats = null;
+
+async function loadAI() {
+  const el = document.getElementById('ai-content');
+  try {
+    _kbStats = await fetch(`${API}/api/kb/stats`).then(r => r.json());
+  } catch(e) { _kbStats = null; }
+  renderAIShell();
+  if (_aiSubTab === 'chat')  renderChatTab();
+  if (_aiSubTab === 'graph') loadGraph();
+  if (_aiSubTab === 'wiki')  loadWiki();
+  if (_aiSubTab === 'notes') loadNotes();
+}
+
+function renderAIShell() {
+  const s = _kbStats;
+  const docs  = s ? s.total_documents : '—';
+  const code  = s ? (s.by_type?.code || 0) : '—';
+  const fns   = s ? (s.by_type?.function || 0) : '—';
+  const market= s ? (s.by_type?.market_data || 0) : '—';
+  const idxAt = s?.indexed_at ? new Date(s.indexed_at * 1000).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+
+  document.getElementById('ai-content').innerHTML = `
+    ${statStrip([
+      {label: 'Documents', value: docs, sub: `${code} files · ${fns} functions`},
+      {label: 'Market Snapshots', value: market, sub: 'auto-collected hourly'},
+      {label: 'Notes', value: s?.notes ?? '—', sub: 'custom research'},
+      {label: 'Last Indexed', value: idxAt || '—'},
+    ])}
+
+    <div class="filter-bar" style="justify-content:space-between">
+      <div style="display:flex;gap:6px">
+        ${['chat','graph','wiki','notes'].map(t =>
+          `<button class="chip${_aiSubTab===t?' active':''}" onclick="setAITab('${t}')">${t.charAt(0).toUpperCase()+t.slice(1)}</button>`
+        ).join('')}
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="reindexKB()">↺ Re-index</button>
+    </div>
+
+    <div id="ai-sub-content"></div>
+  `;
+}
+
+function setAITab(tab) {
+  _aiSubTab = tab;
+  renderAIShell();
+  if (tab === 'chat')  renderChatTab();
+  if (tab === 'graph') loadGraph();
+  if (tab === 'wiki')  loadWiki();
+  if (tab === 'notes') loadNotes();
+}
+
+async function reindexKB() {
+  const btn = event.target;
+  btn.disabled = true; btn.textContent = 'Indexing…';
+  try {
+    _kbStats = await fetch(`${API}/api/kb/index`, {method:'POST'}).then(r => r.json());
+    renderAIShell();
+    if (_aiSubTab === 'chat')  renderChatTab();
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ── Chat sub-tab ──────────────────────────────────────────────────────────────
+
+function renderChatTab() {
+  const el = document.getElementById('ai-sub-content');
+  if (!el) return;
+
+  const historyHtml = _chatHistory.length === 0
+    ? `<div class="chat-empty">Ask anything about the codebase, market data, or trading history.</div>`
+    : _chatHistory.map(m => m.role === 'user'
+        ? `<div class="chat-bubble user">${escHtml(m.content)}</div>`
+        : `<div class="chat-bubble assistant">
+            <div class="chat-answer">${markdownToHtml(m.content)}</div>
+            ${m.sources?.length ? `<div class="chat-sources">
+              <div class="chat-sources-label">Sources</div>
+              ${m.sources.map(s => `
+                <div class="chat-source">
+                  <span class="chat-source-type">${s.type}</span>
+                  <span class="chat-source-title">${escHtml(s.title)}</span>
+                  <span class="chat-source-score">score ${s.score}</span>
+                </div>`).join('')}
+            </div>` : ''}
+            ${m.powered_by ? `<div class="chat-powered-by">powered by ${m.powered_by}</div>` : ''}
+           </div>`
+      ).join('');
+
+  el.innerHTML = `
+    <div class="chat-wrap">
+      <div class="chat-history" id="chat-history">${historyHtml}</div>
+      <div class="chat-input-row">
+        <input class="input chat-input" id="chat-input" placeholder="Ask about the code, MVRV, phases, trades…" onkeydown="if(event.key==='Enter')sendChat()">
+        <button class="btn btn-primary" onclick="sendChat()">Send</button>
+        ${_chatHistory.length ? `<button class="btn btn-ghost btn-sm" onclick="clearChat()">Clear</button>` : ''}
+      </div>
+    </div>
+  `;
+  const h = document.getElementById('chat-history');
+  if (h) h.scrollTop = h.scrollHeight;
+  document.getElementById('chat-input')?.focus();
+}
+
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const q = input?.value?.trim();
+  if (!q) return;
+  input.value = '';
+  input.disabled = true;
+
+  _chatHistory.push({role:'user', content: q});
+  renderChatTab();
+
+  try {
+    const res = await fetch(`${API}/api/kb/ask`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({question: q}),
+    }).then(r => r.json());
+    _chatHistory.push({role:'assistant', content: res.answer, sources: res.sources, powered_by: res.powered_by});
+  } catch(e) {
+    _chatHistory.push({role:'assistant', content: `Error: ${e.message}`});
+  }
+  renderChatTab();
+}
+
+function clearChat() {
+  _chatHistory = [];
+  renderChatTab();
+}
+
+// ── Graph sub-tab ─────────────────────────────────────────────────────────────
+
+async function loadGraph() {
+  const el = document.getElementById('ai-sub-content');
+  if (!el) return;
+  el.innerHTML = '<div class="loading"><div class="spinner"></div> Building knowledge graph…</div>';
+  try {
+    const data = await fetch(`${API}/api/kb/graph`).then(r => r.json());
+    renderGraph(data);
+  } catch(e) {
+    el.innerHTML = `<div class="loading" style="color:var(--red)">Error: ${e.message}</div>`;
+  }
+}
+
+const TYPE_COLORS = {
+  file:     '#38bdf8',
+  function: '#818cf8',
+  coin:     '#4ade80',
+  phase:    '#fbbf24',
+  note:     '#fb923c',
+};
+const TYPE_RADIUS = { file:10, function:6, coin:14, phase:9, note:8 };
+
+function renderGraph(data) {
+  const el = document.getElementById('ai-sub-content');
+  if (!el) return;
+  const W = el.clientWidth || 900, H = 560;
+
+  const nodes = data.nodes.map(n => ({
+    ...n,
+    x: W/2 + (Math.random()-0.5)*W*0.7,
+    y: H/2 + (Math.random()-0.5)*H*0.7,
+    vx: 0, vy: 0,
+  }));
+  const idMap = Object.fromEntries(nodes.map(n => [n.id, n]));
+  const links = data.links.filter(l => idMap[l.source] && idMap[l.target]);
+
+  // Simple force simulation
+  const k = Math.sqrt(W * H / Math.max(nodes.length, 1)) * 0.9;
+  for (let iter = 0; iter < 120; iter++) {
+    for (const n of nodes) { n.fx = 0; n.fy = 0; }
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i+1; j < nodes.length; j++) {
+        const dx = nodes[i].x - nodes[j].x || 0.1;
+        const dy = nodes[i].y - nodes[j].y || 0.1;
+        const d  = Math.sqrt(dx*dx+dy*dy) || 1;
+        const f  = (k*k) / d;
+        nodes[i].fx += dx/d*f; nodes[i].fy += dy/d*f;
+        nodes[j].fx -= dx/d*f; nodes[j].fy -= dy/d*f;
+      }
+    }
+    for (const l of links) {
+      const s = idMap[l.source], t = idMap[l.target];
+      if (!s||!t) continue;
+      const dx=t.x-s.x, dy=t.y-s.y, d=Math.sqrt(dx*dx+dy*dy)||1;
+      const f=(d*d)/k*0.08;
+      s.fx+=dx/d*f; s.fy+=dy/d*f; t.fx-=dx/d*f; t.fy-=dy/d*f;
+    }
+    const cx=W/2, cy=H/2;
+    for (const n of nodes) {
+      n.fx+=(cx-n.x)*0.015; n.fy+=(cy-n.y)*0.015;
+      n.vx=(n.vx+n.fx)*0.8; n.vy=(n.vy+n.fy)*0.8;
+      n.x=Math.max(18,Math.min(W-18,n.x+n.vx));
+      n.y=Math.max(18,Math.min(H-18,n.y+n.vy));
+    }
+  }
+
+  const edgeSvg = links.map(l => {
+    const s=idMap[l.source], t=idMap[l.target];
+    if(!s||!t) return '';
+    return `<line x1="${s.x.toFixed(0)}" y1="${s.y.toFixed(0)}" x2="${t.x.toFixed(0)}" y2="${t.y.toFixed(0)}" stroke="#383838" stroke-width="1" opacity="0.6"/>`;
+  }).join('');
+
+  const nodeSvg = nodes.map(n => {
+    const c = TYPE_COLORS[n.type]||'#6b7280';
+    const r = TYPE_RADIUS[n.type]||6;
+    const lbl = (n.label||'').length > 12 ? n.label.slice(0,11)+'…' : n.label;
+    return `<g class="kgraph-node" data-id="${escHtml(n.id)}" data-type="${n.type}" onclick="kgraphClick(this)" style="cursor:pointer">
+      <circle cx="${n.x.toFixed(0)}" cy="${n.y.toFixed(0)}" r="${r}" fill="${c}" fill-opacity="0.18" stroke="${c}" stroke-width="1.5"/>
+      <text x="${n.x.toFixed(0)}" y="${(n.y+r+9).toFixed(0)}" fill="#6b7280" font-size="8.5" text-anchor="middle" font-family="monospace">${escHtml(lbl)}</text>
+    </g>`;
+  }).join('');
+
+  const legend = Object.entries(TYPE_COLORS).map(([t,c]) =>
+    `<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-muted)">
+      <svg width="10" height="10"><circle cx="5" cy="5" r="4" fill="${c}" fill-opacity="0.25" stroke="${c}" stroke-width="1.5"/></svg>${t}
+    </div>`
+  ).join('');
+
+  el.innerHTML = `
+    <div style="background:var(--surface);border-bottom:1px solid var(--border)">
+      <svg id="kgraph-svg" width="${W}" height="${H}" style="display:block">
+        <g id="kg-edges">${edgeSvg}</g>
+        <g id="kg-nodes">${nodeSvg}</g>
+      </svg>
+    </div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--border)">
+      ${legend}
+      <span style="margin-left:auto;font-size:11px;color:var(--text-faint)">${nodes.length} nodes · ${links.length} links</span>
+    </div>
+    <div id="kgraph-detail" style="padding:12px 16px;background:var(--surface2);min-height:40px;font-size:12px;color:var(--text-muted)">Click a node to see details</div>
+  `;
+}
+
+function kgraphClick(el) {
+  const id   = el.dataset.id;
+  const type = el.dataset.type;
+  const lbl  = el.querySelector('text')?.textContent || id;
+  document.getElementById('kgraph-detail').innerHTML =
+    `<strong style="color:var(--text)">${lbl}</strong>
+     <span class="chat-source-type" style="margin-left:8px">${type}</span>
+     <span style="color:var(--text-faint);margin-left:8px;font-size:11px">${id}</span>`;
+}
+
+// ── Wiki sub-tab ──────────────────────────────────────────────────────────────
+
+let _wikiData = null;
+let _wikiFilter = '';
+
+async function loadWiki() {
+  const el = document.getElementById('ai-sub-content');
+  if (!el) return;
+  el.innerHTML = '<div class="loading"><div class="spinner"></div> Generating wiki…</div>';
+  try {
+    const data = await fetch(`${API}/api/kb/wiki`).then(r => r.json());
+    _wikiData = data.wiki;
+    renderWiki();
+  } catch(e) {
+    el.innerHTML = `<div class="loading" style="color:var(--red)">Error: ${e.message}</div>`;
+  }
+}
+
+function renderWiki() {
+  const el = document.getElementById('ai-sub-content');
+  if (!el || !_wikiData) return;
+  const q = _wikiFilter.toLowerCase();
+  const filtered = _wikiData.filter(f =>
+    !q || f.filename.toLowerCase().includes(q) ||
+    f.entries.some(e => e.name.toLowerCase().includes(q))
+  );
+
+  el.innerHTML = `
+    <div class="filter-bar">
+      <input class="input" style="max-width:280px;padding:4px 10px;font-size:12px"
+        placeholder="Filter files or functions…" value="${escHtml(_wikiFilter)}"
+        oninput="setWikiFilter(this.value)">
+      <span style="margin-left:auto;font-size:12px;color:var(--text-muted)">${filtered.length} files</span>
+    </div>
+    <div class="wiki-list">
+      ${filtered.map((f, fi) => `
+        <div class="wiki-file">
+          <div class="wiki-file-header" onclick="toggleWikiFile(${fi})">
+            <div>
+              <span class="wiki-filename">${escHtml(f.filename)}</span>
+              <span class="wiki-lang">${f.language}</span>
+              <span class="wiki-path">${escHtml(f.path)}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:11px;color:var(--text-faint)">${f.entries.length} symbols</span>
+              <span class="wiki-chevron" id="wiki-chev-${fi}">▶</span>
+            </div>
+          </div>
+          <div class="wiki-entries" id="wiki-entries-${fi}" style="display:none">
+            ${f.entries.length === 0
+              ? '<div style="padding:8px 16px;font-size:12px;color:var(--text-faint)">No symbols extracted</div>'
+              : f.entries.map(e => `
+                <div class="wiki-entry">
+                  <span class="wiki-entry-type ${e.type}">${e.type}</span>
+                  <span class="wiki-entry-name">${escHtml(e.name)}</span>
+                  <span class="wiki-entry-line">L${e.line}</span>
+                  <pre class="wiki-snippet">${escHtml(e.snippet)}</pre>
+                </div>`).join('')}
+          </div>
+        </div>`).join('')}
+    </div>
+  `;
+}
+
+function toggleWikiFile(fi) {
+  const entries = document.getElementById(`wiki-entries-${fi}`);
+  const chev    = document.getElementById(`wiki-chev-${fi}`);
+  if (!entries) return;
+  const open = entries.style.display !== 'none';
+  entries.style.display = open ? 'none' : 'block';
+  if (chev) chev.textContent = open ? '▶' : '▼';
+}
+
+function setWikiFilter(val) {
+  _wikiFilter = val;
+  renderWiki();
+}
+
+// ── Notes sub-tab ─────────────────────────────────────────────────────────────
+
+let _notesData = [];
+
+async function loadNotes() {
+  const el = document.getElementById('ai-sub-content');
+  if (!el) return;
+  try {
+    const data = await fetch(`${API}/api/kb/notes`).then(r => r.json());
+    _notesData = data.notes;
+    renderNotes();
+  } catch(e) {
+    el.innerHTML = `<div class="loading" style="color:var(--red)">Error: ${e.message}</div>`;
+  }
+}
+
+function renderNotes() {
+  const el = document.getElementById('ai-sub-content');
+  if (!el) return;
+  const rows = _notesData.length === 0
+    ? '<div class="chat-empty">No notes yet. Add your first research note below.</div>'
+    : _notesData.map(n => `
+        <div class="note-card">
+          <div class="note-header">
+            <strong class="note-title">${escHtml(n.title)}</strong>
+            <span style="font-size:10px;color:var(--text-faint)">${n.metadata?.created || ''}</span>
+            <button class="btn btn-danger btn-sm" onclick="deleteNote('${escHtml(n.id)}')">✕</button>
+          </div>
+          <div class="note-body">${escHtml(n.content)}</div>
+        </div>`).join('');
+
+  el.innerHTML = `
+    <div class="notes-wrap">
+      <div class="note-add">
+        <input class="input" id="note-title" placeholder="Title (e.g. BTC thesis)" style="max-width:280px">
+        <textarea class="input note-textarea" id="note-content" placeholder="Your research notes, strategy, observations…" rows="3"></textarea>
+        <button class="btn btn-primary btn-sm" onclick="addNote()">Add Note</button>
+      </div>
+      <div class="notes-list">${rows}</div>
+    </div>
+  `;
+}
+
+async function addNote() {
+  const title   = document.getElementById('note-title')?.value?.trim();
+  const content = document.getElementById('note-content')?.value?.trim();
+  if (!title || !content) return;
+  await fetch(`${API}/api/kb/notes`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({title, content}),
+  });
+  await loadNotes();
+}
+
+async function deleteNote(id) {
+  if (!confirm('Delete this note?')) return;
+  await fetch(`${API}/api/kb/notes/${encodeURIComponent(id)}`, {method:'DELETE'});
+  await loadNotes();
+}
+
+// ── Shared helpers ─────────────────────────────────────────────────────────────
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function markdownToHtml(md) {
+  return String(md||'')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+    .replace(/\n/g,'<br>');
 }
 
 // ── MVRV Monitor ─────────────────────────────────────────────────────────────

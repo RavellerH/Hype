@@ -7,3 +7,5 @@ pandas==2.2.2
 numpy==1.26.4
 python-telegram-bot==21.3
 apscheduler==3.10.4
+rank-bm25==0.2.2
+anthropic>=0.28.0

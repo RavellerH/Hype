@@ -12,7 +12,11 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 import hyperliquid as hl
-from config import POLL_INTERVAL, PRIMARY_WALLET, PHASE_RECORD_INTERVAL
+from config import (
+    POLL_INTERVAL, PRIMARY_WALLET, PHASE_RECORD_INTERVAL,
+    WHATSAPP_PHONE, WHATSAPP_APIKEY,
+)
+from knowledge_base import kb
 from phase_detector import detect_phase, phase_to_dict
 from phase_log import record_phases, read_log, PHASE_LOG_CSV
 from telegram_bot import dispatch_wallet_events
@@ -24,6 +28,7 @@ from wallet_tracker import (
     remove_wallet,
     snapshot_wallet,
 )
+from whatsapp import send_whatsapp
 
 # ── WebSocket connection manager ──────────────────────────────────────────────
 
@@ -98,13 +103,30 @@ async def polling_task():
 
 # ── App lifecycle ─────────────────────────────────────────────────────────────
 
+async def kb_snapshot_task():
+    """Periodically snapshot live market data into the knowledge base."""
+    try:
+        state  = await hl.get_clearinghouse_state(PRIMARY_WALLET)
+        summary = hl.parse_account_summary(state)
+        positions = hl.parse_positions(state)
+        kb.add_market_snapshot({"summary": summary, "positions": positions,
+                                 "source": "hyperliquid", "timestamp": int(time.time())})
+    except Exception as e:
+        print(f"[kb_snapshot] error: {e}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Ensure primary wallet is in watchlist
     add_wallet(PRIMARY_WALLET, "My Wallet")
 
-    scheduler.add_job(polling_task, "interval", seconds=POLL_INTERVAL, id="poller")
-    scheduler.add_job(record_phases, "interval", seconds=PHASE_RECORD_INTERVAL, id="phase_recorder")
+    # Index codebase on startup (runs in thread to avoid blocking)
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, kb.index_codebase)
+    print(f"[kb] indexed {kb.stats()['total_documents']} documents")
+
+    scheduler.add_job(polling_task,   "interval", seconds=POLL_INTERVAL,          id="poller")
+    scheduler.add_job(record_phases,  "interval", seconds=PHASE_RECORD_INTERVAL,  id="phase_recorder")
+    scheduler.add_job(kb_snapshot_task, "interval", seconds=3600,                 id="kb_snapshot")
     scheduler.start()
     yield
     scheduler.shutdown()
@@ -483,3 +505,115 @@ async def configure_telegram(body: TelegramConfig):
 async def telegram_status():
     from config import TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
     return {"enabled": bool(TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID)}
+
+
+# ── Knowledge Base ────────────────────────────────────────────────────────────
+
+class AskBody(BaseModel):
+    question: str
+
+class NoteBody(BaseModel):
+    title: str
+    content: str
+
+class WhatsAppConfig(BaseModel):
+    phone: str
+    apikey: str
+
+
+@app.get("/api/kb/stats")
+async def kb_stats():
+    return kb.stats()
+
+
+@app.post("/api/kb/index")
+async def kb_reindex():
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, kb.index_codebase)
+    return kb.stats()
+
+
+@app.get("/api/kb/search")
+async def kb_search(q: str, types: str = ""):
+    doc_types = [t.strip() for t in types.split(",") if t.strip()] or None
+    return {"results": kb.search(q, top_k=8, doc_types=doc_types)}
+
+
+@app.post("/api/kb/ask")
+async def kb_ask(body: AskBody):
+    return await kb.ask(body.question)
+
+
+@app.get("/api/kb/graph")
+async def kb_graph():
+    return kb.build_graph()
+
+
+@app.get("/api/kb/wiki")
+async def kb_wiki():
+    return {"wiki": kb.generate_wiki()}
+
+
+@app.get("/api/kb/notes")
+async def kb_get_notes():
+    return {"notes": kb.notes}
+
+
+@app.post("/api/kb/notes")
+async def kb_add_note(body: NoteBody):
+    note = kb.add_note(body.title, body.content)
+    return note
+
+
+@app.delete("/api/kb/notes/{note_id:path}")
+async def kb_delete_note(note_id: str):
+    ok = kb.delete_note(note_id)
+    if not ok:
+        raise HTTPException(404, "Note not found")
+    return {"deleted": note_id}
+
+
+# ── WhatsApp config & alerts ──────────────────────────────────────────────────
+
+def _write_env_keys(updates: dict[str, str]):
+    env_path = os.path.join(os.path.dirname(__file__), "..", ".env")
+    lines: list[str] = []
+    written: set[str] = set()
+    if os.path.exists(env_path):
+        with open(env_path) as f:
+            for line in f:
+                key = line.split("=")[0]
+                if key in updates:
+                    lines.append(f"{key}={updates[key]}\n")
+                    written.add(key)
+                else:
+                    lines.append(line)
+    for key, val in updates.items():
+        if key not in written:
+            lines.append(f"{key}={val}\n")
+    with open(env_path, "w") as f:
+        f.writelines(lines)
+
+
+@app.get("/api/whatsapp/status")
+async def whatsapp_status():
+    import config as cfg
+    return {"enabled": bool(cfg.WHATSAPP_PHONE and cfg.WHATSAPP_APIKEY),
+            "phone": cfg.WHATSAPP_PHONE or ""}
+
+
+@app.post("/api/whatsapp/configure")
+async def configure_whatsapp(body: WhatsAppConfig):
+    import config as cfg
+    cfg.WHATSAPP_PHONE  = body.phone
+    cfg.WHATSAPP_APIKEY = body.apikey
+    _write_env_keys({"WHATSAPP_PHONE": body.phone, "WHATSAPP_APIKEY": body.apikey})
+    return {"configured": True}
+
+
+@app.post("/api/whatsapp/test")
+async def test_whatsapp():
+    import config as cfg
+    ok, status = await send_whatsapp(cfg.WHATSAPP_PHONE, cfg.WHATSAPP_APIKEY,
+                                      "Hype alert test ✅ WhatsApp connected!")
+    return {"ok": ok, "status": status}
