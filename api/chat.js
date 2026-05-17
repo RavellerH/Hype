@@ -1,5 +1,5 @@
 // Vercel serverless function: Anthropic API proxy
-// Supports modes: chat (default), trade-analyze, wiki-generate, wiki-enhance
+// Supports: regular chat, wiki-generate, wiki-enhance, trade-analyze
 import Anthropic from '@anthropic-ai/sdk';
 
 export default async function handler(req, res) {
@@ -13,8 +13,8 @@ export default async function handler(req, res) {
   }
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  const body = req.body || {};
-  const mode = body.mode || 'chat';
+  const body   = req.body || {};
+  const mode   = body.mode || 'chat';
 
   try {
     // ── trade-analyze ────────────────────────────────────────
@@ -28,12 +28,12 @@ export default async function handler(req, res) {
         system: `You are a trading coach analyzing a crypto trade journal entry.
 Return ONLY valid JSON with this exact structure:
 {
-  "assessment": "2-3 sentence assessment of what happened and what can be learned",
+  "assessment": "2-3 sentence assessment of what happened",
   "wiki_entry": {
     "title": "concise lesson title (max 8 words)",
     "category": "lesson",
-    "summary": "one sentence summary of the lesson",
-    "content": "3-4 paragraph wiki entry covering: what happened, the lesson, what to watch for next time, and how to apply it",
+    "summary": "one sentence summary",
+    "content": "3-4 paragraph wiki entry with the lesson, what to watch for, and how to apply it",
     "tags": ["tag1", "tag2"],
     "coins": ["BTC"]
   }
@@ -52,17 +52,14 @@ Return ONLY valid JSON with this exact structure:
       const response = await client.messages.create({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 1200,
-        system: `You are building a crypto trading knowledge base wiki. Generate a thorough wiki entry.
+        system: `You are building a crypto trading knowledge base wiki. Generate a wiki entry.
 Return ONLY valid JSON:
 {
-  "title": "exact title as given",
+  "title": "exact title",
   "summary": "one sentence summary",
-  "content": "3-5 paragraphs of trading knowledge: what it is, when to use it, what to watch for, common mistakes, and real examples"
+  "content": "3-5 paragraphs of trading knowledge, when to use it, what to watch for, common mistakes"
 }`,
-        messages: [{
-          role: 'user',
-          content: `Generate a wiki entry for: "${title}" (category: ${category || 'lesson'}, coins: ${coins || 'general'}, tags: ${tags || ''})`
-        }],
+        messages: [{ role: 'user', content: `Generate a wiki entry for: "${title}" (category: ${category || 'lesson'}, coins: ${coins || 'any'}, tags: ${tags || 'none'})` }],
       });
       const text = response.content[0]?.text || '{}';
       const json = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] || '{}');
@@ -76,16 +73,13 @@ Return ONLY valid JSON:
       const response = await client.messages.create({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 1500,
-        system: `You are enhancing a trading knowledge base entry. Make it deeper, more specific, add real examples and actionable rules.
+        system: `You are enhancing a trading knowledge base entry. Make it deeper, more specific, add examples.
 Return ONLY valid JSON:
 {
   "summary": "improved one sentence summary",
-  "content": "enhanced content, 4-6 paragraphs with more depth, specific setups, and actionable rules"
+  "content": "enhanced content, 4-6 paragraphs"
 }`,
-        messages: [{
-          role: 'user',
-          content: `Enhance this wiki entry:\nTitle: ${title}\nCategory: ${category || 'lesson'}\n\n${content || '(no content yet)'}`
-        }],
+        messages: [{ role: 'user', content: `Enhance this wiki entry:\nTitle: ${title}\nCategory: ${category || 'lesson'}\n\n${content || ''}` }],
       });
       const text = response.content[0]?.text || '{}';
       const json = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] || '{}');
@@ -113,8 +107,8 @@ Return ONLY valid JSON:
 function buildTradeAnalysisPrompt(t) {
   return `Trade Journal Entry:
 Coin: ${t.coin} | Direction: ${t.direction} | Status: CLOSED
-Entry: $${t.entry_price} | Exit: $${t.exit_price} | PnL: ${t.pnl_pct != null ? t.pnl_pct.toFixed(1) : '?'}% ($${t.pnl_usd != null ? t.pnl_usd.toFixed(0) : '?'})
-Size: $${t.size_usd || 'unknown'} | Timeframe: ${t.timeframe || 'not specified'}
+Entry: $${t.entry_price} | Exit: $${t.exit_price} | PnL: ${t.pnl_pct != null ? t.pnl_pct.toFixed(1) : 'N/A'}% ($${t.pnl_usd != null ? t.pnl_usd.toFixed(0) : 'N/A'})
+Size: $${t.size_usd || 'N/A'} | Timeframe: ${t.timeframe || 'not specified'}
 
 ENTRY REASONING:
 Setup/Pattern: ${t.setup || 'not recorded'}
