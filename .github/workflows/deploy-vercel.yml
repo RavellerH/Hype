@@ -9,5 +9,13 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Vercel deploy hook
-        run: curl -X POST "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}"
+      - name: Set gh-pages as Vercel production branch
+        run: |
+          curl -s -X PATCH \
+            "https://api.vercel.com/v9/projects/prj_AxGfmYrcweNsclkN5cbLCsBx43t3" \
+            -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"productionBranch": "gh-pages"}'
+
+      - name: Trigger Vercel deploy
+        run: curl -s -X POST "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}"
