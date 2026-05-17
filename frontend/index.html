@@ -36,6 +36,7 @@
       <button class="topbar-tab"        data-page="settings"  onclick="navigate('settings')">Settings</button>
       <button class="topbar-tab"        data-page="journal"     onclick="navigate('journal')">Journal</button>
       <button class="topbar-tab"        data-page="indicators"  onclick="navigate('indicators')">Indicators</button>
+      <button class="topbar-tab"        data-page="smartmoney"  onclick="navigate('smartmoney')">Smart Money</button>
     </nav>
 
     <div class="topbar-right">
@@ -95,6 +96,9 @@
     </button>
     <button class="nav-icon-btn" data-page="indicators" onclick="navigate('indicators')" title="Indicators">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    </button>
+    <button class="nav-icon-btn" data-page="smartmoney" onclick="navigate('smartmoney')" title="Smart Money">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/><path d="M8 14s1 2 4 2 4-2 4-2"/></svg>
     </button>
   </nav>
 
@@ -167,6 +171,12 @@
       </div>
     </div>
 
+    <div class="page" id="page-smartmoney">
+      <div id="smartmoney-content">
+        <div class="loading"><div class="spinner"></div> Loading…</div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -175,6 +185,7 @@
 <script src="/static/js/position-meta.js"></script>
 <script src="/static/js/journal.js"></script>
 <script src="/static/js/indicators.js"></script>
+<script src="/static/js/nansen.js"></script>
 <script src="/static/js/app.js"></script>
 <script>
   if ('serviceWorker' in navigator) {

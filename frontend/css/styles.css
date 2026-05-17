@@ -1043,3 +1043,42 @@ tbody tr:hover td       { background: var(--surface-hover); }
 .ind-unavail-badge { display:inline-block; padding:1px 6px; border-radius:var(--radius-sm); font-size:10px; background:var(--surface2); color:var(--text-muted); }
 .ind-sparkline-wrap { height:60px; margin-top:8px; }
 @media (max-width:768px) { .ind-grid { grid-template-columns:1fr; } .ind-floor-grid { grid-template-columns:repeat(2,1fr); } }
+
+/* ── Nansen Smart Money ─────────────────────────────────────────────────────── */
+.nansen-header { display:flex; align-items:center; gap:12px; padding:10px 14px; background:var(--surface); border-bottom:1px solid var(--border); flex-wrap:wrap; }
+.nansen-status { font-size:11px; color:var(--text-muted); }
+.nansen-countdown { font-family:var(--mono); font-size:11px; color:var(--accent); }
+.nansen-refresh-btn { padding:3px 10px; border-radius:var(--radius-sm); background:var(--surface2); border:1px solid var(--border); color:var(--text-muted); font-size:11px; cursor:pointer; }
+.nansen-refresh-btn:hover { color:var(--text); }
+.nansen-tabs { display:flex; border-bottom:1px solid var(--border); background:var(--surface); }
+.nansen-tab { padding:9px 16px; font-size:13px; font-weight:500; color:var(--text-muted); cursor:pointer; border:none; background:none; border-bottom:2px solid transparent; transition:color 0.12s,border-color 0.12s; }
+.nansen-tab:hover { color:var(--text); }
+.nansen-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+.nansen-pos-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:10px; padding:14px; }
+.nansen-pos-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:13px 15px; }
+.nansen-pos-card.pos-accum { border-left:3px solid var(--green); }
+.nansen-pos-card.pos-distrib { border-left:3px solid var(--red); }
+.nansen-pos-card.pos-neutral { border-left:3px solid var(--border); }
+.nansen-pos-header { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+.nansen-pos-coin { font-weight:700; font-size:14px; }
+.nansen-flows { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:8px; }
+.nansen-flow-cell { text-align:center; }
+.nansen-flow-label { font-size:10px; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
+.nansen-flow-val { font-family:var(--mono); font-size:12px; font-weight:700; margin-top:2px; }
+.nansen-badge { display:inline-block; padding:2px 8px; border-radius:var(--radius-pill); font-size:10px; font-weight:700; letter-spacing:0.04em; }
+.nansen-accum { background:var(--green-bg); color:var(--green); }
+.nansen-distrib { background:var(--red-bg); color:var(--red); }
+.nansen-neutral { background:var(--surface2); color:var(--text-muted); }
+.nansen-key-form { padding:24px 14px; max-width:400px; }
+.nansen-key-form input { width:100%; padding:8px 12px; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-family:var(--mono); font-size:12px; outline:none; }
+.nansen-key-form input:focus { border-color:var(--accent); }
+.nansen-save-key-btn { margin-top:8px; padding:6px 16px; background:var(--accent-subtle); border:1px solid var(--accent); border-radius:var(--radius-sm); color:var(--accent); cursor:pointer; font-size:12px; }
+.nansen-pos-open { border-left:2px solid var(--accent) !important; }
+.nansen-watchlist-input { display:flex; gap:8px; padding:12px 14px; border-bottom:1px solid var(--border); }
+.nansen-watchlist-input input { flex:1; padding:6px 10px; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-size:12px; outline:none; }
+.nansen-watchlist-input input:focus { border-color:var(--accent); }
+.nansen-add-btn { padding:6px 12px; background:var(--accent-subtle); border:1px solid var(--accent); border-radius:var(--radius-sm); color:var(--accent); cursor:pointer; font-size:12px; }
+.nansen-wl-item { display:flex; align-items:center; gap:8px; padding:4px 14px; }
+.nansen-wl-remove { background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:14px; padding:2px 6px; }
+.nansen-no-data { padding:24px 14px; color:var(--text-muted); font-size:13px; }
+@media (max-width:768px) { .nansen-pos-grid { grid-template-columns:1fr; } }

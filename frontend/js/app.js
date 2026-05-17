@@ -46,7 +46,7 @@ function navigate(page) {
   const activeIcon = document.querySelector(`.nav-icon-btn[data-page="${page}"]`);
   if (activeIcon) activeIcon.classList.add('active');
 
-  const loaders = { overview: loadOverview, trades: loadTrades, funding: loadFunding, flows: loadFlows, phases: loadPhases, intel: loadIntel, watchlist: loadWatchlist, mvrv: loadMVRV, settings: loadSettings, journal: typeof loadJournal !== 'undefined' ? loadJournal : null, indicators: typeof loadIndicators !== 'undefined' ? loadIndicators : null };
+  const loaders = { overview: loadOverview, trades: loadTrades, funding: loadFunding, flows: loadFlows, phases: loadPhases, intel: loadIntel, watchlist: loadWatchlist, mvrv: loadMVRV, settings: loadSettings, journal: typeof loadJournal !== 'undefined' ? loadJournal : null, indicators: typeof loadIndicators !== 'undefined' ? loadIndicators : null, smartmoney: typeof loadNansen !== 'undefined' ? loadNansen : null };
   if (loaders[page]) loaders[page]();
 }
 

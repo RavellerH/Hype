@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 import hyperliquid as hl
-from config import POLL_INTERVAL, PRIMARY_WALLET, PHASE_RECORD_INTERVAL
+from config import POLL_INTERVAL, PRIMARY_WALLET, PHASE_RECORD_INTERVAL, NANSEN_API_KEY
 from phase_detector import detect_phase, phase_to_dict
 from phase_log import record_phases, read_log, PHASE_LOG_CSV
 from telegram_bot import dispatch_wallet_events
@@ -556,4 +556,53 @@ async def get_indicators():
     }
     _ind_cache = result
     _ind_cache_ts = now
+    return result
+
+
+# ── Nansen Smart Money ────────────────────────────────────────────────────────
+
+_nansen_cache: dict = {}
+_nansen_cache_ts: float = 0.0
+_NANSEN_TTL = 300
+
+
+@app.get("/api/nansen/flow")
+async def get_nansen_flow():
+    global _nansen_cache, _nansen_cache_ts
+    now = time.time()
+    if _nansen_cache and now - _nansen_cache_ts < _NANSEN_TTL:
+        return _nansen_cache
+
+    chains = ["ethereum", "solana", "base", "arbitrum", "optimism", "bnb", "hyperevm"]
+    headers = {"Content-Type": "application/json", "apikey": NANSEN_API_KEY}
+
+    async with _httpx.AsyncClient(timeout=20) as client:
+        netflow_resp, holdings_resp = await asyncio.gather(
+            client.post(
+                "https://api.nansen.ai/api/v1/smart-money/netflow",
+                json={"chains": chains, "pagination": {"page": 1, "per_page": 100}},
+                headers=headers,
+            ),
+            client.post(
+                "https://api.nansen.ai/api/v1/smart-money/holdings",
+                json={"chains": chains},
+                headers=headers,
+            ),
+            return_exceptions=True,
+        )
+
+    netflows = (
+        netflow_resp.json()
+        if not isinstance(netflow_resp, Exception) and netflow_resp.status_code == 200
+        else []
+    )
+    holdings = (
+        holdings_resp.json()
+        if not isinstance(holdings_resp, Exception) and holdings_resp.status_code == 200
+        else []
+    )
+
+    result = {"netflows": netflows, "holdings": holdings, "fetched_at": now}
+    _nansen_cache = result
+    _nansen_cache_ts = now
     return result
