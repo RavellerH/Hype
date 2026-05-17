@@ -35,6 +35,7 @@
       <button class="topbar-tab"        data-page="watchlist" onclick="navigate('watchlist')">Watchlist</button>
       <button class="topbar-tab"        data-page="journal"     onclick="navigate('journal')">Journal</button>
       <button class="topbar-tab"        data-page="indicators"  onclick="navigate('indicators')">Indicators</button>
+      <button class="topbar-tab"        data-page="smartmoney"  onclick="navigate('smartmoney')">Smart Money</button>
     </nav>
 
     <div class="topbar-right">
@@ -64,6 +65,7 @@
     <a class="nav-item"        data-page="watchlist" onclick="navigate('watchlist')" title="Watchlist"><span class="icon">👛</span></a>
     <a class="nav-item"        data-page="journal"     onclick="navigate('journal')"     title="Journal"><span class="icon">📓</span></a>
     <a class="nav-item"        data-page="indicators"  onclick="navigate('indicators')"  title="Indicators"><span class="icon">📊</span></a>
+    <a class="nav-item"        data-page="smartmoney"  onclick="navigate('smartmoney')"  title="Smart Money"><span class="icon">🧠</span></a>
   </nav>
 
   <!-- Mobile bottom nav -->
@@ -111,6 +113,7 @@
     <div class="page"         id="page-watchlist"><div id="watchlist-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page"         id="page-journal"><div id="journal-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page"         id="page-indicators"><div id="indicators-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
+    <div class="page"         id="page-smartmoney"><div id="smartmoney-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
   </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -118,6 +121,7 @@
 <script src="position-meta.js"></script>
 <script src="journal.js"></script>
 <script src="indicators.js"></script>
+<script src="nansen.js"></script>
 <script src="app.js"></script>
 <script src="mvrv-ai.js"></script>
 <script>
