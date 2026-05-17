@@ -4,31 +4,55 @@ let _prevFlows = {};
 let _nansenTab = 'positions';
 let _nansenTimer = null, _nansenCountdown = 300;
 
+function nansenProxyUrl() {
+  // Configurable backend URL for the Vercel proxy function.
+  // Set via localStorage key "nansen_backend_url", e.g. https://your-app.vercel.app
+  const base = (localStorage.getItem('nansen_backend_url') || '').replace(/\/$/, '');
+  return base ? `${base}/api/nansen` : null;
+}
+
 async function fetchNansenData() {
   const apiKey = localStorage.getItem('nansen_api_key');
   if (!apiKey) return null;
 
   if (_nansenCache && Date.now() - _nansenCacheTs < NANSEN_TTL) return _nansenCache;
 
-  const chains = ['ethereum', 'solana', 'base', 'arbitrum', 'optimism', 'bnb', 'hyperevm'];
+  const proxyUrl = nansenProxyUrl();
+  let result;
 
-  const resp = await fetch('https://api.nansen.ai/api/v1/smart-money/netflow', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'apikey': apiKey },
-    body: JSON.stringify({ chains, pagination: { page: 1, per_page: 100 } })
-  });
+  if (proxyUrl) {
+    // Use Vercel proxy (avoids CORS)
+    const resp = await fetch(`${proxyUrl}?key=${encodeURIComponent(apiKey)}`);
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error || `Proxy ${resp.status}`);
+    }
+    result = await resp.json();
+  } else {
+    // Direct call — only works when CORS is allowed (e.g. local dev)
+    const chains = ['ethereum', 'solana', 'base', 'arbitrum', 'optimism', 'bnb', 'hyperevm'];
+    const headers = { 'Content-Type': 'application/json', 'apikey': apiKey };
 
-  if (!resp.ok) throw new Error(`Nansen API ${resp.status}: ${resp.statusText}`);
-  const data = await resp.json();
+    const [netflowResp, holdingsResp] = await Promise.allSettled([
+      fetch('https://api.nansen.ai/api/v1/smart-money/netflow', {
+        method: 'POST', headers,
+        body: JSON.stringify({ chains, pagination: { page: 1, per_page: 100 } })
+      }),
+      fetch('https://api.nansen.ai/api/v1/smart-money/holdings', {
+        method: 'POST', headers,
+        body: JSON.stringify({ chains })
+      })
+    ]);
 
-  const holdResp = await fetch('https://api.nansen.ai/api/v1/smart-money/holdings', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'apikey': apiKey },
-    body: JSON.stringify({ chains })
-  });
-  const holdings = holdResp.ok ? await holdResp.json() : null;
+    const netflows = netflowResp.status === 'fulfilled' && netflowResp.value.ok
+      ? await netflowResp.value.json() : [];
+    const holdings = holdingsResp.status === 'fulfilled' && holdingsResp.value.ok
+      ? await holdingsResp.value.json() : null;
 
-  _nansenCache = { netflows: data, holdings, fetched_at: Date.now() };
+    result = { netflows, holdings, fetched_at: Date.now() };
+  }
+
+  _nansenCache = result;
   _nansenCacheTs = Date.now();
   window._nansenData = _nansenCache;
   return _nansenCache;
@@ -106,18 +130,30 @@ function requestNansenNotifPerms() {
 }
 
 function nansenKeyForm() {
+  const savedKey = localStorage.getItem('nansen_api_key') || '';
+  const savedBackend = localStorage.getItem('nansen_backend_url') || '';
   return `<div class="nansen-key-form">
-    <div style="font-size:13px;font-weight:600;margin-bottom:8px">Nansen API Key Required</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Enter your Nansen API key to access Smart Money data. It will be saved locally.</div>
-    <input id="nansen-key-input" type="text" placeholder="nsn_..." autocomplete="off" spellcheck="false">
-    <button class="nansen-save-key-btn" onclick="nansenSaveKey()">Save Key</button>
+    <div style="font-size:13px;font-weight:600;margin-bottom:8px">Nansen Smart Money Setup</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">
+      Enter your Nansen API key and the URL of your deployed Vercel app (needed because Nansen blocks direct browser requests).
+    </div>
+    <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px">Nansen API Key</label>
+    <input id="nansen-key-input" type="text" value="${savedKey}" placeholder="nsn_..." autocomplete="off" spellcheck="false" style="margin-bottom:10px">
+    <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px">Vercel App URL <span style="opacity:0.6">(proxy, e.g. https://hype-xyz.vercel.app)</span></label>
+    <input id="nansen-backend-input" type="text" value="${savedBackend}" placeholder="https://your-app.vercel.app" autocomplete="off" spellcheck="false" style="margin-bottom:12px">
+    <button class="nansen-save-key-btn" onclick="nansenSaveKey()">Save &amp; Load</button>
   </div>`;
 }
 
 function nansenSaveKey() {
-  const val = (document.getElementById('nansen-key-input')?.value || '').trim();
-  if (!val) return;
-  localStorage.setItem('nansen_api_key', val);
+  const key = (document.getElementById('nansen-key-input')?.value || '').trim();
+  const backend = (document.getElementById('nansen-backend-input')?.value || '').trim();
+  if (!key) return;
+  localStorage.setItem('nansen_api_key', key);
+  if (backend) localStorage.setItem('nansen_backend_url', backend);
+  else localStorage.removeItem('nansen_backend_url');
+  _nansenCache = null;
+  _nansenCacheTs = 0;
   loadNansen();
 }
 
@@ -384,7 +420,7 @@ function renderNansenTab() {
     <span class="nansen-status">Last updated: ${fetchedAt ? nansenMinsAgo(fetchedAt) : '—'}</span>
     <span class="nansen-status">Auto-refresh in: <span class="nansen-countdown" id="nansen-countdown">${_nansenCountdown}s</span></span>
     <button class="nansen-refresh-btn" onclick="nansenForceRefresh()">Refresh Now</button>
-    <button class="nansen-refresh-btn" onclick="nansenClearKey()">Clear Key</button>
+    <button class="nansen-refresh-btn" onclick="nansenShowSettings()">Settings</button>
   </div>
   <div class="nansen-tabs">
     <button class="nansen-tab${_nansenTab === 'positions' ? ' active' : ''}" onclick="setNansenTab('positions',this)">Positions</button>
@@ -442,11 +478,24 @@ async function loadNansen() {
     renderNansenTab();
     startNansenRefresh();
   } catch (err) {
+    const proxyConfigured = !!localStorage.getItem('nansen_backend_url');
+    const hint = !proxyConfigured
+      ? '<div style="font-size:11px;color:var(--yellow);margin-top:6px">Tip: Nansen blocks direct browser requests. Open Settings and enter your Vercel app URL to use the proxy.</div>'
+      : '';
     content.innerHTML = `<div class="nansen-no-data">
       <div style="color:var(--red);font-weight:600;margin-bottom:8px">Failed to load Nansen data</div>
-      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">${err.message}</div>
-      <button class="nansen-refresh-btn" onclick="nansenForceRefresh()">Try Again</button>
-      <button class="nansen-refresh-btn" onclick="nansenClearKey()" style="margin-left:8px">Clear Key</button>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">${err.message}</div>
+      ${hint}
+      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="nansen-refresh-btn" onclick="nansenForceRefresh()">Try Again</button>
+        <button class="nansen-refresh-btn" onclick="nansenShowSettings()">Settings</button>
+        <button class="nansen-refresh-btn" onclick="nansenClearKey()">Clear Key</button>
+      </div>
     </div>`;
   }
+}
+
+function nansenShowSettings() {
+  const content = document.getElementById('smartmoney-content');
+  if (content) content.innerHTML = nansenKeyForm();
 }
