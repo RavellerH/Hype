@@ -35,6 +35,7 @@
       <button class="topbar-tab"        data-page="watchlist" onclick="navigate('watchlist')">Watchlist</button>
       <button class="topbar-tab"        data-page="journal"     onclick="navigate('journal')">Journal</button>
       <button class="topbar-tab"        data-page="indicators"  onclick="navigate('indicators')">Indicators</button>
+      <button class="topbar-tab"        data-page="kb"          onclick="navigate('kb')">KB</button>
     </nav>
 
     <div class="topbar-right">
@@ -64,6 +65,7 @@
     <a class="nav-item"        data-page="watchlist" onclick="navigate('watchlist')" title="Watchlist"><span class="icon">👛</span></a>
     <a class="nav-item"        data-page="journal"     onclick="navigate('journal')"     title="Journal"><span class="icon">📓</span></a>
     <a class="nav-item"        data-page="indicators"  onclick="navigate('indicators')"  title="Indicators"><span class="icon">📊</span></a>
+    <a class="nav-item"        data-page="kb"          onclick="navigate('kb')"          title="Knowledge Base"><span class="icon">🧠</span></a>
   </nav>
 
   <!-- Mobile bottom nav -->
@@ -95,6 +97,9 @@
     <button class="bottom-nav-item" data-page="watchlist" onclick="navigate('watchlist')">
       <span class="bnav-icon">👛</span><span>Watch</span>
     </button>
+    <button class="bottom-nav-item" data-page="kb" onclick="navigate('kb')">
+      <span class="bnav-icon">🧠</span><span>KB</span>
+    </button>
   </nav>
 
   <main class="main">
@@ -111,6 +116,7 @@
     <div class="page"         id="page-watchlist"><div id="watchlist-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page"         id="page-journal"><div id="journal-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page"         id="page-indicators"><div id="indicators-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
+    <div class="page"         id="page-kb"><div id="kb-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
   </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -120,6 +126,7 @@
 <script src="indicators.js"></script>
 <script src="app.js"></script>
 <script src="mvrv-ai.js"></script>
+<script src="kb.js"></script>
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW:', err));
