@@ -565,15 +565,22 @@ function renderOverviewTab() {
         <div class="stat-card"><div class="stat-label">Withdrawable</div><div class="stat-value">${fmt$(s.withdrawable)}</div><div class="stat-sub">USDC spot ${fmt$(usdcBalance)}</div></div>
       </div>
       <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px">
           <div class="card-title" style="margin:0">📈 Portfolio Growth — 7 Days</div>
-          <div style="display:flex;gap:4px">
-            <button class="tab ch-cur-tab active" data-cur="USD" onclick="setChartCurrency('USD')">$ USD</button>
-            <button class="tab ch-cur-tab" data-cur="IDR" onclick="setChartCurrency('IDR')">Rp IDR</button>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+            <div style="display:flex;gap:2px">
+              <button class="tab ch-mode-tab${chartMode==='all'?' active':''}" data-mode="all"  onclick="setChartMode('all',this)">All</button>
+              <button class="tab ch-mode-tab${chartMode==='perp'?' active':''}" data-mode="perp" onclick="setChartMode('perp',this)">Perps</button>
+              <button class="tab ch-mode-tab${chartMode==='spot'?' active':''}" data-mode="spot" onclick="setChartMode('spot',this)">Spot</button>
+            </div>
+            <div style="display:flex;gap:2px">
+              <button class="tab ch-cur-tab${chartCurrency==='USD'?' active':''}" data-cur="USD" onclick="setChartCurrency('USD')">$ USD</button>
+              <button class="tab ch-cur-tab${chartCurrency==='IDR'?' active':''}" data-cur="IDR" onclick="setChartCurrency('IDR')">Rp IDR</button>
+            </div>
           </div>
         </div>
         <div style="display:flex;gap:16px;margin-bottom:10px;flex-wrap:wrap">
-          <div><div class="stat-label">Now</div><div id="ch-cur" class="mono" style="font-size:15px;font-weight:600">—</div></div>
+          <div><div class="stat-label" id="ch-mode-label">${chartMode==='perp'?'Perp acct':chartMode==='spot'?'Spot total':'Portfolio'}</div><div id="ch-cur" class="mono" style="font-size:15px;font-weight:600">—</div></div>
           <div><div class="stat-label">7d Change</div><div id="ch-chg" class="mono" style="font-size:13px">—</div></div>
           <div><div class="stat-label">7d %</div><div id="ch-pct" class="mono" style="font-size:13px">—</div></div>
           <div><div class="stat-label">Rate</div><div id="ch-rate" class="muted" style="font-size:11px">fetching…</div></div>
@@ -1465,19 +1472,27 @@ async function loadMonitor() {
 }
 
 // ── Portfolio Chart ───────────────────────────────────────────────────────────
-function savePortfolioSnap(v) {
+let chartMode = 'all'; // 'all' | 'perp' | 'spot'
+let _chartData = {};   // cached per-mode data
+
+function savePortfolioSnap(key, v) {
   try {
-    const snaps = JSON.parse(localStorage.getItem('hype_snaps') || '[]');
+    const sk = key === 'all' ? 'hype_snaps' : 'hype_snaps_' + key;
+    const snaps = JSON.parse(localStorage.getItem(sk) || '[]');
     const now = Date.now();
     if (snaps.length && now - snaps.at(-1).ts < 30 * 60 * 1000) return;
     snaps.push({ ts: now, v });
     const cut = now - 8 * 86400000;
-    localStorage.setItem('hype_snaps', JSON.stringify(snaps.filter(s => s.ts >= cut)));
+    localStorage.setItem(sk, JSON.stringify(snaps.filter(s => s.ts >= cut)));
   } catch(_) {}
 }
-function getPortfolioSnaps() {
-  try { return JSON.parse(localStorage.getItem('hype_snaps') || '[]'); } catch { return []; }
+function getPortfolioSnaps(key) {
+  try {
+    const sk = key === 'all' ? 'hype_snaps' : 'hype_snaps_' + key;
+    return JSON.parse(localStorage.getItem(sk) || '[]');
+  } catch { return []; }
 }
+
 
 async function fetchIDRRate() {
   try {
@@ -1489,28 +1504,25 @@ async function fetchIDRRate() {
   } catch(_) {}
 }
 
-function buildPortfolioHistory(currentValue, fills, funding) {
+function buildPortfolioHistory(currentValue, fills, funding, snaps) {
   const msDay = 86400000;
   const now = Date.now();
   const today = Math.floor(now / msDay) * msDay;
 
-  // Daily PnL buckets (UTC day start ms → total PnL)
   const dailyPnL = {};
-  for (const f of fills) {
+  for (const f of (fills || [])) {
     const d = Math.floor(f.time / msDay) * msDay;
     dailyPnL[d] = (dailyPnL[d] || 0) + (f.closed_pnl || 0);
   }
-  for (const f of funding) {
+  for (const f of (funding || [])) {
     const d = Math.floor(f.time / msDay) * msDay;
     dailyPnL[d] = (dailyPnL[d] || 0) + (f.usdc || 0);
   }
 
-  // Work backwards: starting value 7 days ago
   let startV = currentValue;
   for (let i = 0; i < 7; i++) startV -= (dailyPnL[today - i * msDay] || 0);
   startV = Math.max(0, startV);
 
-  // Reconstruct forward (8 points: 7d ago → today)
   const daily = [];
   let v = startV;
   for (let i = 7; i >= 0; i--) {
@@ -1518,15 +1530,12 @@ function buildPortfolioHistory(currentValue, fills, funding) {
     daily.push({ ts, v });
     if (i > 0) v += (dailyPnL[ts] || 0);
   }
-  // Last point = current value (exact)
   daily[daily.length - 1].v = currentValue;
 
-  // Merge with stored intraday snapshots for the last 2 days
-  const snaps = getPortfolioSnaps().filter(s => s.ts >= today - 2 * msDay);
-  if (snaps.length >= 3) {
-    // Replace last 2 daily bars with hourly granularity
+  const recentSnaps = (snaps || []).filter(s => s.ts >= today - 2 * msDay);
+  if (recentSnaps.length >= 3) {
     const base = daily.filter(p => p.ts < today - 2 * msDay);
-    return [...base, ...snaps.map(s => ({ ts: s.ts, v: s.v }))];
+    return [...base, ...recentSnaps.map(s => ({ ts: s.ts, v: s.v }))];
   }
   return daily;
 }
@@ -1545,6 +1554,17 @@ function setChartCurrency(cur) {
   if (portfolioChart) updateChartLabels();
 }
 
+function setChartMode(mode, btn) {
+  chartMode = mode;
+  document.querySelectorAll('.ch-mode-tab').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  const lbl = document.getElementById('ch-mode-label');
+  if (lbl) lbl.textContent = mode === 'perp' ? 'Perp acct' : mode === 'spot' ? 'Spot total' : 'Portfolio';
+  const d = _chartData[mode];
+  if (!d?.pts?.length) return;
+  _drawPortfolioChart(d.pts, d.current);
+  updateChartLabels();
+}
+
 function updateChartLabels() {
   if (!portfolioChart) return;
   const rate = chartCurrency === 'IDR' ? (usdToIdr || 16000) : 1;
@@ -1553,78 +1573,82 @@ function updateChartLabels() {
   portfolioChart.options.scales.y.ticks.callback = v =>
     chartCurrency === 'IDR' ? 'Rp ' + (v / 1e6).toFixed(1) + 'M' : '$' + (v >= 1000 ? (v / 1000).toFixed(1) + 'K' : v.toFixed(0));
   portfolioChart.update('none');
-  // Update stat strip
-  const pts = portfolioChart._rawPts;
-  const cur = pts.at(-1)?.v || 0, start = pts[0]?.v || cur;
+  const cur = portfolioChart._modeCurrentValue ?? raw.at(-1)?.v ?? 0;
+  const start = raw[0]?.v || cur;
   const chg = cur - start, pct = start > 0 ? chg / start * 100 : 0;
-  const el = id => document.getElementById(id);
-  if (el('ch-cur')) el('ch-cur').textContent = fmtChartValue(cur);
-  if (el('ch-chg')) { el('ch-chg').textContent = (chg >= 0 ? '+' : '') + fmtChartValue(Math.abs(chg)); el('ch-chg').className = chg >= 0 ? 'pos mono' : 'neg mono'; }
-  if (el('ch-pct')) { el('ch-pct').textContent = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%'; el('ch-pct').className = pct >= 0 ? 'pos mono' : 'neg mono'; }
+  const $el = id => document.getElementById(id);
+  if ($el('ch-cur')) $el('ch-cur').textContent = fmtChartValue(cur);
+  if ($el('ch-chg')) { $el('ch-chg').textContent = (chg >= 0 ? '+' : '') + fmtChartValue(Math.abs(chg)); $el('ch-chg').className = chg >= 0 ? 'pos mono' : 'neg mono'; }
+  if ($el('ch-pct')) { $el('ch-pct').textContent = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%'; $el('ch-pct').className = pct >= 0 ? 'pos mono' : 'neg mono'; }
 }
 
-async function renderPortfolioChart(accountValue) {
-  savePortfolioSnap(accountValue);
-  fetchIDRRate(); // fire and forget — updates label async
+function _drawPortfolioChart(pts, currentValue) {
+  const ctx = document.getElementById('portfolio-chart');
+  if (!ctx || !window.Chart || !pts?.length) return;
+  if (portfolioChart) { portfolioChart.destroy(); portfolioChart = null; }
 
-  let fills = [], funding = [];
-  try {
-    [fills, funding] = await Promise.all([
-      getUserFills(currentWallet).then(parseFills),
-      getUserFunding(currentWallet, 7).then(parseFunding)
-    ]);
-  } catch(_) {}
-
-  const pts = buildPortfolioHistory(accountValue, fills, funding);
-  if (!pts.length) return;
-
-  const isUp = pts.at(-1).v >= pts[0].v;
+  const rate  = chartCurrency === 'IDR' ? (usdToIdr || 16000) : 1;
+  const isUp  = pts.at(-1).v >= pts[0].v;
   const color = isUp ? '#22c55e' : '#ef4444';
-  const bg = isUp ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)';
-
+  const bg    = isUp ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)';
   const labels = pts.map(p => {
     const d = new Date(p.ts);
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + (pts.length > 10 ? ' ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '');
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      + (pts.length > 10 ? ' ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '');
   });
-  const values = pts.map(p => +p.v.toFixed(2));
-
-  const ctx = document.getElementById('portfolio-chart');
-  if (!ctx || !window.Chart) return;
-  if (portfolioChart) { portfolioChart.destroy(); portfolioChart = null; }
+  const values = pts.map(p => +(p.v * rate).toFixed(2));
 
   portfolioChart = new Chart(ctx, {
     type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        data: values,
-        borderColor: color,
-        backgroundColor: bg,
-        fill: true,
-        tension: 0.35,
-        pointRadius: pts.length <= 10 ? 3 : 0,
-        pointHoverRadius: 5,
-        borderWidth: 2,
-      }]
-    },
+    data: { labels, datasets: [{ data: values, borderColor: color, backgroundColor: bg, fill: true, tension: 0.35, pointRadius: pts.length <= 10 ? 3 : 0, pointHoverRadius: 5, borderWidth: 2 }] },
     options: {
       responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
       plugins: {
         legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: c => fmtChartValue(c.raw / (chartCurrency === 'IDR' ? (usdToIdr || 16000) : 1)),
-            title: items => labels[items[0].dataIndex]
-          }
-        }
+        tooltip: { callbacks: {
+          label: c => fmtChartValue(c.raw / rate),
+          title: items => labels[items[0].dataIndex]
+        }}
       },
       scales: {
         x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#666', maxRotation: 0, maxTicksLimit: 7, font: { size: 10 } } },
-        y: { position: 'right', grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#666', font: { size: 10 }, callback: v => '$' + (v >= 1000 ? (v/1000).toFixed(1)+'K' : v.toFixed(0)) } }
+        y: { position: 'right', grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#666', font: { size: 10 }, callback: v => chartCurrency === 'IDR' ? 'Rp ' + (v/1e6).toFixed(1)+'M' : '$' + (v >= 1000 ? (v/1000).toFixed(1)+'K' : v.toFixed(0)) } }
       }
     }
   });
   portfolioChart._rawPts = pts;
+  portfolioChart._modeCurrentValue = currentValue;
+}
+
+async function renderPortfolioChart(totalPortfolio) {
+  const perpValue = _ovData?.s?.account_value ?? totalPortfolio;
+  const spotValue = _ovData?.spotTotalValue   ?? 0;
+
+  savePortfolioSnap('all',  totalPortfolio);
+  savePortfolioSnap('perp', perpValue);
+  savePortfolioSnap('spot', spotValue);
+  fetchIDRRate();
+
+  let taggedFills = [], funding = [];
+  try {
+    const rawFills = await getUserFills(currentWallet);
+    const spotIndexMap = buildSpotIndexMap(_ovData?.spotMetaRaw);
+    taggedFills = tagFills(parseFills(rawFills), spotIndexMap);
+    funding = await getUserFunding(currentWallet, 7).then(parseFunding).catch(() => []);
+  } catch(_) {}
+
+  const perpFills = taggedFills.filter(f => !f.isSpot);
+  const spotFills = taggedFills.filter(f =>  f.isSpot);
+
+  _chartData = {
+    all:  { pts: buildPortfolioHistory(totalPortfolio, taggedFills, funding,  getPortfolioSnaps('all')),  current: totalPortfolio },
+    perp: { pts: buildPortfolioHistory(perpValue,      perpFills,   funding,  getPortfolioSnaps('perp')), current: perpValue },
+    spot: { pts: buildPortfolioHistory(spotValue,      spotFills,   [],       getPortfolioSnaps('spot')), current: spotValue },
+  };
+
+  const d = _chartData[chartMode];
+  if (!d?.pts?.length) return;
+  _drawPortfolioChart(d.pts, d.current);
   updateChartLabels();
 }
 
