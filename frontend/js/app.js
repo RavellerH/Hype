@@ -360,6 +360,7 @@ async function loadOverview() {
       fetch(`${API}/api/market-ctx`).then(r => r.json()).catch(() => ({})),
     ]);
     _marketCtx = mktCtx;
+    window._rawMeta = null; // dev branch fetches via backend, not raw HL
     // Lazily warm MVRV cache for scoring
     if (typeof _mvrvData === 'undefined' || !_mvrvData) {
       fetch(`${API}/api/mvrv`).then(r => r.json()).then(d => { _mvrvData = d; }).catch(() => {});
@@ -1302,6 +1303,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
   }, 60000);
+  if (typeof loggerInit === 'function') { loggerInit(); loggerRefreshStatus(); }
 });
 
 document.addEventListener('click', (e) => {
