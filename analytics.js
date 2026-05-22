@@ -539,33 +539,69 @@ function _md(text) {
 
 // ── Load ──────────────────────────────────────────────────────────────────────
 
+let _analyticsTab = 'stats';
+
+function setAnalyticsTab(tab, btn) {
+  _analyticsTab = tab;
+  document.querySelectorAll('.an-tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const el = document.getElementById('analytics-content');
+  if (!el) return;
+  if (tab === 'logger') {
+    _renderLoggerTab(el);
+  } else {
+    _renderStatsTab(el);
+  }
+}
+
+function _renderTabBar() {
+  return `<div class="an-tabbar">
+    <button class="an-tab${_analyticsTab === 'stats'  ? ' active' : ''}" onclick="setAnalyticsTab('stats',this)">Stats &amp; ML</button>
+    <button class="an-tab${_analyticsTab === 'logger' ? ' active' : ''}" onclick="setAnalyticsTab('logger',this)">Data Logger</button>
+  </div>`;
+}
+
+function _renderLoggerTab(el) {
+  el.innerHTML = _renderTabBar() + (typeof renderLoggerSettings === 'function'
+    ? renderLoggerSettings()
+    : '<div style="padding:24px;color:var(--text-muted)">Logger not loaded.</div>');
+}
+
+function _renderStatsTab(el) {
+  if (!_analyticsCache) {
+    el.innerHTML = _renderTabBar() + '<div style="padding:24px;color:var(--text-muted)">No closed trades found yet.</div>';
+    return;
+  }
+  el.innerHTML = _renderTabBar() + renderAnalytics(_analyticsCache);
+  requestAnimationFrame(() => _renderAnalyticsCharts(_analyticsCache));
+}
+
 async function loadAnalytics() {
   const el = document.getElementById('analytics-content');
   if (!el) return;
 
+  if (_analyticsTab === 'logger') {
+    _renderLoggerTab(el);
+    return;
+  }
+
   if (!currentWallet) {
-    el.innerHTML = '<div style="padding:24px;color:var(--text-muted)">Connect a wallet to view analytics.</div>';
+    el.innerHTML = _renderTabBar() + '<div style="padding:24px;color:var(--text-muted)">Connect a wallet to view analytics.</div>';
     return;
   }
 
   if (!_analyticsCache || Date.now() - _analyticsTs > ANALYTICS_TTL) {
-    el.innerHTML = '<div class="loading"><div class="spinner"></div> Building analytics…</div>';
+    el.innerHTML = _renderTabBar() + '<div class="loading"><div class="spinner"></div> Building analytics…</div>';
     try {
       const rawFills = await getUserFills(currentWallet);
       const trades   = typeof buildTrades === 'function' ? buildTrades(rawFills) : [];
       _analyticsCache = buildAnalytics(trades);
       _analyticsTs    = Date.now();
     } catch (err) {
-      el.innerHTML = `<div style="padding:24px;color:var(--red)">Failed to load fills: ${err.message}</div>`;
+      el.innerHTML = _renderTabBar() + `<div style="padding:24px;color:var(--red)">Failed to load fills: ${err.message}</div>`;
       return;
     }
   }
 
-  if (!_analyticsCache) {
-    el.innerHTML = '<div style="padding:24px;color:var(--text-muted)">No closed trades found yet.</div>';
-    return;
-  }
-
-  el.innerHTML = renderAnalytics(_analyticsCache);
-  requestAnimationFrame(() => _renderAnalyticsCharts(_analyticsCache));
+  _renderStatsTab(el);
 }

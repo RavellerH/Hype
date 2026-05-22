@@ -621,6 +621,7 @@ async function loadOverview(){
     const totalPortfolio = s.account_value + spotTotalValue;
 
     _ovData = {s, positions, spotBals, usdcBalance, orders, totalPortfolio, spotTotalValue, spotUnrPnl, totalUnr, marketCtx};
+    window._rawMeta = perpMetaRaw;
     if(typeof fetchIndicators==='function')fetchIndicators().catch(()=>{});
 
     el.innerHTML = `
@@ -1865,4 +1866,5 @@ document.addEventListener('DOMContentLoaded',()=>{
   }
   navigate('overview');
   autoRefreshTimer=setInterval(()=>navigate(currentPage),30000);
+  if(typeof loggerInit==='function'){ loggerInit(); loggerRefreshStatus(); }
 });

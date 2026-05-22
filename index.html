@@ -43,6 +43,8 @@
     <div class="topbar-right">
       <span class="refresh-info" id="refresh-info"></span>
       <button class="btn btn-ghost btn-sm" onclick="refreshAll()">↺</button>
+      <span id="logger-dot" class="logger-dot off" id="logger-dot" title="Data Logger"></span>
+      <span id="logger-tip" class="logger-tip" style="display:none"></span>
       <span class="wallet-badge" id="wallet-display">0x6e4c…2015</span>
       <div id="ws-status" class="status-dot off" title="WebSocket"></div>
       <button class="btn btn-ghost btn-sm" id="install-btn" onclick="installPWA()" title="Install app">
@@ -132,6 +134,7 @@
 <script src="indicators.js"></script>
 <script src="nansen.js"></script>
 <script src="analytics.js"></script>
+<script src="logger.js"></script>
 <script src="app.js"></script>
 <script src="mvrv-ai.js"></script>
 <script src="kb.js"></script>
