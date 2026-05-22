@@ -482,6 +482,68 @@ function refreshAll(){navigate(currentPage);}
 // ── Overview ──────────────────────────────────────────────────────────────────
 let overviewTab = 'summary';
 let _ovData = null; // cached for tab switching
+let _spotEnriched = false;
+
+// Lazily compute spot cost basis from fill history for tokens with no entryNtl
+async function enrichSpotCostBasis() {
+  const spotBals   = _ovData?.spotBals;
+  const spotMetaRaw = _ovData?.spotMetaRaw;
+  if (!spotBals?.some(b => b.avgEntry === 0 && b.total > 0.000001)) return;
+  if (_spotEnriched) return;
+  try {
+    const spotIndexMap = buildSpotIndexMap(spotMetaRaw);
+    const rawFills = await getUserFills(currentWallet);
+    const spotFills = (rawFills || [])
+      .filter(f => f.coin?.startsWith('@') && spotIndexMap[f.coin])
+      .map(f => ({
+        coin:  spotIndexMap[f.coin],
+        buy:   f.side === 'B',
+        size:  parseFloat(f.sz  || 0),
+        price: parseFloat(f.px  || 0),
+        time:  f.time || 0,
+      }))
+      .filter(f => f.size > 0 && f.price > 0)
+      .sort((a, b) => a.time - b.time);
+
+    // Average cost method per coin
+    const h = {}; // { coin: { shares, cost } }
+    for (const f of spotFills) {
+      if (!h[f.coin]) h[f.coin] = { shares: 0, cost: 0 };
+      const c = h[f.coin];
+      if (f.buy) {
+        c.cost   += f.size * f.price;
+        c.shares += f.size;
+      } else if (c.shares > 0) {
+        const frac = Math.min(f.size / c.shares, 1);
+        c.cost  *= (1 - frac);
+        c.shares = Math.max(c.shares - f.size, 0);
+      }
+    }
+
+    let changed = false;
+    _ovData.spotBals = spotBals.map(b => {
+      if (b.avgEntry > 0) return b;
+      const c = h[b.coin];
+      if (!c || c.shares < 1e-9) return b;
+      const avgEntry = c.cost / c.shares;
+      if (avgEntry <= 0) return b;
+      const unrealizedPnl = (b.currentPrice - avgEntry) * b.total;
+      const entryNtl = avgEntry * b.total;
+      const pnlPct   = entryNtl > 0 ? unrealizedPnl / entryNtl * 100 : 0;
+      changed = true;
+      return { ...b, avgEntry, entryNtl, unrealizedPnl, pnlPct };
+    });
+
+    if (changed) {
+      _spotEnriched = true;
+      _ovData.spotUnrPnl = _ovData.spotBals.reduce((a, b) => a + b.unrealizedPnl, 0);
+      _ovData.totalUnr   = _ovData.positions.reduce((a, p) => a + p.unrealized_pnl, 0) + _ovData.spotUnrPnl;
+      if (['summary', 'spot'].includes(overviewTab)) renderOverviewTab();
+    }
+  } catch (e) {
+    console.warn('[enrichSpot]', e);
+  }
+}
 
 function setOverviewTab(tab) {
   overviewTab = tab;
@@ -517,7 +579,58 @@ function renderOverviewTab() {
           <div><div class="stat-label">Rate</div><div id="ch-rate" class="muted" style="font-size:11px">fetching…</div></div>
         </div>
         <div style="position:relative;height:160px"><canvas id="portfolio-chart"></canvas></div>
-      </div>`;
+      </div>
+      ${(()=>{
+        if (!positions.length) return '';
+        const perpPnl = positions.reduce((a,p)=>a+p.unrealized_pnl,0);
+        return `<div class="card" style="margin-top:14px">
+          <div class="card-title" style="margin-bottom:10px">Perp Positions (${positions.length}) <span class="${perpPnl>=0?'pos':'neg'} mono" style="font-weight:400;font-size:12px">${perpPnl>=0?'+':''}${fmt$(perpPnl)}</span></div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Coin</th><th>Side</th><th>Size</th><th>Entry</th><th>Now</th><th>PnL</th><th>PnL %</th></tr></thead>
+            <tbody>${positions.map(p=>{
+              const mark    = marketCtx[p.coin]?.mark_price || p.mark_price || 0;
+              const pnlPct  = p.entry_price>0 ? p.unrealized_pnl/(p.size*p.entry_price)*100 : 0;
+              return `<tr>
+                <td class="accent" style="font-weight:600;cursor:pointer" onclick="openPositionDetail('${p.coin}')">${p.coin}</td>
+                <td><span class="side-badge ${p.side}">${p.side==='long'?'LONG':'SHORT'}</span></td>
+                <td class="mono">${p.size}</td>
+                <td class="mono muted">${fmt$(p.entry_price)}</td>
+                <td class="mono">${mark>0?fmtPrice(mark):'—'}</td>
+                <td class="${p.unrealized_pnl>=0?'pos':'neg'} mono">${fmt$(p.unrealized_pnl)}</td>
+                <td class="${pnlPct>=0?'pos':'neg'}">${pnlPct>=0?'+':''}${pnlPct.toFixed(2)}%</td>
+              </tr>`;
+            }).join('')}</tbody>
+          </table></div>
+        </div>`;
+      })()}
+      ${(()=>{
+        if (!spotBals.length) return '';
+        const spotPnl = spotBals.reduce((a,b)=>a+b.unrealizedPnl,0);
+        return `<div class="card" style="margin-top:14px">
+          <div class="card-title" style="margin-bottom:10px">Spot Holdings (${spotBals.length}) ${spotPnl!==0?`<span class="${spotPnl>=0?'pos':'neg'} mono" style="font-weight:400;font-size:12px">${spotPnl>=0?'+':''}${fmt$(spotPnl)}</span>`:''}
+          </div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Coin</th><th>Amount</th><th>Entry</th><th>Now</th><th>Value</th><th>PnL</th><th>PnL %</th></tr></thead>
+            <tbody>${spotBals.map(b=>`<tr>
+              <td class="accent" style="font-weight:600">${b.coin}</td>
+              <td class="mono">${b.total.toLocaleString('en-US',{maximumFractionDigits:6})}</td>
+              <td class="mono muted">${b.avgEntry>0?fmtPrice(b.avgEntry):'—'}</td>
+              <td class="mono">${b.currentPrice>0?fmtPrice(b.currentPrice):'—'}</td>
+              <td class="mono">${b.value>0?fmt$(b.value):'—'}</td>
+              <td class="${b.unrealizedPnl>=0?'pos':'neg'} mono">${b.avgEntry>0?fmt$(b.unrealizedPnl):'—'}</td>
+              <td class="${b.pnlPct>=0?'pos':'neg'}">${b.avgEntry>0?(b.pnlPct>=0?'+':'')+b.pnlPct.toFixed(2)+'%':'—'}</td>
+            </tr>`).join('')}
+            ${usdcBalance>0.01?`<tr>
+              <td class="muted" style="font-weight:600">USDC</td>
+              <td class="mono">${usdcBalance.toFixed(2)}</td>
+              <td class="muted">—</td><td class="mono muted">$1.00</td>
+              <td class="mono">${fmt$(usdcBalance)}</td>
+              <td class="muted">—</td><td class="muted">—</td>
+            </tr>`:''}
+            </tbody>
+          </table></div>
+        </div>`;
+      })()}`;
     requestAnimationFrame(() => renderPortfolioChart(totalPortfolio));
   }
 
@@ -534,14 +647,16 @@ function renderOverviewTab() {
         <div class="card-title">Open Positions (${positions.length})</div>
         ${positions.length===0?'<div class="empty-state">No open perp positions</div>':`
         <div class="table-wrap"><table>
-          <thead><tr><th>Coin</th><th>Side</th><th>Size</th><th>Entry</th><th>Liq</th><th>PnL</th><th>Lev</th><th>Age</th><th>Health</th></tr></thead>
-          <tbody>${(()=>{_posHealthData={};return positions;})().map(p=>{const h=scorePosition(p,marketCtx);_posHealthData[p.coin]={coin:p.coin,side:p.side,...h};return`<tr>
+          <thead><tr><th>Coin</th><th>Side</th><th>Size</th><th>Entry</th><th>Now</th><th>Liq</th><th>PnL</th><th>PnL%</th><th>Lev</th><th>Age</th><th>Health</th></tr></thead>
+          <tbody>${(()=>{_posHealthData={};return positions;})().map(p=>{const h=scorePosition(p,marketCtx);_posHealthData[p.coin]={coin:p.coin,side:p.side,...h};const markPx=marketCtx[p.coin]?.mark_price||p.mark_price||0;const pnlPct=p.entry_price>0?p.unrealized_pnl/(p.size*p.entry_price)*100:0;return`<tr>
             <td class="accent" style="font-weight:600;cursor:pointer" onclick="openPositionDetail('${p.coin}')">${p.coin}</td>
             <td><span class="side-badge ${p.side}">${p.side==='long'?'LONG':'SHORT'}</span></td>
             <td class="mono">${p.size}</td>
-            <td class="mono">${fmt$(p.entry_price)}</td>
+            <td class="mono muted">${fmt$(p.entry_price)}</td>
+            <td class="mono">${markPx>0?fmtPrice(markPx):'—'}</td>
             <td class="${p.liquidation_price>0?'neg':'muted'} mono">${p.liquidation_price>0?fmt$(p.liquidation_price):'—'}</td>
             <td class="${p.unrealized_pnl>=0?'pos':'neg'} mono">${fmt$(p.unrealized_pnl)}</td>
+            <td class="${pnlPct>=0?'pos':'neg'}">${pnlPct>=0?'+':''}${pnlPct.toFixed(2)}%</td>
             <td class="muted">${p.leverage_value}x</td>
             <td>${typeof posAgeBadge==='function'?posAgeBadge(p.coin):''}</td>
             <td><span class="health-badge ${h.cls}" style="cursor:pointer" onclick="showHealthModal('${p.coin}')"><span class="health-score">${h.score}</span> ${h.grade}</span></td>
@@ -602,6 +717,7 @@ function renderOverviewTab() {
 async function loadOverview(){
   const el=document.getElementById('overview-content');
   el.innerHTML=loading();
+  _spotEnriched = false;
   try{
     setStatus(true);
     const [state, orders, spotStateRaw, spotMetaRaw, perpMetaRaw] = await Promise.all([
@@ -620,9 +736,10 @@ async function loadOverview(){
     const totalUnr = positions.reduce((a,p)=>a+p.unrealized_pnl,0) + spotUnrPnl;
     const totalPortfolio = s.account_value + spotTotalValue;
 
-    _ovData = {s, positions, spotBals, usdcBalance, orders, totalPortfolio, spotTotalValue, spotUnrPnl, totalUnr, marketCtx};
+    _ovData = {s, positions, spotBals, usdcBalance, orders, totalPortfolio, spotTotalValue, spotUnrPnl, totalUnr, marketCtx, spotMetaRaw};
     window._rawMeta = perpMetaRaw;
     if(typeof fetchIndicators==='function')fetchIndicators().catch(()=>{});
+    enrichSpotCostBasis().catch(()=>{});
 
     el.innerHTML = `
       <div class="section-header" style="margin-bottom:14px">
