@@ -163,6 +163,17 @@ async def get_positions(wallet: str = PRIMARY_WALLET):
     }
 
 
+@app.get("/api/spot")
+async def get_spot(wallet: str = PRIMARY_WALLET):
+    spot_state, spot_meta, fills = await asyncio.gather(
+        hl.get_spot_state(wallet),
+        hl.get_spot_meta(),
+        hl.get_user_fills(wallet),
+    )
+    return hl.parse_spot_balances(spot_state, spot_meta, fills)
+
+
+
 @app.get("/api/trades")
 async def get_trades(wallet: str = PRIMARY_WALLET, limit: int = 100):
     fills = await hl.get_user_fills(wallet)

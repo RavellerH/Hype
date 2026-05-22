@@ -397,13 +397,16 @@ function renderOverview(summary, positions, marketCtx) {
         const liqPct = p.liquidation_price > 0 && p.mark_price > 0
           ? Math.abs((p.mark_price - p.liquidation_price) / p.mark_price * 100).toFixed(1) + '%'
           : null;
+        const pnlPct = p.entry_price > 0 ? p.unrealized_pnl / (p.size * p.entry_price) * 100 : 0;
         return `<tr>
           <td class="coin-cell" style="cursor:pointer" onclick="typeof openPositionDetail==='function'&&openPositionDetail('${p.coin}')">${p.coin}</td>
           <td><span class="side-badge ${p.side}">${p.side.toUpperCase()}</span></td>
           <td class="num">${p.size}</td>
-          <td class="num">${fmt$(p.entry_price)}</td>
+          <td class="num muted">${fmt$(p.entry_price)}</td>
+          <td class="num">${p.mark_price > 0 ? fmtPrice(p.mark_price) : '—'}</td>
           <td class="num ${p.liquidation_price > 0 ? 'neg' : 'muted'}" title="${liqPct ? liqPct + ' away' : ''}">${p.liquidation_price > 0 ? fmt$(p.liquidation_price) : '—'}</td>
           <td class="num ${p.unrealized_pnl >= 0 ? 'pos' : 'neg'}">${fmt$(p.unrealized_pnl)}</td>
+          <td class="num ${pnlPct >= 0 ? 'pos' : 'neg'}">${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%</td>
           <td class="num ${p.cum_funding >= 0 ? 'pos' : 'neg'}">${p.cum_funding.toFixed(4)}</td>
           <td class="num muted">${p.leverage_value}× ${p.leverage_type}</td>
           <td>${typeof posAgeBadge === 'function' ? posAgeBadge(p.coin) : ''}</td>
@@ -431,15 +434,70 @@ function renderOverview(summary, positions, marketCtx) {
       <table>
         <thead><tr>
           <th>Coin</th><th>Side</th>
-          <th class="num">Size</th><th class="num">Entry</th>
-          <th class="num">Liq. Price</th><th class="num">Unr. PnL</th>
+          <th class="num">Size</th><th class="num">Entry</th><th class="num">Now</th>
+          <th class="num">Liq. Price</th><th class="num">Unr. PnL</th><th class="num">PnL %</th>
           <th class="num">Funding</th><th class="num">Leverage</th>
           <th>Age</th><th>Health</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>
+    <div id="spot-section"></div>
   `;
+  loadSpotSection();
+}
+
+let _spotCache = null;
+
+async function loadSpotSection() {
+  const el = document.getElementById('spot-section');
+  if (!el) return;
+  try {
+    _spotCache = await fetch(`${API}/api/spot?wallet=${PRIMARY_WALLET}`).then(r => r.json());
+    renderSpotSection(_spotCache);
+  } catch (e) {
+    console.warn('[spot]', e);
+  }
+}
+
+function renderSpotSection(data) {
+  const el = document.getElementById('spot-section');
+  if (!el || !data) return;
+  const { balances = [], usdc_balance = 0 } = data;
+  if (!balances.length && usdc_balance < 0.01) { el.innerHTML = ''; return; }
+  const spotPnl = balances.reduce((a, b) => a + b.unrealized_pnl, 0);
+  el.innerHTML = `
+    <div class="table-wrap" style="margin-top:16px">
+      <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;display:flex;align-items:center;gap:8px">
+        Spot Holdings
+        ${spotPnl !== 0 ? `<span class="${spotPnl >= 0 ? 'pos' : 'neg'} mono" style="font-weight:400">${spotPnl >= 0 ? '+' : ''}${fmt$(spotPnl)}</span>` : ''}
+      </div>
+      <table>
+        <thead><tr>
+          <th>Coin</th>
+          <th class="num">Amount</th><th class="num">Entry</th><th class="num">Now</th>
+          <th class="num">Value</th><th class="num">PnL $</th><th class="num">PnL %</th>
+        </tr></thead>
+        <tbody>
+          ${balances.map(b => `<tr>
+            <td class="coin-cell">${b.coin}</td>
+            <td class="num">${b.total.toLocaleString('en-US', {maximumFractionDigits:6})}</td>
+            <td class="num muted">${b.avg_entry > 0 ? fmtPrice(b.avg_entry) : '—'}</td>
+            <td class="num">${b.current_price > 0 ? fmtPrice(b.current_price) : '—'}</td>
+            <td class="num">${b.value > 0 ? fmt$(b.value) : '—'}</td>
+            <td class="num ${b.unrealized_pnl >= 0 ? 'pos' : 'neg'}">${b.avg_entry > 0 ? fmt$(b.unrealized_pnl) : '—'}</td>
+            <td class="${b.pnl_pct >= 0 ? 'pos' : 'neg'}">${b.avg_entry > 0 ? (b.pnl_pct >= 0 ? '+' : '') + b.pnl_pct.toFixed(2) + '%' : '—'}</td>
+          </tr>`).join('')}
+          ${usdc_balance > 0.01 ? `<tr>
+            <td class="coin-cell muted">USDC</td>
+            <td class="num">${usdc_balance.toFixed(2)}</td>
+            <td class="muted">—</td><td class="num muted">$1.00</td>
+            <td class="num">${fmt$(usdc_balance)}</td>
+            <td class="muted">—</td><td class="muted">—</td>
+          </tr>` : ''}
+        </tbody>
+      </table>
+    </div>`;
 }
 
 function setOverviewFilter(val) {
@@ -1138,6 +1196,15 @@ function fmt$(n) {
   if (abs >= 1e6) return sign + '$' + (abs / 1e6).toFixed(2) + 'M';
   if (abs >= 1e3) return sign + '$' + abs.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
   return sign + '$' + abs.toFixed(2);
+}
+
+function fmtPrice(n) {
+  if (!n && n !== 0) return '—';
+  const abs = Math.abs(n);
+  if (abs >= 1000)  return '$' + abs.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  if (abs >= 1)     return '$' + abs.toFixed(4);
+  if (abs >= 0.001) return '$' + abs.toFixed(6);
+  return '$' + abs.toFixed(8);
 }
 
 function fmtTime(ms) {

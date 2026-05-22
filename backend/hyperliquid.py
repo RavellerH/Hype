@@ -21,6 +21,94 @@ async def get_spot_state(wallet: str) -> dict:
     return await _post({"type": "spotClearinghouseState", "user": wallet})
 
 
+async def get_spot_meta() -> dict:
+    return await _post({"type": "spotMetaAndAssetCtxs"})
+
+
+def parse_spot_balances(state: dict, spot_meta: dict, fills: list) -> dict:
+    """Return spot balances with avg entry computed from entryNtl or fill history."""
+    if not state or "balances" not in state:
+        return {"balances": [], "usdc_balance": 0.0}
+
+    meta_universe = (spot_meta[0].get("universe") if spot_meta and len(spot_meta) > 0 else None) or []
+    asset_ctxs    = (spot_meta[1] if spot_meta and len(spot_meta) > 1 else None) or []
+
+    # Build price map: coin → current price
+    price_map: dict[str, float] = {}
+    for i, u in enumerate(meta_universe):
+        base = u.get("name", "").split("/")[0]
+        px = float((asset_ctxs[i].get("midPx") or asset_ctxs[i].get("markPx") or 0) if i < len(asset_ctxs) else 0)
+        if px > 0:
+            price_map[base] = px
+
+    # Build spot index map: "@N" → coin name
+    spot_idx_map: dict[str, str] = {f"@{i}": u.get("name", "").split("/")[0] for i, u in enumerate(meta_universe)}
+
+    # Compute avg entry per coin from fills (average cost method)
+    holdings: dict[str, dict] = {}
+    spot_fills = sorted(
+        [f for f in (fills or []) if isinstance(f.get("coin"), str) and f["coin"].startswith("@")],
+        key=lambda f: f.get("time", 0),
+    )
+    for f in spot_fills:
+        coin = spot_idx_map.get(f["coin"])
+        if not coin:
+            continue
+        size  = float(f.get("sz",  0) or 0)
+        price = float(f.get("px",  0) or 0)
+        if size <= 0 or price <= 0:
+            continue
+        if coin not in holdings:
+            holdings[coin] = {"shares": 0.0, "cost": 0.0}
+        h = holdings[coin]
+        if f.get("side") == "B":
+            h["cost"]   += size * price
+            h["shares"] += size
+        elif h["shares"] > 0:
+            frac = min(size / h["shares"], 1.0)
+            h["cost"]  *= (1.0 - frac)
+            h["shares"] = max(h["shares"] - size, 0.0)
+
+    usdc_entry = next((b for b in state["balances"] if b.get("coin") == "USDC"), None)
+    usdc_balance = float(usdc_entry.get("total", 0) if usdc_entry else 0)
+
+    balances = []
+    for b in state["balances"]:
+        if b.get("coin") == "USDC":
+            continue
+        total = float(b.get("total", 0) or 0)
+        if total <= 0:
+            continue
+        coin  = b["coin"]
+        # Prefer entryNtl from API; fall back to fill-computed avg
+        entry_ntl = float(b.get("entryNtl", 0) or 0)
+        avg_entry  = entry_ntl / total if (entry_ntl > 0 and total > 0) else 0.0
+
+        if avg_entry == 0.0 and coin in holdings:
+            h = holdings[coin]
+            if h["shares"] > 1e-9:
+                avg_entry  = h["cost"] / h["shares"]
+                entry_ntl  = avg_entry * total
+
+        current_price  = price_map.get(coin, 0.0)
+        value          = current_price * total
+        unrealized_pnl = (current_price - avg_entry) * total if (avg_entry > 0 and current_price > 0) else 0.0
+        pnl_pct        = unrealized_pnl / entry_ntl * 100 if entry_ntl > 0 else 0.0
+
+        if value > 0.01 or entry_ntl > 0:
+            balances.append({
+                "coin": coin, "total": total,
+                "avg_entry": round(avg_entry, 6),
+                "current_price": round(current_price, 6),
+                "value": round(value, 4),
+                "unrealized_pnl": round(unrealized_pnl, 4),
+                "pnl_pct": round(pnl_pct, 4),
+            })
+
+    balances.sort(key=lambda b: b["value"], reverse=True)
+    return {"balances": balances, "usdc_balance": round(usdc_balance, 4)}
+
+
 # ── Trade fills ───────────────────────────────────────────────────────────────
 
 async def get_user_fills(wallet: str) -> list:
