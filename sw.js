@@ -1,9 +1,15 @@
-const CACHE = 'hype-v5';
+const CACHE = 'hype-v6';
 const STATIC = [
   './',
   './styles.css',
   './app.js',
+  './ta-signal.js',
+  './position-meta.js',
   './intel.js',
+  './indicators.js',
+  './analytics.js',
+  './logger.js',
+  './nansen.js',
   './mvrv-ai.js',
   './icons/icon.svg',
   './manifest.json',

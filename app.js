@@ -1052,6 +1052,10 @@ async function loadPhases(interval){
         <div class="section-title">Phase Detector</div>
         <div class="tabs">${['1h','4h','1d'].map(iv=>`<button class="tab ${phaseInterval===iv?'active':''}" onclick="loadPhases('${iv}')">${iv}</button>`).join('')}</div>
       </div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-title" style="margin-bottom:10px">🔄 CVD + OI Market Scanner</div>
+        <div id="cvd-oi-table"><div class="loading">${spinnerHtml()} Scanning ${allCoins.join(', ')}…</div></div>
+      </div>
       <div id="phase-cards" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
         <div class="loading" style="grid-column:1/-1">${spinnerHtml()} Analyzing ${allCoins.join(', ')} on ${phaseInterval}…</div>
       </div>
@@ -1065,16 +1069,48 @@ async function loadPhases(interval){
         </div>
       </div>`;
 
-    const results=await Promise.allSettled(allCoins.map(async coin=>{
-      const candles=await getCandles(coin,phaseInterval,days);
-      return {coin,hasPosition:posCoinSet.has(coin),...detectPhase(candles)};
-    }));
+    const [results, phaseMeta] = await Promise.all([
+      Promise.allSettled(allCoins.map(async coin=>{
+        const candles=await getCandles(coin,phaseInterval,days);
+        return {coin,hasPosition:posCoinSet.has(coin),candles,...detectPhase(candles)};
+      })),
+      getMetaAndAssetCtxs().catch(()=>null),
+    ]);
     const phases=results.map((r,i)=>
       r.status==='fulfilled'?r.value:
       {coin:allCoins[i],hasPosition:posCoinSet.has(allCoins[i]),phase:'NEUTRAL',confidence:0,signals:['fetch failed']}
     );
     const pcards=document.getElementById('phase-cards');
     if(pcards) pcards.innerHTML=phases.map(phaseCard).join('');
+
+    // CVD+OI scanner
+    const cvdEl=document.getElementById('cvd-oi-table');
+    if(cvdEl && phaseMeta && typeof calcCVD==='function'){
+      const universe=phaseMeta[0]?.universe||[], ctxs=phaseMeta[1]||[];
+      const cvdRows=phases.map(ph=>{
+        if(!ph.candles||!ph.candles.length) return null;
+        const idx=universe.findIndex(a=>a.name===ph.coin);
+        const rawCtx=idx>=0?ctxs[idx]:null;
+        const markPx=rawCtx?parseFloat(rawCtx.markPx||rawCtx.midPx||0):0;
+        const currentOI=rawCtx?parseFloat(rawCtx.openInterest||0)*markPx:0;
+        const opens=ph.candles.map(c=>parseFloat(c.o));
+        const closes=ph.candles.map(c=>parseFloat(c.c));
+        const highs=ph.candles.map(c=>parseFloat(c.h));
+        const lows=ph.candles.map(c=>parseFloat(c.l));
+        const vols=ph.candles.map(c=>parseFloat(c.v));
+        const cvdArr=calcCVD(opens,closes,highs,lows,vols);
+        const lb=4;
+        const recentCVD=cvdArr.at(-1)-(cvdArr.length>lb?cvdArr[cvdArr.length-1-lb]:0);
+        const priceChg=closes.length>lb?(closes.at(-1)-closes[closes.length-1-lb])/closes[closes.length-1-lb]*100:0;
+        if(currentOI>0) saveOIPoint(ph.coin,currentOI);
+        const prevOI=getPrevOI(ph.coin);
+        const oiChgPct=(prevOI&&prevOI>0&&currentOI>0)?(currentOI-prevOI)/prevOI*100:null;
+        const sig=sigCVDOI(priceChg,recentCVD,oiChgPct);
+        return{coin:ph.coin,hasPosition:ph.hasPosition,price:closes.at(-1),priceChg,cvdUp:recentCVD>0,oiChgPct,sig};
+      }).filter(Boolean);
+      cvdEl.innerHTML=renderCVDOITable(cvdRows);
+    }
+
     setRefreshTime();
   }catch(e){el.innerHTML=err(e);}
 }
