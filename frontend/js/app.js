@@ -272,10 +272,10 @@ function riskSummaryHtml(positions, marketCtx) {
   </div>`;
 }
 function parseAccountSummary(state) {
-  // Unified accounts expose crossMarginSummary which includes spot collateral value;
-  // legacy isolated accounts only have marginSummary.
+  // In unified accounts crossMarginSummary exists but its accountValue is 0 (no separate perp wallet).
+  // Use marginSummary for per-stat display; isUnified flag controls totalPortfolio calc below.
   const isUnified = !!state.crossMarginSummary;
-  const m = state.crossMarginSummary || state.marginSummary || {};
+  const m = state.marginSummary || {};
   return { account_value:parseFloat(m.accountValue||0), total_margin_used:parseFloat(m.totalMarginUsed||0),
     total_ntl_pos:parseFloat(m.totalNtlPos||0), withdrawable:parseFloat(state.withdrawable||0), isUnified };
 }
@@ -791,9 +791,13 @@ async function loadOverview(){
     });
     const spotTotalValue = spotBals.reduce((a,b)=>a+b.value,0) + usdcBalance;
     const spotUnrPnl = spotBals.reduce((a,b)=>a+b.unrealizedPnl,0);
-    const totalUnr = positions.reduce((a,p)=>a+p.unrealized_pnl,0) + spotUnrPnl;
-    // Unified account: crossMarginSummary.accountValue already includes spot collateral — don't add twice
-    const totalPortfolio = s.isUnified ? s.account_value : s.account_value + spotTotalValue;
+    const perpUnrPnl = positions.reduce((a,p)=>a+p.unrealized_pnl,0);
+    const totalUnr = perpUnrPnl + spotUnrPnl;
+    // Unified: USDC lives in spot wallet (already in spotTotalValue); perp side only adds floating PnL
+    // Legacy: separate perp wallet (account_value) + spot
+    const totalPortfolio = s.isUnified
+      ? spotTotalValue + perpUnrPnl
+      : s.account_value + spotTotalValue;
 
     _ovData = {s, positions, spotBals, usdcBalance, orders, totalPortfolio, spotTotalValue, spotUnrPnl, totalUnr, marketCtx, spotMetaRaw};
     window._rawMeta = perpMetaRaw;
