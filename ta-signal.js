@@ -371,22 +371,208 @@ function renderCVDOICharts(rows) {
       ? `<span class="${r.oiChgPct >= 0 ? 'pos' : 'neg'}">${r.oiChgPct >= 0 ? '+' : ''}${r.oiChgPct.toFixed(1)}%</span>`
       : `<span class="cvd-track">tracking…</span>`;
     return `<div class="cvd-chart-card${r.hasPosition ? ' cvd-chart-pos' : ''}">
-      <div class="cvd-chart-hdr">
+      <div class="cvd-chart-hdr cvd-chart-toggle" onclick="toggleCVDCard('${r.coin}')">
         <div class="cvd-chart-left">
           <span class="cvd-chart-coin">${r.coin}${r.hasPosition ? '<span class="cvd-dot">◆</span>' : ''}</span>
           <span class="${r.priceChg >= 0 ? 'pos' : 'neg'}" style="font-size:11px">${r.priceChg >= 0 ? '+' : ''}${r.priceChg.toFixed(2)}%</span>
         </div>
-        <span class="ta-sig-badge ta-${r.sig.cls}">${r.sig.label}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="ta-sig-badge ta-${r.sig.cls}">${r.sig.label}</span>
+          <span id="cvd-tog-${r.coin}" class="cvd-toggle-icon">▼</span>
+        </div>
       </div>
-      <div class="cvd-panel-label">Price · <span style="font-family:var(--mono)">${fmtPrice(r.price)}</span></div>
-      <div class="cvd-panel"><canvas id="cvdp-${r.coin}"></canvas></div>
-      <div class="cvd-panel-label">CVD · ${r.cvdUp ? '<span class="pos">▲ net buying</span>' : '<span class="neg">▼ net selling</span>'}</div>
-      <div class="cvd-panel"><canvas id="cvdc-${r.coin}"></canvas></div>
-      <div class="cvd-panel-label">Open Interest · ${oiAbs} ${oiChgHtml}</div>
-      <div class="cvd-panel" id="cvdo-wrap-${r.coin}"><canvas id="cvdo-${r.coin}"></canvas></div>
-      <div class="cvd-analysis">${r.sig.detail || '—'}</div>
+      <div id="cvd-body-${r.coin}" class="cvd-chart-body">
+        <div class="cvd-panel-label">Price · <span style="font-family:var(--mono)">${fmtPrice(r.price)}</span></div>
+        <div class="cvd-panel"><canvas id="cvdp-${r.coin}"></canvas></div>
+        <div class="cvd-panel-label">CVD · ${r.cvdUp ? '<span class="pos">▲ net buying</span>' : '<span class="neg">▼ net selling</span>'}</div>
+        <div class="cvd-panel"><canvas id="cvdc-${r.coin}"></canvas></div>
+        <div class="cvd-panel-label">Open Interest · ${oiAbs} ${oiChgHtml}</div>
+        <div class="cvd-panel" id="cvdo-wrap-${r.coin}"><canvas id="cvdo-${r.coin}"></canvas></div>
+        <div class="cvd-analysis">${r.sig.detail || '—'}</div>
+      </div>
     </div>`;
   }).join('')}</div>`;
+}
+
+function toggleCVDCard(coin) {
+  const body = document.getElementById(`cvd-body-${coin}`);
+  const icon = document.getElementById(`cvd-tog-${coin}`);
+  if (!body) return;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : '';
+  if (icon) icon.textContent = open ? '▶' : '▼';
+  if (!open) {
+    setTimeout(() => {
+      ['p_','c_','o_'].forEach(p => _cvdCharts[p + coin]?.resize?.());
+    }, 50);
+  }
+}
+
+// ── Smart Money Flow (Binance L/S + taker, CoinGecko dominance) ──────────────
+
+const _lsCache = {};
+const _LS_TTL = 5 * 60 * 1000;
+
+async function _lsFetch(endpoint, sym, period = '1h', limit = 2) {
+  const key = `${endpoint}_${sym}_${period}`;
+  const now = Date.now();
+  if (_lsCache[key] && now - _lsCache[key].ts < _LS_TTL) return _lsCache[key].data;
+  try {
+    const url = `https://fapi.binance.com/futures/data/${endpoint}?symbol=${sym}&period=${period}&limit=${limit}`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.json();
+    _lsCache[key] = { ts: now, data };
+    return data;
+  } catch { return null; }
+}
+
+const _BINANCE_PERP_COINS = new Set(['BTC','ETH','SOL','BNB','XRP','DOGE','AVAX','ADA','SUI',
+  'ARB','OP','INJ','TIA','ATOM','LTC','LINK','MATIC','FTM','APT','SEI','WIF','PEPE','BONK','FET']);
+
+async function fetchMoneyFlow(coin) {
+  if (!_BINANCE_PERP_COINS.has(coin)) return null;
+  const sym = coin + 'USDT';
+  const [glsR, topR, tkrR] = await Promise.allSettled([
+    _lsFetch('globalLongShortAccountRatio', sym, '1h', 2),
+    _lsFetch('topLongShortAccountRatio',    sym, '1h', 2),
+    _lsFetch('takerlongshortRatio',         sym, '1h', 2),
+  ]);
+  const gls = glsR.value?.at(-1);
+  const tls = topR.value?.at(-1);
+  const tkr = tkrR.value?.at(-1);
+  if (!gls && !tls && !tkr) return null;
+  return {
+    coin,
+    lsRatio:    gls ? parseFloat(gls.longShortRatio) : null,
+    topRatio:   tls ? parseFloat(tls.longShortRatio) : null,
+    takerRatio: tkr ? parseFloat(tkr.buySellRatio)   : null,
+  };
+}
+
+async function fetchBTCDom() {
+  const key = 'cg_global';
+  const now = Date.now();
+  if (_lsCache[key] && now - _lsCache[key].ts < _LS_TTL) return _lsCache[key].data;
+  try {
+    const res = await fetch('https://api.coingecko.com/api/v3/global');
+    if (!res.ok) return null;
+    const { data: d } = await res.json();
+    const mp = d.market_cap_percentage || {};
+    const result = {
+      btcDom:    mp.btc || 0,
+      ethDom:    mp.eth || 0,
+      stablePct: (mp.usdt || 0) + (mp.usdc || 0),
+      mcap24h:   d.market_cap_change_percentage_24h_usd || 0,
+    };
+    _lsCache[key] = { ts: now, data: result };
+    return result;
+  } catch { return null; }
+}
+
+function _signalLS({ lsRatio, topRatio, takerRatio }) {
+  const topBull       = topRatio != null && topRatio > 1.1;
+  const topBear       = topRatio != null && topRatio < 0.9;
+  const crowdedLong   = lsRatio  != null && lsRatio  > 1.55;
+  const crowdedShort  = lsRatio  != null && lsRatio  < 0.7;
+  const takerBuy      = takerRatio != null && takerRatio > 1.08;
+  const takerSell     = takerRatio != null && takerRatio < 0.92;
+
+  if (topBull  && takerBuy  && !crowdedLong)  return { label:'SMART ACCUM', cls:'bull', detail:'Top traders long + buy aggression — high quality setup' };
+  if (topBear  && takerSell && !crowdedShort) return { label:'SMART DIST',  cls:'bear', detail:'Top traders short + sell aggression — distribution signal' };
+  if (topBull  && crowdedShort)               return { label:'SQUEEZE ↑',   cls:'bull', detail:'Retail heavily short, smart money long — short squeeze risk' };
+  if (topBear  && crowdedLong)                return { label:'SQUEEZE ↓',   cls:'bear', detail:'Retail overleveraged long, smart money short — long squeeze risk' };
+  if (topBear  && takerBuy)                   return { label:'FAKE PUMP',   cls:'warn', detail:'Retail buying aggressor, top traders positioned short — potential trap' };
+  if (topBull  && takerSell)                  return { label:'DEGEN SELL',  cls:'warn', detail:'Smart money holding long but sell pressure mounting' };
+  if (crowdedLong  && !topBull)               return { label:'CROWDED LONG',cls:'warn', detail:'Retail overleveraged long without smart money confirmation' };
+  if (crowdedShort && !topBear)               return { label:'CROWDED SHORT',cls:'info', detail:'Retail heavily short — watch for squeeze if catalyst appears' };
+  if (topBull)  return { label:'TOP BULL',  cls:'bull', detail:'Smart money (top 20%) positioned net long' };
+  if (topBear)  return { label:'TOP BEAR',  cls:'bear', detail:'Smart money (top 20%) positioned net short' };
+  if (takerBuy) return { label:'BUY PRESS', cls:'bull', detail:'Aggressive buyers dominating taker volume' };
+  if (takerSell)return { label:'SELL PRESS',cls:'bear', detail:'Aggressive sellers dominating taker volume' };
+  return { label:'NEUTRAL', cls:'neut', detail:'No strong directional bias from L/S or taker data' };
+}
+
+function renderMoneyFlowCard() {
+  return `<div class="card" style="margin-bottom:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px">
+      <div class="card-title" style="margin:0">💸 Smart Money Flow</div>
+      <span id="mf-risk" class="muted" style="font-size:11px">loading…</span>
+    </div>
+    <div id="mf-dom-bar" style="margin-bottom:10px"></div>
+    <div id="mf-table"><div class="loading" style="padding:10px 0">${spinnerHtml()} fetching L/S &amp; taker data…</div></div>
+    <div style="font-size:10px;color:var(--text-muted);margin-top:8px;padding-top:6px;border-top:1px solid var(--border)">
+      <b>L/S All</b> = all retail accounts · <b>L/S Top</b> = top 20% by volume (smart money) · <b>Taker</b> = buy/sell aggressor ratio · source: Binance Futures
+    </div>
+  </div>`;
+}
+
+async function loadMoneyFlowSignals(coins) {
+  const riskEl = document.getElementById('mf-risk');
+  const domBarEl = document.getElementById('mf-dom-bar');
+  const tblEl = document.getElementById('mf-table');
+  if (!tblEl) return;
+
+  // BTC dominance + global market data
+  fetchBTCDom().then(dom => {
+    if (!dom) return;
+    const risk = dom.btcDom > 54 ? 'RISK OFF' : dom.btcDom < 47 ? 'RISK ON' : 'NEUTRAL';
+    const rCls = risk === 'RISK ON' ? 'pos' : risk === 'RISK OFF' ? 'neg' : 'muted';
+    if (riskEl) riskEl.innerHTML = `BTC.D <b style="color:var(--yellow)">${dom.btcDom.toFixed(1)}%</b> · Stable <b>${dom.stablePct.toFixed(1)}%</b> · MCap <span class="${dom.mcap24h>=0?'pos':'neg'}">${dom.mcap24h>=0?'+':''}${dom.mcap24h.toFixed(1)}%</span> · <span class="${rCls}" style="font-weight:600">${risk}</span>`;
+    if (domBarEl) domBarEl.innerHTML = `
+      <div style="display:flex;gap:0;height:6px;border-radius:3px;overflow:hidden">
+        <div style="flex:${dom.btcDom.toFixed(0)};background:var(--yellow)" title="BTC ${dom.btcDom.toFixed(1)}%"></div>
+        <div style="flex:${dom.ethDom.toFixed(0)};background:var(--blue)" title="ETH ${dom.ethDom.toFixed(1)}%"></div>
+        <div style="flex:${dom.stablePct.toFixed(0)};background:var(--green)" title="Stables ${dom.stablePct.toFixed(1)}%"></div>
+        <div style="flex:${Math.max(1,100-dom.btcDom-dom.ethDom-dom.stablePct).toFixed(0)};background:var(--surface2)" title="Others"></div>
+      </div>
+      <div style="display:flex;gap:10px;font-size:9px;color:var(--text-muted);margin-top:3px">
+        <span style="color:var(--yellow)">■ BTC ${dom.btcDom.toFixed(1)}%</span>
+        <span style="color:var(--blue)">■ ETH ${dom.ethDom.toFixed(1)}%</span>
+        <span style="color:var(--green)">■ Stables ${dom.stablePct.toFixed(1)}%</span>
+        <span>■ Others</span>
+      </div>`;
+  });
+
+  // Per-coin L/S + taker from Binance
+  const tracked = coins.filter(c => _BINANCE_PERP_COINS.has(c));
+  if (!tracked.length) {
+    if (tblEl) tblEl.innerHTML = '<div class="muted" style="font-size:12px;padding:8px 0">No tracked coins available on Binance Futures (positions are Hyperliquid-only)</div>';
+    return;
+  }
+
+  const flows = await Promise.all(tracked.map(fetchMoneyFlow));
+  if (!tblEl) return;
+
+  const fmtR = (v, lowGood = false) => {
+    if (v == null) return '<span class="muted">—</span>';
+    const hi = lowGood ? v < 0.9 : v > 1.1;
+    const lo = lowGood ? v > 1.1 : v < 0.9;
+    const cls = hi ? 'pos' : lo ? 'neg' : 'muted';
+    return `<span class="${cls} mono">${v.toFixed(2)}</span>`;
+  };
+
+  const hasAny = flows.some(Boolean);
+  if (!hasAny) {
+    tblEl.innerHTML = '<div class="muted" style="font-size:12px;padding:8px 0">Binance API unavailable — try again shortly</div>';
+    return;
+  }
+
+  tblEl.innerHTML = `
+    <div class="cvd-head" style="grid-template-columns:52px 60px 60px 55px 1fr">
+      <span>Coin</span><span title="All accounts long/short ratio">L/S All</span><span title="Top 20% accounts">L/S Top</span><span title="Taker buy/sell ratio">Taker</span><span>Signal</span>
+    </div>
+    ${flows.map(f => {
+      if (!f) return '';
+      const sig = _signalLS(f);
+      return `<div class="cvd-row cvd-mf-row" style="grid-template-columns:52px 60px 60px 55px 1fr">
+        <span class="cvd-coin accent">${f.coin}</span>
+        <span>${fmtR(f.lsRatio)}</span>
+        <span>${fmtR(f.topRatio)}</span>
+        <span>${fmtR(f.takerRatio)}</span>
+        <span class="ta-sig-badge ta-${sig.cls}" title="${sig.detail}">${sig.label}</span>
+      </div>`;
+    }).join('')}`;
 }
 
 async function initCVDCharts(rows) {

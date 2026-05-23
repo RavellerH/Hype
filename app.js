@@ -1088,6 +1088,7 @@ async function loadPhases(interval){
         <div class="section-title">Phase Detector</div>
         <div class="tabs">${['1h','4h','1d'].map(iv=>`<button class="tab ${phaseInterval===iv?'active':''}" onclick="loadPhases('${iv}')">${iv}</button>`).join('')}</div>
       </div>
+      <div id="money-flow-wrap" style="margin-bottom:14px">${typeof renderMoneyFlowCard === 'function' ? renderMoneyFlowCard() : ''}</div>
       <div class="card" style="margin-bottom:14px">
         <div class="card-title" style="margin-bottom:10px">🔄 CVD + OI Market Scanner</div>
         <div id="cvd-oi-table"><div class="loading">${spinnerHtml()} Scanning ${allCoins.join(', ')}…</div></div>
@@ -1148,6 +1149,7 @@ async function loadPhases(interval){
       }).filter(Boolean);
       cvdEl.innerHTML=renderCVDOITable(cvdRows)+renderCVDOICharts(cvdRows);
       await initCVDCharts(cvdRows);
+      if(typeof loadMoneyFlowSignals==='function') loadMoneyFlowSignals(allCoins);
     }
 
     setRefreshTime();
