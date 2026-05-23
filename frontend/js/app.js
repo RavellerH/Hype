@@ -774,6 +774,18 @@ async function loadOverview(){
     if (typeof pmClearStale === 'function') pmClearStale(positions.map(p => p.coin));
     const marketCtx = buildMarketCtx(perpMetaRaw);
     const {balances:spotBals, usdcBalance} = parseSpotBalances(spotStateRaw, spotMetaRaw);
+    // Fill missing spot prices from perp mark price (HYPE and others may lack spot ctx price)
+    spotBals.forEach(b => {
+      if (b.currentPrice > 0) return;
+      const px = livePrices[b.coin] || marketCtx[b.coin]?.mark_price || 0;
+      if (!px) return;
+      b.currentPrice = px;
+      b.value = px * b.total;
+      if (b.avgEntry > 0) {
+        b.unrealizedPnl = (px - b.avgEntry) * b.total;
+        b.pnlPct = b.entryNtl > 0 ? b.unrealizedPnl / b.entryNtl * 100 : 0;
+      }
+    });
     const spotTotalValue = spotBals.reduce((a,b)=>a+b.value,0) + usdcBalance;
     const spotUnrPnl = spotBals.reduce((a,b)=>a+b.unrealizedPnl,0);
     const totalUnr = positions.reduce((a,p)=>a+p.unrealized_pnl,0) + spotUnrPnl;
