@@ -1459,8 +1459,9 @@ async function loadMonitor() {
           <button class="btn btn-ghost btn-sm" onclick="refreshTA()" style="padding:3px 10px;font-size:11px">↻</button>
         </div>
       </div>
-      <div style="display:flex;gap:4px;margin-bottom:14px;flex-wrap:wrap">
+      <div style="display:flex;gap:4px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
         ${TA_COINS.map(c=>`<button class="tab ta-coin-tab${c===taCoin?' active':''}" data-coin="${c}" onclick="setTACoin('${c}')">${c}</button>`).join('')}
+        <input id="ta-custom-coin" class="input" type="text" placeholder="custom…" style="width:80px;height:24px;font-size:11px;padding:2px 6px" onkeydown="if(event.key==='Enter'){const v=this.value.trim().toUpperCase();if(v){setTACoin(v);this.value='';}}" title="Type any coin and press Enter">
       </div>
       <div id="ta-content"><div class="loading">${spinnerHtml()} Loading…</div></div>
     </div>
@@ -1903,41 +1904,11 @@ async function refreshTA() {
   try {
     const days = taTf==='4h' ? 60 : 15;
     const [candles, meta] = await Promise.all([getCandles(taCoin, taTf, days), getMetaAndAssetCtxs()]);
-    const opens=candles.map(c=>parseFloat(c.o)), closes=candles.map(c=>parseFloat(c.c));
-    const highs=candles.map(c=>parseFloat(c.h)), lows=candles.map(c=>parseFloat(c.l));
-    const volumes=candles.map(c=>parseFloat(c.v));
-    const price=closes.at(-1);
-
-    const ema20=iEMA(closes,20), ema50=iEMA(closes,50);
-    const ema200=closes.length>=200?iEMA(closes,200):null;
-    const {hist,macd}=iMACD(closes);
-    const rsiArr=iRSI(closes); const rsiVal=rsiArr.filter(v=>v!==null).at(-1);
-    const {k:stochK,d:stochD}=iStoch(highs,lows,closes);
-    const kVal=stochK.filter(v=>v!==null).at(-1), dVal=stochD.filter(v=>v!==null).at(-1);
-    const bbArr=iBB(closes); const bb=bbArr.filter(v=>v!==null).at(-1);
-    const atrArr=iATR(highs,lows,closes); const atr=atrArr.filter(v=>v!==null).at(-1);
-    const mf=iMoneyFlow(opens,closes,volumes);
-
     const universe=meta[0].universe, ctxs=meta[1];
     const idx=universe.findIndex(a=>a.name===taCoin);
-    const ctx=idx>=0?ctxs[idx]:{};
-    const fundingRate=parseFloat(ctx.funding||0);
-    const markPx=parseFloat(ctx.markPx||ctx.midPx||0);
-    const oi=parseFloat(ctx.openInterest||0)*markPx;
-    const prev=taOIPrev[taCoin+taTf]||null;
-    taOIPrev[taCoin+taTf]=oi;
-
-    el.innerHTML = renderTADash({
-      ema: sigEMA(price, ema20.at(-1), ema50.at(-1), ema200?ema200.at(-1):null),
-      macd: sigMACD(hist, macd),
-      rsi: rsiVal!=null ? sigRSI(rsiVal) : null,
-      stoch: kVal!=null&&dVal!=null ? sigStoch(kVal,dVal) : null,
-      bb: bb ? sigBB(bb) : null,
-      atr: atr ? sigATR(atr,price) : null,
-      funding: sigFunding(fundingRate),
-      oi: sigOI(oi,prev),
-      mf: sigFlow(mf.buyPct)
-    }, price);
+    const rawCtx=idx>=0?ctxs[idx]:null;
+    const ta = await buildFullTA(taCoin, taTf, candles, rawCtx);
+    el.innerHTML = renderTARec(ta);
   } catch(e) {
     el.innerHTML = `<div class="loading">Error: ${e.message}</div>`;
   }

@@ -364,6 +364,57 @@ tr:hover td { background: var(--surface-hover); }
 .ta-warn .ta-badge { background: var(--yellow-bg);color: var(--yellow); }
 .ta-info .ta-badge { background: var(--blue-bg);  color: var(--blue); }
 
+/* ── TA Recommendation card ─────────────────────────────────────────────────── */
+
+.ta-rec-card { border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
+.ta-rec-long  { border-color: rgba(74,222,128,0.3); }
+.ta-rec-short { border-color: rgba(248,113,113,0.3); }
+.ta-rec-neutral { border-color: var(--border); }
+
+.ta-rec-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 12px 14px; background: var(--surface2); flex-wrap: wrap; }
+.ta-rec-dir { font-size: 22px; font-weight: 800; letter-spacing: 0.05em; }
+.ta-rec-meta { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+.ta-rec-score-wrap { text-align: right; min-width: 140px; }
+.ta-rec-score-label { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+.ta-rec-bar { height: 6px; background: var(--red-bg); border-radius: 3px; overflow: hidden; }
+.ta-rec-bar-fill { height: 100%; background: var(--green); border-radius: 3px; transition: width 0.3s; }
+.ta-rec-score-subs { font-size: 10px; margin-top: 3px; display: flex; gap: 8px; justify-content: flex-end; }
+
+.ta-setup-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); }
+.ta-setup-cell { padding: 8px 10px; background: var(--surface); }
+.ta-setup-label { font-size: 10px; color: var(--text-muted); margin-bottom: 3px; }
+.ta-setup-val { font-size: 13px; font-weight: 600; font-family: var(--mono); }
+.ta-setup-note { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+.ta-sr-block { padding: 8px 14px; border-top: 1px solid var(--border); background: var(--surface2); }
+.ta-sr-row { display: flex; align-items: baseline; gap: 8px; font-size: 11px; padding: 2px 0; }
+.ta-sr-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); min-width: 72px; }
+
+.ta-ck-section { padding: 10px 14px 12px; }
+.ta-ck-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 8px; }
+.ta-ck-row { display: flex; align-items: flex-start; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--border); }
+.ta-ck-row:last-child { border-bottom: none; }
+.ta-ck-icon { font-size: 14px; flex-shrink: 0; width: 20px; text-align: center; padding-top: 1px; }
+.ta-ck-body { flex: 1; min-width: 0; }
+.ta-ck-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 2px; }
+.ta-ck-name { font-size: 12px; color: var(--text); }
+.ta-sig-badge { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: var(--radius-sm); letter-spacing: 0.04em; white-space: nowrap; flex-shrink: 0; }
+.ta-bull .ta-sig-badge, .ta-ck-bull .ta-sig-badge { background: var(--green-bg); color: var(--green); }
+.ta-bear .ta-sig-badge, .ta-ck-bear .ta-sig-badge { background: var(--red-bg);   color: var(--red); }
+.ta-neut .ta-sig-badge, .ta-ck-neut .ta-sig-badge { background: var(--surface2); color: var(--text-muted); }
+.ta-warn .ta-sig-badge, .ta-ck-warn .ta-sig-badge { background: var(--yellow-bg);color: var(--yellow); }
+.ta-info .ta-sig-badge, .ta-ck-info .ta-sig-badge { background: var(--blue-bg);  color: var(--blue); }
+.ta-ck-sub { font-size: 10px; color: var(--text-muted); line-height: 1.4; }
+.ta-ck-exp { color: var(--text-dim, var(--text-muted)); font-style: italic; }
+
+.ta-conflict-banner { background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.4); border-radius: var(--radius-md); padding: 8px 12px; font-size: 12px; color: var(--red); margin-bottom: 10px; }
+.ta-aligned-banner  { background: rgba(74,222,128,0.1);  border: 1px solid rgba(74,222,128,0.4);  border-radius: var(--radius-md); padding: 8px 12px; font-size: 12px; color: var(--green); margin-bottom: 10px; }
+
+@media (max-width: 480px) {
+  .ta-setup-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
 /* ── Live monitor ────────────────────────────────────────────────────────────── */
 
 .mono { font-family: var(--mono); font-size: 12px; }

@@ -100,11 +100,13 @@ function _pmModalHtml(coin, tab) {
       <button class="pos-tab${tab==='intent'?' active':''}" onclick="pmSwitchTab('intent')">Intent</button>
       <button class="pos-tab${tab==='thesis'?' active':''}" onclick="pmSwitchTab('thesis')">Thesis</button>
       <button class="pos-tab${tab==='risk'?' active':''}" onclick="pmSwitchTab('risk')">Risk</button>
+      <button class="pos-tab${tab==='signal'?' active':''}" onclick="pmSwitchTab('signal')">Signal</button>
     </div>
     <div class="pos-tab-panel">
       ${tab === 'intent' ? _pmTabIntent(coin, m) : ''}
       ${tab === 'thesis' ? _pmTabThesis(coin, m, ctx) : ''}
       ${tab === 'risk'   ? _pmTabRisk(coin, m, pos, ctx) : ''}
+      ${tab === 'signal' ? _pmTabSignal(coin) : ''}
     </div>
   </div>`;
 }
@@ -236,6 +238,13 @@ function _pmTabRisk(coin, m, pos, ctx) {
       ${entryPrice > 0 ? `<div class="pos-field-hint">Entry: ${_pmFmtPrice(entryPrice)} · Mark: ${_pmFmtPrice(markPrice)}</div>` : ''}
     </div>
     ${metricsHtml}`;
+}
+
+function _pmTabSignal(coin) {
+  setTimeout(() => {
+    if (typeof loadModalSignal === 'function') loadModalSignal(coin);
+  }, 0);
+  return `<div id="pm-signal-body"><div class="loading" style="padding:20px"><div class="spinner"></div> Analysing ${coin}…</div></div>`;
 }
 
 // ── Signal checkers ───────────────────────────────────────────────────────────
