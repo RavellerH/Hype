@@ -575,7 +575,189 @@ async function loadMoneyFlowSignals(coins) {
     }).join('')}`;
 }
 
-async function initCVDCharts(rows) {
+// ── HYPE Intelligence ─────────────────────────────────────────────────────────
+
+const HYPE_SUPPLY = 1_000_000_000;
+
+function _fundingSignal(f8h) {
+  if (f8h > 0.0005)  return { label:'OVERLEVERAGED LONG', cls:'warn',  detail:'Longs paying a lot → flush risk on pullbacks' };
+  if (f8h > 0.0001)  return { label:'BULLISH POSITIONING', cls:'bull', detail:'Longs paying → market expects higher' };
+  if (f8h < -0.0005) return { label:'EXTREME SHORT BIAS',  cls:'info', detail:'Shorts paying heavily → squeeze candidate' };
+  if (f8h < -0.0001) return { label:'BEARISH POSITIONING', cls:'bear', detail:'Shorts paying → market expects lower' };
+  return { label:'NEUTRAL FUNDING', cls:'neut', detail:'Balanced positioning, no extreme leverage bias' };
+}
+
+function _revenueSignal(rev) {
+  if (rev > 5e6)  return { label:'HIGH REVENUE', cls:'bull', detail:'Strong fee income → active buyback pressure' };
+  if (rev > 1.5e6) return { label:'NORMAL REVENUE', cls:'neut', detail:'Healthy platform activity' };
+  return { label:'LOW REVENUE', cls:'warn', detail:'Reduced trading activity → lower buyback pressure' };
+}
+
+function _stakeSignal(pct) {
+  if (pct > 40) return { label:'HIGH LOCK', cls:'bull', detail:`${pct.toFixed(1)}% staked → tight float, reduced sell pressure` };
+  if (pct > 20) return { label:'MODERATE', cls:'neut', detail:`${pct.toFixed(1)}% staked — normal distribution` };
+  return { label:'LOW STAKE', cls:'warn', detail:`Only ${pct.toFixed(1)}% staked → more circulating supply` };
+}
+
+function renderHYPECard() {
+  return `<div class="card" style="margin-bottom:14px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+      <div class="card-title" style="margin:0">⚡ HYPE Intelligence</div>
+      <span class="muted" style="font-size:10px">Platform health · HL-native signals · staking float</span>
+    </div>
+    <div id="hype-intel-body"><div class="loading" style="padding:10px 0">${spinnerHtml()} loading platform &amp; staking data…</div></div>
+  </div>`;
+}
+
+async function loadHYPEIntel(phaseMeta) {
+  const el = document.getElementById('hype-intel-body');
+  if (!el) return;
+  try {
+    // ── Platform stats from phaseMeta (already fetched in loadPhases) ───────────
+    let platformVol = 0, platformOI = 0, hype = null;
+    if (phaseMeta) {
+      const [meta, ctxs] = phaseMeta;
+      (meta?.universe || []).forEach((asset, i) => {
+        const ctx = ctxs[i] || {};
+        const mark = parseFloat(ctx.markPx || ctx.midPx || 0);
+        const vol  = parseFloat(ctx.dayNtlVlm || 0);
+        const oi   = parseFloat(ctx.openInterest || 0) * mark;
+        platformVol += vol;
+        platformOI  += oi;
+        if (asset.name === 'HYPE') {
+          hype = {
+            price:    mark,
+            prevPx:   parseFloat(ctx.prevDayPx || mark),
+            oi,
+            vol,
+            funding:  parseFloat(ctx.funding || 0),
+          };
+        }
+      });
+    }
+
+    if (!hype) {
+      el.innerHTML = '<div class="muted" style="font-size:12px;padding:6px 0">HYPE not found in market data — try refreshing</div>';
+      return;
+    }
+
+    const priceChg24h  = hype.prevPx > 0 ? (hype.price - hype.prevPx) / hype.prevPx * 100 : 0;
+    const estRevenue   = platformVol * 0.0003;   // ~0.03% avg fee (maker+taker blended)
+    const hypeVolShare = platformVol > 0 ? hype.vol / platformVol * 100 : 0;
+    const revSig       = _revenueSignal(estRevenue);
+    const fundSig      = _fundingSignal(hype.funding);
+
+    // ── HYPE OI vs price divergence (using our localStorage history) ─────────
+    const prevOI   = getPrevOI('HYPE');
+    if (hype.oi > 0) saveOIPoint('HYPE', hype.oi);
+    const oiChgPct = prevOI > 0 && hype.oi > 0 ? (hype.oi - prevOI) / prevOI * 100 : null;
+    const oiSig    = sigCVDOI(priceChg24h, 0, oiChgPct);
+
+    // ── Staking / validator data ─────────────────────────────────────────────
+    let stakingHtml = '';
+    try {
+      const validators = await (typeof hlPost === 'function'
+        ? hlPost({ type: 'validatorSummaries' })
+        : null);
+      if (Array.isArray(validators) && validators.length) {
+        // Try several possible field names for stake amount
+        const stakeFields = ['stake', 'stkd', 'totalStake', 'stakedHype', 'delegatedStake'];
+        let raw = 0, usedField = null;
+        for (const f of stakeFields) {
+          const s = validators.reduce((a, v) => a + parseFloat(v[f] || 0), 0);
+          if (s > 1e6 && s < 2e12) { raw = s; usedField = f; break; }
+        }
+        // If values look like they're in raw units (>1B for total), divide by 1e8
+        let staked = raw > HYPE_SUPPLY * 2 ? raw / 1e8 : raw;
+        if (staked > 0 && staked <= HYPE_SUPPLY) {
+          const stakePct = staked / HYPE_SUPPLY * 100;
+          const stakeSig = _stakeSignal(stakePct);
+          stakingHtml = `
+            <div style="padding-top:10px;margin-top:10px;border-top:1px solid var(--border)">
+              <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Staking / Float</div>
+              <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;margin-bottom:6px">
+                <div>
+                  <div class="stat-label">Total Staked</div>
+                  <div style="font-family:var(--mono);font-size:17px;font-weight:700">${fmtB(staked)}</div>
+                  <div class="stat-sub">${stakePct.toFixed(1)}% of 1B supply · ${validators.length} validators</div>
+                </div>
+                <div>
+                  <span class="ta-sig-badge ta-${stakeSig.cls}">${stakeSig.label}</span>
+                  <div style="font-size:10px;color:var(--text-muted);margin-top:3px;max-width:200px">${stakeSig.detail}</div>
+                </div>
+              </div>
+              <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(stakePct,100)}%"></div></div>
+            </div>`;
+        }
+      }
+    } catch(_) {}
+    if (!stakingHtml) {
+      stakingHtml = `
+        <div style="padding-top:10px;margin-top:10px;border-top:1px solid var(--border)">
+          <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Staking / Float</div>
+          <div class="muted" style="font-size:11px">Validator data unavailable from this context — check <a href="https://app.hyperliquid.xyz/staking" target="_blank" style="color:var(--accent)">HL staking page</a></div>
+        </div>`;
+    }
+
+    // ── Render ───────────────────────────────────────────────────────────────
+    el.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border-radius:var(--radius-md);overflow:hidden;margin-bottom:12px">
+        <div style="background:var(--surface);padding:10px 12px">
+          <div class="stat-label">HL 24h Volume</div>
+          <div style="font-family:var(--mono);font-size:16px;font-weight:700">${fmtB(platformVol)}</div>
+          <div style="margin-top:3px"><span class="ta-sig-badge ta-${revSig.cls}" style="font-size:9px">${revSig.label}</span></div>
+        </div>
+        <div style="background:var(--surface);padding:10px 12px">
+          <div class="stat-label">Est. Daily Revenue</div>
+          <div style="font-family:var(--mono);font-size:16px;font-weight:700">${fmtB(estRevenue)}</div>
+          <div class="stat-sub">~0.03% avg fee</div>
+        </div>
+        <div style="background:var(--surface);padding:10px 12px">
+          <div class="stat-label">Total Platform OI</div>
+          <div style="font-family:var(--mono);font-size:16px;font-weight:700">${fmtB(platformOI)}</div>
+          <div class="stat-sub">all perp markets</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;padding-bottom:12px;border-bottom:1px solid var(--border)">
+        <div>
+          <div class="stat-label">HYPE Price</div>
+          <div style="font-family:var(--mono);font-size:20px;font-weight:800">${fmtPrice(hype.price)}</div>
+          <div style="font-size:12px" class="${priceChg24h>=0?'pos':'neg'}">${priceChg24h>=0?'+':''}${priceChg24h.toFixed(2)}% 24h</div>
+        </div>
+        <div>
+          <div class="stat-label">HYPE Perp OI</div>
+          <div style="font-family:var(--mono);font-size:17px;font-weight:700">${fmtB(hype.oi)}</div>
+          ${oiChgPct != null
+            ? `<div style="font-size:11px" class="${oiChgPct>=0?'pos':'neg'}">${oiChgPct>=0?'+':''}${oiChgPct.toFixed(1)}% vs prev</div>`
+            : '<div class="muted" style="font-size:10px">tracking OI…</div>'}
+        </div>
+        <div>
+          <div class="stat-label">Funding /8h</div>
+          <div style="font-family:var(--mono);font-size:17px;font-weight:700;color:${hype.funding>=0?'var(--green)':'var(--red)'}">${(hype.funding*100).toFixed(4)}%</div>
+          <div style="font-size:10px" class="muted">${hype.funding>0?'longs paying':'shorts paying'}</div>
+        </div>
+        <div>
+          <div class="stat-label">HYPE Vol Share</div>
+          <div style="font-family:var(--mono);font-size:17px;font-weight:700">${hypeVolShare.toFixed(1)}%</div>
+          <div class="stat-sub">${fmtB(hype.vol)} / platform</div>
+        </div>
+        <div style="margin-left:auto;display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+          <div>
+            <div class="stat-label" style="text-align:right">Price+OI Signal</div>
+            <span class="ta-sig-badge ta-${oiSig.cls}">${oiSig.label}</span>
+          </div>
+          <div>
+            <div class="stat-label" style="text-align:right">Funding Signal</div>
+            <span class="ta-sig-badge ta-${fundSig.cls}">${fundSig.label}</span>
+          </div>
+        </div>
+      </div>
+      ${stakingHtml}`;
+  } catch(e) {
+    if (el) el.innerHTML = `<div class="muted" style="font-size:11px">Error loading HYPE data: ${e.message}</div>`;
+  }
+}
   _destroyCVDCharts();
 
   // Fetch Binance OI for all coins in parallel
