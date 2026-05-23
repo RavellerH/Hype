@@ -1089,6 +1089,7 @@ async function loadPhases(interval){
         <div class="tabs">${['1h','4h','1d'].map(iv=>`<button class="tab ${phaseInterval===iv?'active':''}" onclick="loadPhases('${iv}')">${iv}</button>`).join('')}</div>
       </div>
       <div id="money-flow-wrap" style="margin-bottom:14px">${typeof renderMoneyFlowCard === 'function' ? renderMoneyFlowCard() : ''}</div>
+      <div id="hype-intel-wrap" style="margin-bottom:14px">${typeof renderHYPECard === 'function' ? renderHYPECard() : ''}</div>
       <div class="card" style="margin-bottom:14px">
         <div class="card-title" style="margin-bottom:10px">🔄 CVD + OI Market Scanner</div>
         <div id="cvd-oi-table"><div class="loading">${spinnerHtml()} Scanning ${allCoins.join(', ')}…</div></div>
@@ -1150,6 +1151,7 @@ async function loadPhases(interval){
       cvdEl.innerHTML=renderCVDOITable(cvdRows)+renderCVDOICharts(cvdRows);
       await initCVDCharts(cvdRows);
       if(typeof loadMoneyFlowSignals==='function') loadMoneyFlowSignals(allCoins);
+      if(typeof loadHYPEIntel==='function') loadHYPEIntel(phaseMeta);
     }
 
     setRefreshTime();
