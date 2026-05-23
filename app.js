@@ -466,11 +466,44 @@ function detectPhase(candles) {
 }
 
 // ── Navigation ────────────────────────────────────────────────────────────────
+function openDrawer() {
+  document.getElementById('nav-drawer')?.classList.add('open');
+  document.getElementById('nav-overlay')?.classList.add('open');
+  document.getElementById('hamburger-btn')?.classList.add('open');
+}
+function closeDrawer() {
+  document.getElementById('nav-drawer')?.classList.remove('open');
+  document.getElementById('nav-overlay')?.classList.remove('open');
+  document.getElementById('hamburger-btn')?.classList.remove('open');
+}
+function toggleDrawer() {
+  const d = document.getElementById('nav-drawer');
+  if (d?.classList.contains('open')) closeDrawer(); else openDrawer();
+}
+function initMobileTableLabels() {
+  function labelTable(t) {
+    const headers = [...t.querySelectorAll('thead th')].map(th => th.textContent.trim());
+    if (!headers.length) return;
+    t.querySelectorAll('tbody tr').forEach(row =>
+      [...row.querySelectorAll('td')].forEach((td, i) => { if (headers[i] && !td.dataset.label) td.dataset.label = headers[i]; })
+    );
+  }
+  document.querySelectorAll('table.mobile-cards').forEach(labelTable);
+  new MutationObserver(ms => {
+    for (const m of ms) for (const n of m.addedNodes)
+      if (n.nodeType === 1) {
+        n.querySelectorAll?.('table.mobile-cards').forEach(labelTable);
+        if (n.matches?.('table.mobile-cards')) labelTable(n);
+      }
+  }).observe(document.body, { childList: true, subtree: true });
+}
+
 function navigate(page) {
   try {
+    closeDrawer();
     if (currentPage === 'monitor' && page !== 'monitor') disconnectWS();
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-    document.querySelectorAll('.nav-item,.bottom-nav-item,.topbar-tab').forEach(n=>n.classList.remove('active'));
+    document.querySelectorAll('.nav-item,.bottom-nav-item,.topbar-tab,.drawer-item').forEach(n=>n.classList.remove('active'));
     const pageEl = document.getElementById(`page-${page}`);
     if (!pageEl) return;
     pageEl.classList.add('active');
@@ -595,7 +628,7 @@ function renderOverviewTab() {
         const perpPnl = positions.reduce((a,p)=>a+p.unrealized_pnl,0);
         return `<div class="card" style="margin-top:14px">
           <div class="card-title" style="margin-bottom:10px">Perp Positions (${positions.length}) <span class="${perpPnl>=0?'pos':'neg'} mono" style="font-weight:400;font-size:12px">${perpPnl>=0?'+':''}${fmt$(perpPnl)}</span></div>
-          <div class="table-wrap"><table>
+          <div class="table-wrap"><table class="mobile-cards">
             <thead><tr><th>Coin</th><th>Side</th><th>Size</th><th>Entry</th><th>Now</th><th>PnL</th><th>PnL %</th></tr></thead>
             <tbody>${positions.map(p=>{
               const mark    = marketCtx[p.coin]?.mark_price || p.mark_price || 0;
@@ -619,7 +652,7 @@ function renderOverviewTab() {
         return `<div class="card" style="margin-top:14px">
           <div class="card-title" style="margin-bottom:10px">Spot Holdings (${spotBals.length}) ${spotPnl!==0?`<span class="${spotPnl>=0?'pos':'neg'} mono" style="font-weight:400;font-size:12px">${spotPnl>=0?'+':''}${fmt$(spotPnl)}</span>`:''}
           </div>
-          <div class="table-wrap"><table>
+          <div class="table-wrap"><table class="mobile-cards">
             <thead><tr><th>Coin</th><th>Amount</th><th>Entry</th><th>Now</th><th>Value</th><th>PnL</th><th>PnL %</th></tr></thead>
             <tbody>${spotBals.map(b=>`<tr>
               <td class="accent" style="font-weight:600">${b.coin}</td>
@@ -656,7 +689,7 @@ function renderOverviewTab() {
       <div class="card" style="margin-bottom:14px">
         <div class="card-title">Open Positions (${positions.length})</div>
         ${positions.length===0?'<div class="empty-state">No open perp positions</div>':`
-        <div class="table-wrap"><table>
+        <div class="table-wrap"><table class="mobile-cards">
           <thead><tr><th>Coin</th><th>Side</th><th>Size</th><th>Entry</th><th>Now</th><th>Liq</th><th>PnL</th><th>PnL%</th><th>Lev</th><th>Age</th><th>Health</th></tr></thead>
           <tbody>${(()=>{_posHealthData={};return positions;})().map(p=>{const h=scorePosition(p,marketCtx);_posHealthData[p.coin]={coin:p.coin,side:p.side,...h};const markPx=marketCtx[p.coin]?.mark_price||p.mark_price||0;const pnlPct=p.entry_price>0?p.unrealized_pnl/(p.size*p.entry_price)*100:0;return`<tr>
             <td class="accent" style="font-weight:600;cursor:pointer" onclick="openPositionDetail('${p.coin}')">${p.coin}</td>
@@ -675,7 +708,7 @@ function renderOverviewTab() {
       </div>
       ${orders.length>0?`<div class="card">
         <div class="card-title">Open Orders (${orders.length})</div>
-        <div class="table-wrap"><table>
+        <div class="table-wrap"><table class="mobile-cards">
           <thead><tr><th>Coin</th><th>Side</th><th>Size</th><th>Limit</th></tr></thead>
           <tbody>${orders.map(o=>`<tr>
             <td class="accent">${o.coin}</td>
@@ -699,7 +732,7 @@ function renderOverviewTab() {
       <div class="card">
         <div class="card-title">Spot Holdings</div>
         ${spotBals.length===0&&usdcBalance<0.01?'<div class="empty-state">No spot holdings</div>':`
-        <div class="table-wrap"><table>
+        <div class="table-wrap"><table class="mobile-cards">
           <thead><tr><th>Coin</th><th>Amount</th><th>Avg Entry</th><th>Price Now</th><th>Value</th><th>PnL $</th><th>PnL %</th></tr></thead>
           <tbody>
             ${spotBals.map(b=>`<tr>
@@ -794,7 +827,7 @@ async function loadTrades(){
 
       ${spotFills.length>0?`<div class="card" style="margin-bottom:14px">
         <div class="card-title">Spot Trade History (${spotFills.length})</div>
-        <div class="table-wrap"><table>
+        <div class="table-wrap"><table class="mobile-cards">
           <thead><tr><th>Time</th><th>Coin</th><th>Side</th><th>Price</th><th>Amount</th><th>Total</th><th>Fee</th></tr></thead>
           <tbody>${spotFills.slice(0,200).map(f=>`<tr>
             <td class="muted">${fmtTime(f.time)}</td>
@@ -810,7 +843,7 @@ async function loadTrades(){
 
       <div class="card">
         <div class="card-title">Perp Fill History (${perpFills.length})</div>
-        <div class="table-wrap"><table>
+        <div class="table-wrap"><table class="mobile-cards">
           <thead><tr><th>Time</th><th>Coin</th><th>Side</th><th>Price</th><th>Size</th><th>PnL</th></tr></thead>
           <tbody>${perpFills.slice(0,200).map(f=>`<tr>
             <td class="muted">${fmtTime(f.time)}</td>
@@ -842,11 +875,11 @@ async function loadFunding(){
         <div class="stat-card"><div class="stat-label">Coins</div><div class="stat-value">${coinRows.length}</div></div>
       </div>
       <div class="grid-2">
-        <div class="card"><div class="card-title">By Coin</div><div class="table-wrap"><table>
+        <div class="card"><div class="card-title">By Coin</div><div class="table-wrap"><table class="mobile-cards">
           <thead><tr><th>Coin</th><th>USDC</th></tr></thead>
           <tbody>${coinRows.map(([c,u])=>`<tr><td class="accent">${c}</td><td class="${u>=0?'pos':'neg'}">${fmt$(u)}</td></tr>`).join('')}</tbody>
         </table></div></div>
-        <div class="card"><div class="card-title">Recent</div><div class="table-wrap"><table>
+        <div class="card"><div class="card-title">Recent</div><div class="table-wrap"><table class="mobile-cards">
           <thead><tr><th>Time</th><th>Coin</th><th>Rate</th><th>USDC</th></tr></thead>
           <tbody>${funding.slice(0,60).map(f=>`<tr>
             <td class="muted">${fmtTime(f.time)}</td><td class="accent">${f.coin||'?'}</td>
@@ -876,7 +909,7 @@ async function loadFlows(){
       </div>
       <div class="card"><div class="card-title">Flow History</div>
         ${flows.length===0?'<div class="empty-state">No deposit/withdrawal activity in 90 days</div>':`
-        <div class="table-wrap"><table>
+        <div class="table-wrap"><table class="mobile-cards">
           <thead><tr><th>Time</th><th>Dir</th><th>Type</th><th>Amount</th></tr></thead>
           <tbody>${flows.map(f=>`<tr>
             <td class="muted">${fmtTime(f.time)}</td>
@@ -947,7 +980,7 @@ function renderMarkets(){
           ${['volume','oi','change','funding'].map(k=>`<button class="btn btn-ghost btn-sm ${marketSortKey===k?'btn-active-sort':''}" onclick="setSortKey('${k}')" style="${marketSortKey===k?'border-color:var(--accent);color:var(--accent)':''}">By ${k}</button>`).join('')}
         </div>
       </div>
-      <div class="table-wrap"><table>
+      <div class="table-wrap"><table class="mobile-cards">
         <thead><tr>
           <th>#</th><th>Coin</th><th>Price</th><th>24h %</th>
           <th>OI (USD)</th><th>24h Vol</th><th>Funding/8h</th><th>Bias</th>
@@ -1412,7 +1445,7 @@ async function loadMonitor() {
     ${positions.length > 0 ? `
     <div class="card" style="margin-bottom:14px">
       <div class="card-title">📍 Positions · Live P&L</div>
-      <div class="table-wrap"><table>
+      <div class="table-wrap"><table class="mobile-cards">
         <thead><tr><th>Coin</th><th>Side</th><th>Size</th><th>Entry</th><th>Now</th><th>Live PnL</th><th>Lev</th></tr></thead>
         <tbody>${positions.map(p => {
           const key = p.coin + p.side;
@@ -2066,6 +2099,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     wl.unshift({address:DEFAULT_WALLET.toLowerCase(),label:'My Wallet',added_at:Date.now()});
     saveWatchlist(wl);
   }
+  initMobileTableLabels();
   navigate('overview');
   autoRefreshTimer=setInterval(_doSilentRefresh,60000);
   _startAgoCounter();

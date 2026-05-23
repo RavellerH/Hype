@@ -20,6 +20,9 @@
   <!-- Topbar -->
   <header class="topbar">
     <div class="topbar-logo">⚡</div>
+    <button class="hamburger-btn" id="hamburger-btn" onclick="toggleDrawer()" aria-label="Open menu">
+      <div class="hbars"><span></span><span></span><span></span></div>
+    </button>
 
     <nav class="topbar-nav">
       <button class="topbar-tab active" data-page="overview"  onclick="navigate('overview')">Portfolio</button>
@@ -106,6 +109,38 @@
     <button class="bottom-nav-item" data-page="kb" onclick="navigate('kb')">
       <span class="bnav-icon">🧠</span><span>KB</span>
     </button>
+  </nav>
+
+  <!-- Nav drawer overlay -->
+  <div id="nav-overlay" class="nav-overlay" onclick="closeDrawer()"></div>
+
+  <!-- Slide-in nav drawer -->
+  <nav id="nav-drawer" class="nav-drawer">
+    <div class="nav-drawer-header">
+      <span class="nav-drawer-logo">⚡ Hype</span>
+      <button class="nav-drawer-close" onclick="closeDrawer()" aria-label="Close menu">✕</button>
+    </div>
+    <div class="nav-drawer-body">
+      <div class="nav-drawer-section">Main</div>
+      <button class="drawer-item active" data-page="overview"  onclick="navigate('overview')"><span class="drawer-item-icon">📊</span>Portfolio</button>
+      <button class="drawer-item"        data-page="trades"    onclick="navigate('trades')"><span class="drawer-item-icon">🔄</span>Trades</button>
+      <button class="drawer-item"        data-page="funding"   onclick="navigate('funding')"><span class="drawer-item-icon">💹</span>Funding</button>
+      <button class="drawer-item"        data-page="flows"     onclick="navigate('flows')"><span class="drawer-item-icon">💰</span>Flows</button>
+      <button class="drawer-item"        data-page="monitor"   onclick="navigate('monitor')"><span class="drawer-item-icon">⚡</span>Live Monitor</button>
+      <div class="nav-drawer-section">Analysis</div>
+      <button class="drawer-item"        data-page="markets"   onclick="navigate('markets')"><span class="drawer-item-icon">🌊</span>Markets</button>
+      <button class="drawer-item"        data-page="phases"    onclick="navigate('phases')"><span class="drawer-item-icon">🔵</span>Phases</button>
+      <button class="drawer-item"        data-page="intel"     onclick="navigate('intel')"><span class="drawer-item-icon">📡</span>Intel</button>
+      <button class="drawer-item"        data-page="mvrv"      onclick="navigate('mvrv')"><span class="drawer-item-icon">📈</span>MVRV</button>
+      <button class="drawer-item"        data-page="ai"        onclick="navigate('ai')"><span class="drawer-item-icon">🤖</span>AI</button>
+      <div class="nav-drawer-section">Tools</div>
+      <button class="drawer-item"        data-page="watchlist"  onclick="navigate('watchlist')"><span class="drawer-item-icon">👛</span>Watchlist</button>
+      <button class="drawer-item"        data-page="journal"    onclick="navigate('journal')"><span class="drawer-item-icon">📓</span>Journal</button>
+      <button class="drawer-item"        data-page="indicators" onclick="navigate('indicators')"><span class="drawer-item-icon">📊</span>Indicators</button>
+      <button class="drawer-item"        data-page="smartmoney" onclick="navigate('smartmoney')"><span class="drawer-item-icon">🧠</span>Smart Money</button>
+      <button class="drawer-item"        data-page="analytics"  onclick="navigate('analytics')"><span class="drawer-item-icon">📊</span>Analytics</button>
+      <button class="drawer-item"        data-page="kb"         onclick="navigate('kb')"><span class="drawer-item-icon">📚</span>KB</button>
+    </div>
   </nav>
 
   <main class="main">
