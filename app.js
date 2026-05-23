@@ -272,9 +272,12 @@ function riskSummaryHtml(positions, marketCtx) {
   </div>`;
 }
 function parseAccountSummary(state) {
-  const m=state.marginSummary||{};
+  // Unified accounts expose crossMarginSummary which includes spot collateral value;
+  // legacy isolated accounts only have marginSummary.
+  const isUnified = !!state.crossMarginSummary;
+  const m = state.crossMarginSummary || state.marginSummary || {};
   return { account_value:parseFloat(m.accountValue||0), total_margin_used:parseFloat(m.totalMarginUsed||0),
-    total_ntl_pos:parseFloat(m.totalNtlPos||0), withdrawable:parseFloat(state.withdrawable||0) };
+    total_ntl_pos:parseFloat(m.totalNtlPos||0), withdrawable:parseFloat(state.withdrawable||0), isUnified };
 }
 function parseFills(fills) {
   return (fills||[]).map(f=>({time:f.time,coin:f.coin,side:f.side,price:parseFloat(f.px||0),size:parseFloat(f.sz||0),fee:parseFloat(f.fee||0),closed_pnl:parseFloat(f.closedPnl||0)})).sort((a,b)=>b.time-a.time);
@@ -789,7 +792,8 @@ async function loadOverview(){
     const spotTotalValue = spotBals.reduce((a,b)=>a+b.value,0) + usdcBalance;
     const spotUnrPnl = spotBals.reduce((a,b)=>a+b.unrealizedPnl,0);
     const totalUnr = positions.reduce((a,p)=>a+p.unrealized_pnl,0) + spotUnrPnl;
-    const totalPortfolio = s.account_value + spotTotalValue;
+    // Unified account: crossMarginSummary.accountValue already includes spot collateral — don't add twice
+    const totalPortfolio = s.isUnified ? s.account_value : s.account_value + spotTotalValue;
 
     _ovData = {s, positions, spotBals, usdcBalance, orders, totalPortfolio, spotTotalValue, spotUnrPnl, totalUnr, marketCtx, spotMetaRaw};
     window._rawMeta = perpMetaRaw;
