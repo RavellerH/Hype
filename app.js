@@ -1102,13 +1102,16 @@ async function loadPhases(interval){
         const lb=4;
         const recentCVD=cvdArr.at(-1)-(cvdArr.length>lb?cvdArr[cvdArr.length-1-lb]:0);
         const priceChg=closes.length>lb?(closes.at(-1)-closes[closes.length-1-lb])/closes[closes.length-1-lb]*100:0;
-        if(currentOI>0) saveOIPoint(ph.coin,currentOI);
+        // getPrevOI must be called BEFORE saveOIPoint to get a true "previous" value
         const prevOI=getPrevOI(ph.coin);
+        if(currentOI>0) saveOIPoint(ph.coin,currentOI);
         const oiChgPct=(prevOI&&prevOI>0&&currentOI>0)?(currentOI-prevOI)/prevOI*100:null;
         const sig=sigCVDOI(priceChg,recentCVD,oiChgPct);
-        return{coin:ph.coin,hasPosition:ph.hasPosition,price:closes.at(-1),priceChg,cvdUp:recentCVD>0,oiChgPct,sig};
+        return{coin:ph.coin,hasPosition:ph.hasPosition,price:closes.at(-1),priceChg,
+               cvdUp:recentCVD>0,cvdArr,currentOI,oiChgPct,sig};
       }).filter(Boolean);
-      cvdEl.innerHTML=renderCVDOITable(cvdRows);
+      cvdEl.innerHTML=renderCVDOITable(cvdRows)+renderCVDOICharts(cvdRows);
+      initCVDCharts(cvdRows);
     }
 
     setRefreshTime();

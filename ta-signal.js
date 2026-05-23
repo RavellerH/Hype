@@ -242,14 +242,15 @@ function getPrevOI(coin, lookbackMs = 3600000) {
   const h = _oiHistGet();
   const arr = h[coin] || [];
   if (!arr.length) return null;
+  // Exclude entries saved in the last 3 minutes (to avoid comparing with freshly-saved point)
+  const candidates = arr.filter(e => Date.now() - e.ts > 180000);
+  if (!candidates.length) return arr.length > 1 ? arr[arr.length - 2].oi : null;
   const target = Date.now() - lookbackMs;
-  let best = null;
-  for (const e of arr) {
-    if (e.ts <= Date.now() - lookbackMs * 0.4) {
-      if (!best || Math.abs(e.ts - target) < Math.abs(best.ts - target)) best = e;
-    }
+  let best = candidates[0];
+  for (const e of candidates) {
+    if (Math.abs(e.ts - target) < Math.abs(best.ts - target)) best = e;
   }
-  return best ? best.oi : null;
+  return best.oi;
 }
 
 // ── CVD + OI combined signal ──────────────────────────────────────────────────
@@ -303,21 +304,91 @@ function renderCVDOITable(rows) {
   return `
   <div class="cvd-table">
     <div class="cvd-head">
-      <span>Coin</span><span>4c Chg</span><span>CVD</span><span>OI ∆</span><span>Signal</span>
+      <span>Coin</span><span>4c Chg</span><span>CVD</span><span>OI</span><span>Signal</span>
     </div>
     ${rows.map(r => {
-      const oiStr = r.oiChgPct == null ? '—' : `${r.oiChgPct >= 0 ? '+' : ''}${r.oiChgPct.toFixed(1)}%`;
-      const oiCls = r.oiChgPct == null ? '' : r.oiChgPct >= 0 ? 'pos' : 'neg';
+      const oiAbs = r.currentOI > 0 ? fmtB(r.currentOI) : '—';
+      const oiChgStr = r.oiChgPct != null
+        ? `<span class="${r.oiChgPct >= 0 ? 'pos' : 'neg'}" style="font-size:9px;display:block">${r.oiChgPct >= 0 ? '+' : ''}${r.oiChgPct.toFixed(1)}%</span>`
+        : `<span style="font-size:9px;display:block;color:var(--text-muted)">tracking</span>`;
       return `<div class="cvd-row${r.hasPosition ? ' cvd-pos-row' : ''}">
         <span class="cvd-coin">${r.coin}${r.hasPosition ? '<span class="cvd-dot">◆</span>' : ''}</span>
         <span class="${r.priceChg >= 0 ? 'pos' : 'neg'}">${r.priceChg >= 0 ? '+' : ''}${r.priceChg.toFixed(2)}%</span>
         <span class="${r.cvdUp ? 'pos' : 'neg'}" style="font-size:11px">${r.cvdUp ? '▲ BUY' : '▼ SELL'}</span>
-        <span class="${oiCls}">${oiStr}</span>
+        <span>${oiAbs}${oiChgStr}</span>
         <span class="ta-sig-badge ta-${r.sig.cls}" style="font-size:10px">${r.sig.label}</span>
       </div>`;
     }).join('')}
   </div>
-  <div class="cvd-legend">◆ = open position · CVD = 4-candle volume delta · OI vs ~1h ago snapshot</div>`;
+  <div class="cvd-legend">◆ = open position · CVD = 4-candle volume delta · OI vs ~1h ago</div>`;
+}
+
+// ── CVD+OI sparkline charts ───────────────────────────────────────────────────
+const _cvdCharts = {};
+function _destroyCVDCharts() {
+  for (const k of Object.keys(_cvdCharts)) {
+    try { _cvdCharts[k].destroy(); } catch {}
+    delete _cvdCharts[k];
+  }
+}
+
+function renderCVDOICharts(rows) {
+  return `<div class="cvd-charts-grid">${rows.map(r => {
+    const oiAbs = r.currentOI > 0 ? fmtB(r.currentOI) : '—';
+    const oiChgStr = r.oiChgPct != null
+      ? `<span class="${r.oiChgPct >= 0 ? 'pos' : 'neg'}">${r.oiChgPct >= 0 ? '+' : ''}${r.oiChgPct.toFixed(1)}%</span>`
+      : `<span class="muted" style="font-size:10px">tracking…</span>`;
+    return `<div class="cvd-chart-card${r.hasPosition ? ' cvd-chart-pos' : ''}">
+      <div class="cvd-chart-hdr">
+        <div class="cvd-chart-left">
+          <span class="cvd-chart-coin">${r.coin}${r.hasPosition ? '<span class="cvd-dot">◆</span>' : ''}</span>
+          <span class="${r.priceChg >= 0 ? 'pos' : 'neg'}" style="font-size:11px">${r.priceChg >= 0 ? '+' : ''}${r.priceChg.toFixed(2)}%</span>
+        </div>
+        <span class="ta-sig-badge ta-${r.sig.cls}">${r.sig.label}</span>
+      </div>
+      <div class="cvd-chart-label">CVD — ${r.cvdUp ? '<span class="pos">▲ net buying</span>' : '<span class="neg">▼ net selling</span>'}</div>
+      <div style="position:relative;height:65px"><canvas id="cvdc-${r.coin}"></canvas></div>
+      <div class="cvd-chart-footer">
+        <span>OI ${oiAbs}</span>${oiChgStr}
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function initCVDCharts(rows) {
+  _destroyCVDCharts();
+  for (const r of rows) {
+    const canvas = document.getElementById(`cvdc-${r.coin}`);
+    if (!canvas || !r.cvdArr?.length) continue;
+    const color   = r.cvdUp ? 'rgba(74,222,128,0.9)' : 'rgba(248,113,113,0.9)';
+    const bgColor = r.cvdUp ? 'rgba(74,222,128,0.08)' : 'rgba(248,113,113,0.08)';
+    const zero    = 'rgba(100,100,100,0.3)';
+    _cvdCharts[r.coin] = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: r.cvdArr.map((_, i) => i),
+        datasets: [
+          { data: r.cvdArr, borderColor: color, backgroundColor: bgColor,
+            borderWidth: 1.5, fill: true, tension: 0.3, pointRadius: 0 },
+          { data: r.cvdArr.map(() => 0), borderColor: zero, borderWidth: 1,
+            borderDash: [3,3], fill: false, pointRadius: 0 },
+        ],
+      },
+      options: {
+        animation: false, responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            enabled: true,
+            callbacks: {
+              label: ctx => ctx.datasetIndex === 0 ? `CVD: ${ctx.raw.toFixed(0)}` : null,
+            },
+          },
+        },
+        scales: { x: { display: false }, y: { display: false } },
+      },
+    });
+  }
 }
 
 // ── Full TA build (async) ─────────────────────────────────────────────────────
@@ -354,8 +425,8 @@ async function buildFullTA(coin, tf, candles, rawMarketCtx) {
   const lb        = 4;
   const recentCVD = cvdArr.at(-1) - (cvdArr.length > lb ? cvdArr[cvdArr.length - 1 - lb] : 0);
   const priceChg4 = closes.length > lb ? (closes.at(-1) - closes[closes.length - 1 - lb]) / closes[closes.length - 1 - lb] * 100 : 0;
-  if (oi > 0) saveOIPoint(coin, oi);
   const prevOI    = getPrevOI(coin);
+  if (oi > 0) saveOIPoint(coin, oi);
   const oiChgPct  = (prevOI && prevOI > 0 && oi > 0) ? (oi - prevOI) / prevOI * 100 : null;
 
   const sigs = {
