@@ -465,7 +465,8 @@ tr:hover td { background: var(--surface-hover); }
 .cvd-toggle-icon { font-size: 11px; color: var(--text-muted); flex-shrink: 0; transition: transform 0.15s; }
 .cvd-chart-body { padding: 0 10px 10px; border-top: 1px solid var(--border); }
 .cvd-panel-label { font-size: 10px; color: var(--text-muted); margin: 7px 0 3px; display: flex; align-items: center; gap: 5px; }
-.cvd-panel { position: relative; height: 80px; }
+.cvd-panel { position: relative; height: 80px; overflow: hidden; }
+.cvd-panel canvas { max-width: 100%; display: block; }
 .cvd-analysis {
   font-size: 11px; color: var(--text-muted); line-height: 1.5;
   margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border);
