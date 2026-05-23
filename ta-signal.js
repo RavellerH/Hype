@@ -323,7 +323,25 @@ function renderCVDOITable(rows) {
   <div class="cvd-legend">◆ = open position · CVD = 4-candle volume delta · OI vs ~1h ago</div>`;
 }
 
-// ── CVD+OI sparkline charts ───────────────────────────────────────────────────
+// ── Binance historical OI (free, no API key) ──────────────────────────────────
+const _binanceOICache = {};
+async function fetchBinanceOI(coin, tf = '1h', limit = 60) {
+  const sym = coin.toUpperCase().replace(/^1000/, '') + 'USDT';
+  const period = tf === '4h' ? '4h' : tf === '1d' ? '1d' : '1h';
+  const key = `${sym}_${period}`;
+  if (_binanceOICache[key] && Date.now() - _binanceOICache[key].ts < 300000) return _binanceOICache[key].data;
+  try {
+    const r = await fetch(`https://fapi.binance.com/futures/data/openInterestHist?symbol=${sym}&period=${period}&limit=${limit}`);
+    if (!r.ok) return null;
+    const d = await r.json();
+    if (!Array.isArray(d) || !d.length) return null;
+    const data = d.map(e => ({ ts: e.timestamp, oi: parseFloat(e.sumOpenInterestValue) }));
+    _binanceOICache[key] = { ts: Date.now(), data };
+    return data;
+  } catch { return null; }
+}
+
+// ── Chart instance registry ───────────────────────────────────────────────────
 const _cvdCharts = {};
 function _destroyCVDCharts() {
   for (const k of Object.keys(_cvdCharts)) {
@@ -332,12 +350,26 @@ function _destroyCVDCharts() {
   }
 }
 
+function _miniOpts(tooltipFmt) {
+  return {
+    animation: false, responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: tooltipFmt
+        ? { callbacks: { label: ctx => tooltipFmt(ctx.raw), title: () => '' } }
+        : { enabled: false },
+    },
+    scales: { x: { display: false }, y: { display: false } },
+  };
+}
+
+// ── Combined CVD+OI chart cards (Price / CVD / OI per coin) ───────────────────
 function renderCVDOICharts(rows) {
   return `<div class="cvd-charts-grid">${rows.map(r => {
-    const oiAbs = r.currentOI > 0 ? fmtB(r.currentOI) : '—';
-    const oiChgStr = r.oiChgPct != null
+    const oiAbs   = r.currentOI > 0 ? fmtB(r.currentOI) : '—';
+    const oiChgHtml = r.oiChgPct != null
       ? `<span class="${r.oiChgPct >= 0 ? 'pos' : 'neg'}">${r.oiChgPct >= 0 ? '+' : ''}${r.oiChgPct.toFixed(1)}%</span>`
-      : `<span class="muted" style="font-size:10px">tracking…</span>`;
+      : `<span class="cvd-track">tracking…</span>`;
     return `<div class="cvd-chart-card${r.hasPosition ? ' cvd-chart-pos' : ''}">
       <div class="cvd-chart-hdr">
         <div class="cvd-chart-left">
@@ -346,48 +378,89 @@ function renderCVDOICharts(rows) {
         </div>
         <span class="ta-sig-badge ta-${r.sig.cls}">${r.sig.label}</span>
       </div>
-      <div class="cvd-chart-label">CVD — ${r.cvdUp ? '<span class="pos">▲ net buying</span>' : '<span class="neg">▼ net selling</span>'}</div>
-      <div style="position:relative;height:65px"><canvas id="cvdc-${r.coin}"></canvas></div>
-      <div class="cvd-chart-footer">
-        <span>OI ${oiAbs}</span>${oiChgStr}
-      </div>
+      <div class="cvd-panel-label">Price · <span style="font-family:var(--mono)">${fmtPrice(r.price)}</span></div>
+      <div class="cvd-panel"><canvas id="cvdp-${r.coin}"></canvas></div>
+      <div class="cvd-panel-label">CVD · ${r.cvdUp ? '<span class="pos">▲ net buying</span>' : '<span class="neg">▼ net selling</span>'}</div>
+      <div class="cvd-panel"><canvas id="cvdc-${r.coin}"></canvas></div>
+      <div class="cvd-panel-label">Open Interest · ${oiAbs} ${oiChgHtml}</div>
+      <div class="cvd-panel" id="cvdo-wrap-${r.coin}"><canvas id="cvdo-${r.coin}"></canvas></div>
+      <div class="cvd-analysis">${r.sig.detail || '—'}</div>
     </div>`;
   }).join('')}</div>`;
 }
 
-function initCVDCharts(rows) {
+async function initCVDCharts(rows) {
   _destroyCVDCharts();
-  for (const r of rows) {
-    const canvas = document.getElementById(`cvdc-${r.coin}`);
-    if (!canvas || !r.cvdArr?.length) continue;
-    const color   = r.cvdUp ? 'rgba(74,222,128,0.9)' : 'rgba(248,113,113,0.9)';
-    const bgColor = r.cvdUp ? 'rgba(74,222,128,0.08)' : 'rgba(248,113,113,0.08)';
-    const zero    = 'rgba(100,100,100,0.3)';
-    _cvdCharts[r.coin] = new Chart(canvas, {
-      type: 'line',
-      data: {
-        labels: r.cvdArr.map((_, i) => i),
-        datasets: [
-          { data: r.cvdArr, borderColor: color, backgroundColor: bgColor,
-            borderWidth: 1.5, fill: true, tension: 0.3, pointRadius: 0 },
-          { data: r.cvdArr.map(() => 0), borderColor: zero, borderWidth: 1,
-            borderDash: [3,3], fill: false, pointRadius: 0 },
-        ],
-      },
-      options: {
-        animation: false, responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            enabled: true,
-            callbacks: {
-              label: ctx => ctx.datasetIndex === 0 ? `CVD: ${ctx.raw.toFixed(0)}` : null,
-            },
-          },
+
+  // Fetch Binance OI for all coins in parallel
+  const oiResults = await Promise.allSettled(
+    rows.map(r => fetchBinanceOI(r.coin, 'h1', Math.min(r.cvdArr?.length || 60, 200)))
+  );
+
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    const n = r.cvdArr?.length || 0;
+
+    // ── Price chart ──────────────────────────────────────────────────────────
+    const priceC = document.getElementById(`cvdp-${r.coin}`);
+    if (priceC && r.closes?.length) {
+      _cvdCharts[`p_${r.coin}`] = new Chart(priceC, {
+        type: 'line',
+        data: {
+          labels: r.closes.map((_, j) => j),
+          datasets: [{ data: r.closes,
+            borderColor: 'rgba(148,163,184,0.9)', backgroundColor: 'rgba(148,163,184,0.06)',
+            borderWidth: 1.5, fill: true, tension: 0.3, pointRadius: 0 }],
         },
-        scales: { x: { display: false }, y: { display: false } },
-      },
-    });
+        options: _miniOpts(v => fmtPrice(v)),
+      });
+    }
+
+    // ── CVD chart ────────────────────────────────────────────────────────────
+    const cvdC = document.getElementById(`cvdc-${r.coin}`);
+    if (cvdC && r.cvdArr?.length) {
+      const col  = r.cvdUp ? 'rgba(74,222,128,0.9)' : 'rgba(248,113,113,0.9)';
+      const bg   = r.cvdUp ? 'rgba(74,222,128,0.08)' : 'rgba(248,113,113,0.08)';
+      _cvdCharts[`c_${r.coin}`] = new Chart(cvdC, {
+        type: 'line',
+        data: {
+          labels: r.cvdArr.map((_, j) => j),
+          datasets: [
+            { data: r.cvdArr, borderColor: col, backgroundColor: bg,
+              borderWidth: 1.5, fill: true, tension: 0.3, pointRadius: 0 },
+            { data: r.cvdArr.map(() => 0), borderColor: 'rgba(100,100,100,0.35)',
+              borderWidth: 1, borderDash: [3, 3], fill: false, pointRadius: 0 },
+          ],
+        },
+        options: _miniOpts(v => `CVD: ${Math.round(v).toLocaleString()}`),
+      });
+    }
+
+    // ── OI chart — Binance history or localStorage fallback ───────────────────
+    const oiC = document.getElementById(`cvdo-${r.coin}`);
+    const binanceOI = oiResults[i].status === 'fulfilled' ? oiResults[i].value : null;
+    const localOI   = (_oiHistGet()[r.coin] || []).map(e => ({ ts: e.ts, oi: e.oi }));
+    const oiSrc     = binanceOI || (localOI.length > 1 ? localOI : null);
+
+    if (oiC && oiSrc?.length) {
+      const oiVals = oiSrc.map(e => e.oi).slice(-Math.max(n, 30));
+      const oiUp   = oiVals.at(-1) > oiVals[0];
+      _cvdCharts[`o_${r.coin}`] = new Chart(oiC, {
+        type: 'line',
+        data: {
+          labels: oiVals.map((_, j) => j),
+          datasets: [{ data: oiVals,
+            borderColor: oiUp ? 'rgba(251,191,36,0.9)' : 'rgba(156,163,175,0.8)',
+            backgroundColor: oiUp ? 'rgba(251,191,36,0.07)' : 'rgba(156,163,175,0.05)',
+            borderWidth: 1.5, fill: true, tension: 0.3, pointRadius: 0 }],
+        },
+        options: _miniOpts(v => `OI: ${fmtB(v)}`),
+      });
+    } else if (oiC) {
+      // No OI data yet — show placeholder
+      const wrap = document.getElementById(`cvdo-wrap-${r.coin}`);
+      if (wrap) wrap.innerHTML = '<div class="cvd-oi-empty">OI data loading from Binance…</div>';
+    }
   }
 }
 

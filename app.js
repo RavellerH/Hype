@@ -1108,10 +1108,10 @@ async function loadPhases(interval){
         const oiChgPct=(prevOI&&prevOI>0&&currentOI>0)?(currentOI-prevOI)/prevOI*100:null;
         const sig=sigCVDOI(priceChg,recentCVD,oiChgPct);
         return{coin:ph.coin,hasPosition:ph.hasPosition,price:closes.at(-1),priceChg,
-               cvdUp:recentCVD>0,cvdArr,currentOI,oiChgPct,sig};
+               cvdUp:recentCVD>0,cvdArr,closes,currentOI,oiChgPct,sig};
       }).filter(Boolean);
       cvdEl.innerHTML=renderCVDOITable(cvdRows)+renderCVDOICharts(cvdRows);
-      initCVDCharts(cvdRows);
+      await initCVDCharts(cvdRows);
     }
 
     setRefreshTime();
