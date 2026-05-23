@@ -1,11 +1,19 @@
-const CACHE = 'hype-v1';
+const CACHE = 'hype-v7';
 const STATIC = [
-  '/',
-  '/static/css/styles.css',
-  '/static/js/app.js',
-  '/static/icons/icon.svg',
-  '/manifest.json',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap',
+  './',
+  './styles.css',
+  './app.js',
+  './ta-signal.js',
+  './position-meta.js',
+  './intel.js',
+  './indicators.js',
+  './analytics.js',
+  './logger.js',
+  './nansen.js',
+  './mvrv-ai.js',
+  './icons/icon.svg',
+  './manifest.json',
+  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap',
 ];
 
 self.addEventListener('install', e => {
@@ -23,24 +31,12 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  const url = new URL(e.request.url);
-
-  // Network-first for API calls
-  if (url.pathname.startsWith('/api/') || url.pathname === '/ws') {
-    e.respondWith(
-      fetch(e.request).catch(() => new Response('{"error":"offline"}', {
-        headers: { 'Content-Type': 'application/json' }
-      }))
-    );
-    return;
-  }
-
-  // Cache-first for everything else
+  if (e.request.method !== 'GET') return;
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
       return fetch(e.request).then(res => {
-        if (res.ok && e.request.method === 'GET') {
+        if (res.ok) {
           const clone = res.clone();
           caches.open(CACHE).then(c => c.put(e.request, clone));
         }
