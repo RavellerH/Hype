@@ -215,6 +215,111 @@ function addDetail(sig, name) {
   return { ...sig, detail };
 }
 
+// ── CVD (Candle Volume Delta) ─────────────────────────────────────────────────
+function calcCVD(opens, closes, highs, lows, volumes) {
+  let cvd = 0;
+  return closes.map((_, i) => {
+    const range = highs[i] - lows[i];
+    if (range > 0) cvd += volumes[i] * ((closes[i] - lows[i]) - (highs[i] - closes[i])) / range;
+    return cvd;
+  });
+}
+
+// ── OI history (localStorage, per-coin) ──────────────────────────────────────
+const _OI_HIST_KEY = 'hype_oi_hist_v1';
+function _oiHistGet() {
+  try { return JSON.parse(localStorage.getItem(_OI_HIST_KEY) || '{}'); } catch { return {}; }
+}
+function saveOIPoint(coin, oi) {
+  if (!oi || oi <= 0) return;
+  const h = _oiHistGet();
+  if (!h[coin]) h[coin] = [];
+  h[coin].push({ ts: Date.now(), oi });
+  if (h[coin].length > 96) h[coin] = h[coin].slice(-96);
+  try { localStorage.setItem(_OI_HIST_KEY, JSON.stringify(h)); } catch {}
+}
+function getPrevOI(coin, lookbackMs = 3600000) {
+  const h = _oiHistGet();
+  const arr = h[coin] || [];
+  if (!arr.length) return null;
+  const target = Date.now() - lookbackMs;
+  let best = null;
+  for (const e of arr) {
+    if (e.ts <= Date.now() - lookbackMs * 0.4) {
+      if (!best || Math.abs(e.ts - target) < Math.abs(best.ts - target)) best = e;
+    }
+  }
+  return best ? best.oi : null;
+}
+
+// ── CVD + OI combined signal ──────────────────────────────────────────────────
+function sigCVDOI(priceChg, recentCVD, oiChgPct) {
+  const pUp = priceChg >  0.2;
+  const pDn = priceChg < -0.2;
+  const cUp = recentCVD > 0;
+  const oUp = oiChgPct != null && oiChgPct >  1.5;
+  const oDn = oiChgPct != null && oiChgPct < -1.5;
+  const oNa = oiChgPct == null;
+  let label, cls, detail;
+
+  if (pUp && cUp && (oUp || oNa)) {
+    label = 'STRONG BULL';    cls = 'bull';
+    detail = 'Price up + net buying CVD + OI expanding — real demand with new longs, continuation likely';
+  } else if (pUp && cUp) {
+    label = 'SPOT DRIVEN';    cls = 'bull';
+    detail = 'Price and CVD rising, OI flat/down — spot buyers driving move, shorts likely covering';
+  } else if (pUp && !cUp && oUp) {
+    label = 'SUSPECT PUMP';   cls = 'warn';
+    detail = 'Price up but sellers dominate CVD — move driven by short squeeze, not real demand';
+  } else if (pUp && !cUp) {
+    label = 'WEAK RALLY';     cls = 'warn';
+    detail = 'Price up with net selling CVD and falling OI — fragile move, likely reversal ahead';
+  } else if (pDn && !cUp && (oDn || oNa)) {
+    label = 'STRONG BEAR';    cls = 'bear';
+    detail = 'Price, CVD and OI all falling — real selling with longs exiting, continuation likely';
+  } else if (pDn && !cUp && oUp) {
+    label = 'LEVERAGED SELL'; cls = 'bear';
+    detail = 'Price and CVD down but OI rising — shorts adding leverage, squeeze risk if wrong';
+  } else if (pDn && cUp && oDn) {
+    label = 'ACCUMULATION';   cls = 'info';
+    detail = 'Price falling but net buyers absorb — dip buying while longs reduce exposure';
+  } else if (pDn && cUp) {
+    label = 'BULL DIVERGENCE';cls = 'info';
+    detail = 'Price down but buyers dominating CVD — hidden accumulation, watch for reversal';
+  } else {
+    label = 'NEUTRAL';        cls = 'neut';
+    detail = 'Price sideways or CVD/OI signals mixed — no clear directional edge';
+  }
+
+  const oStr = oNa ? 'OI N/A' : `OI ${oiChgPct >= 0 ? '+' : ''}${oiChgPct.toFixed(1)}%`;
+  return { label, cls,
+    sub: `Price ${priceChg >= 0 ? '+' : ''}${priceChg.toFixed(2)}% · CVD ${cUp ? '▲ buying' : '▼ selling'} · ${oStr}`,
+    detail };
+}
+
+// ── CVD+OI multi-coin overview table ─────────────────────────────────────────
+function renderCVDOITable(rows) {
+  if (!rows.length) return '<div style="font-size:12px;color:var(--text-muted);padding:8px">No data</div>';
+  return `
+  <div class="cvd-table">
+    <div class="cvd-head">
+      <span>Coin</span><span>4c Chg</span><span>CVD</span><span>OI ∆</span><span>Signal</span>
+    </div>
+    ${rows.map(r => {
+      const oiStr = r.oiChgPct == null ? '—' : `${r.oiChgPct >= 0 ? '+' : ''}${r.oiChgPct.toFixed(1)}%`;
+      const oiCls = r.oiChgPct == null ? '' : r.oiChgPct >= 0 ? 'pos' : 'neg';
+      return `<div class="cvd-row${r.hasPosition ? ' cvd-pos-row' : ''}">
+        <span class="cvd-coin">${r.coin}${r.hasPosition ? '<span class="cvd-dot">◆</span>' : ''}</span>
+        <span class="${r.priceChg >= 0 ? 'pos' : 'neg'}">${r.priceChg >= 0 ? '+' : ''}${r.priceChg.toFixed(2)}%</span>
+        <span class="${r.cvdUp ? 'pos' : 'neg'}" style="font-size:11px">${r.cvdUp ? '▲ BUY' : '▼ SELL'}</span>
+        <span class="${oiCls}">${oiStr}</span>
+        <span class="ta-sig-badge ta-${r.sig.cls}" style="font-size:10px">${r.sig.label}</span>
+      </div>`;
+    }).join('')}
+  </div>
+  <div class="cvd-legend">◆ = open position · CVD = 4-candle volume delta · OI vs ~1h ago snapshot</div>`;
+}
+
 // ── Full TA build (async) ─────────────────────────────────────────────────────
 async function buildFullTA(coin, tf, candles, rawMarketCtx) {
   const opens  = candles.map(c=>parseFloat(c.o));
@@ -244,6 +349,15 @@ async function buildFullTA(coin, tf, candles, rawMarketCtx) {
   const oiPrev = taOIPrev?.[coin + tf] ?? null;
   if (typeof taOIPrev !== 'undefined') taOIPrev[coin + tf] = oi;
 
+  // CVD + OI
+  const cvdArr    = calcCVD(opens, closes, highs, lows, vols);
+  const lb        = 4;
+  const recentCVD = cvdArr.at(-1) - (cvdArr.length > lb ? cvdArr[cvdArr.length - 1 - lb] : 0);
+  const priceChg4 = closes.length > lb ? (closes.at(-1) - closes[closes.length - 1 - lb]) / closes[closes.length - 1 - lb] * 100 : 0;
+  if (oi > 0) saveOIPoint(coin, oi);
+  const prevOI    = getPrevOI(coin);
+  const oiChgPct  = (prevOI && prevOI > 0 && oi > 0) ? (oi - prevOI) / prevOI * 100 : null;
+
   const sigs = {
     ema:     addDetail(sigEMA(price, ema20.at(-1), ema50.at(-1), ema200?ema200.at(-1):null), 'ema'),
     macd:    addDetail(sigMACD(hist, macd), 'macd'),
@@ -266,6 +380,7 @@ async function buildFullTA(coin, tf, candles, rawMarketCtx) {
   sigs.cg      = sigCG(cg);
   sigs.nansen  = sigNansenFlow(coin);
   sigs.fg      = sigFGGlobal();
+  sigs.cvdoi   = sigCVDOI(priceChg4, recentCVD, oiChgPct);
 
   const sr    = findSR(highs, lows, closes);
   const dir   = scoreDirection(sigs);
@@ -378,6 +493,7 @@ function renderTARec(ta) {
       ${_checkRow('📈','24h Change (CG)',   s.cg)}
       ${_checkRow('🏦','Smart Money',       s.nansen)}
       ${_checkRow('😱','Fear & Greed',      s.fg)}
+      ${_checkRow('🔄','CVD + OI',          s.cvdoi)}
     </div>
   </div>`;
 }
