@@ -137,6 +137,8 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); font
 .page { display: none; animation: fadein 0.15s ease; }
 .page.active { display: block; }
 @keyframes fadein { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+@keyframes refresh-flash { 0%,100% { color: var(--text-muted); } 50% { color: var(--green); } }
+.refresh-flash { animation: refresh-flash 0.5s ease; }
 
 /* ── Stat strip ──────────────────────────────────────────────────────────────── */
 

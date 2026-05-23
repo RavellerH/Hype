@@ -7,6 +7,9 @@ let currentPage = 'overview';
 let phaseInterval = '1h';
 let activeNarrative = 'all';
 let autoRefreshTimer = null;
+let _silentRefresh = false;
+let _lastRefreshTs = 0;
+const _SKIP_SILENT = new Set(['phases','monitor','journal','analytics','kb','mvrv','ai']);
 let marketSortKey = 'volume';
 let allMarketData = [];
 
@@ -723,7 +726,7 @@ function renderOverviewTab() {
 
 async function loadOverview(){
   const el=document.getElementById('overview-content');
-  el.innerHTML=loading();
+  if(!_silentRefresh) el.innerHTML=loading();
   _spotEnriched = false;
   try{
     setStatus(true);
@@ -761,13 +764,13 @@ async function loadOverview(){
 
     renderOverviewTab();
     setRefreshTime();
-  }catch(e){el.innerHTML=err(e);setStatus(false);}
+  }catch(e){if(!_silentRefresh){el.innerHTML=err(e);setStatus(false);}}
 }
 
 // ── Trades ────────────────────────────────────────────────────────────────────
 async function loadTrades(){
   const el=document.getElementById('trades-content');
-  el.innerHTML=loading();
+  if(!_silentRefresh) el.innerHTML=loading();
   try{
     const [rawFills, spotMetaRaw] = await Promise.all([
       getUserFills(currentWallet),
@@ -819,13 +822,13 @@ async function loadTrades(){
         </table></div>
       </div>`;
     setRefreshTime();
-  }catch(e){el.innerHTML=err(e);}
+  }catch(e){if(!_silentRefresh)el.innerHTML=err(e);}
 }
 
 // ── Funding ───────────────────────────────────────────────────────────────────
 async function loadFunding(){
   const el=document.getElementById('funding-content');
-  el.innerHTML=loading();
+  if(!_silentRefresh) el.innerHTML=loading();
   try{
     const funding=parseFunding(await getUserFunding(currentWallet,30));
     const totalUsdc=funding.reduce((a,f)=>a+f.usdc,0);
@@ -853,13 +856,13 @@ async function loadFunding(){
         </table></div></div>
       </div>`;
     setRefreshTime();
-  }catch(e){el.innerHTML=err(e);}
+  }catch(e){if(!_silentRefresh)el.innerHTML=err(e);}
 }
 
 // ── My Flows ──────────────────────────────────────────────────────────────────
 async function loadFlows(){
   const el=document.getElementById('flows-content');
-  el.innerHTML=loading();
+  if(!_silentRefresh) el.innerHTML=loading();
   try{
     const flows=parseLedger(await getLedgerUpdates(currentWallet,90));
     const totalIn=flows.filter(f=>f.usdc>0).reduce((a,f)=>a+f.usdc,0);
@@ -884,19 +887,19 @@ async function loadFlows(){
         </table></div>`}
       </div>`;
     setRefreshTime();
-  }catch(e){el.innerHTML=err(e);}
+  }catch(e){if(!_silentRefresh)el.innerHTML=err(e);}
 }
 
 // ── Global Markets / Money Flows ──────────────────────────────────────────────
 async function loadMarkets(){
   const el=document.getElementById('markets-content');
-  el.innerHTML=loading();
+  if(!_silentRefresh) el.innerHTML=loading();
   try{
     const raw=await getMetaAndAssetCtxs();
     allMarketData=parseMarketData(raw);
     renderMarkets();
     setRefreshTime();
-  }catch(e){el.innerHTML=err(e);}
+  }catch(e){if(!_silentRefresh)el.innerHTML=err(e);}
 }
 
 function renderMarkets(){
@@ -1038,7 +1041,7 @@ function setSortKey(key){
 async function loadPhases(interval){
   if(interval) phaseInterval=interval;
   const el=document.getElementById('phases-content');
-  el.innerHTML=loading();
+  if(!_silentRefresh) el.innerHTML=loading();
   try{
     const state=await getClearinghouseState(currentWallet);
     const positions=parsePositions(state);
@@ -1115,7 +1118,7 @@ async function loadPhases(interval){
     }
 
     setRefreshTime();
-  }catch(e){el.innerHTML=err(e);}
+  }catch(e){if(!_silentRefresh)el.innerHTML=err(e);}
 }
 
 function phaseCard(p){
@@ -2000,6 +2003,7 @@ function fmtTime(ms){
 }
 function setStatus(ok){document.getElementById('ws-status').className='status-dot'+(ok?'':' off');}
 function setRefreshTime(){
+  _lastRefreshTs=Date.now();
   const el=document.getElementById('refresh-info');
   if(el){el.style.display='block';el.textContent='Updated '+new Date().toLocaleTimeString();}
   setStatus(true);
@@ -2009,6 +2013,53 @@ function loading(){return `<div class="loading">${spinnerHtml()} Loading…</div
 function err(e){return `<div class="loading">Error: ${e.message}</div>`;}
 
 // ── Init ──────────────────────────────────────────────────────────────────────
+function _doSilentRefresh(){
+  if(document.hidden) return;
+  if(_SKIP_SILENT.has(currentPage)) return;
+  const main=document.querySelector('.main');
+  const sy=main?main.scrollTop:0;
+  _silentRefresh=true;
+  const loaders={overview:loadOverview,trades:loadTrades,funding:loadFunding,
+    flows:loadFlows,markets:loadMarkets,watchlist:loadWatchlist,
+    intel:typeof loadIntel!=='undefined'?loadIntel:null,
+    indicators:typeof loadIndicators!=='undefined'?loadIndicators:null,
+    smartmoney:typeof loadNansen!=='undefined'?loadNansen:null};
+  const loader=loaders[currentPage];
+  const p=loader?Promise.resolve(loader()):Promise.resolve();
+  p.catch(()=>{}).finally(()=>{
+    _silentRefresh=false;
+    _lastRefreshTs=Date.now();
+    if(main) requestAnimationFrame(()=>{main.scrollTop=sy;});
+    const ri=document.getElementById('refresh-info');
+    if(ri){ri.classList.add('refresh-flash');setTimeout(()=>ri.classList.remove('refresh-flash'),500);}
+  });
+}
+
+function _startAgoCounter(){
+  setInterval(()=>{
+    if(!_lastRefreshTs) return;
+    const s=Math.floor((Date.now()-_lastRefreshTs)/1000);
+    const ri=document.getElementById('refresh-info');
+    if(!ri) return;
+    if(s<60) ri.textContent='Updated just now';
+    else ri.textContent=`Updated ${Math.floor(s/60)}m ago`;
+  },30000);
+}
+
+// Pull-to-refresh (mobile)
+let _ptrY=0;
+document.addEventListener('touchstart',e=>{_ptrY=e.touches[0].clientY;},{passive:true});
+document.addEventListener('touchend',e=>{
+  const main=document.querySelector('.main');
+  const dy=e.changedTouches[0].clientY-_ptrY;
+  if(dy>65&&main&&main.scrollTop<=0) navigate(currentPage);
+},{passive:true});
+
+// Refresh when returning to tab after >60s
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden&&Date.now()-_lastRefreshTs>60000) _doSilentRefresh();
+});
+
 document.addEventListener('DOMContentLoaded',()=>{
   const wl=getWatchlist();
   if(!wl.find(w=>w.address===DEFAULT_WALLET.toLowerCase())){
@@ -2016,6 +2067,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     saveWatchlist(wl);
   }
   navigate('overview');
-  autoRefreshTimer=setInterval(()=>navigate(currentPage),30000);
+  autoRefreshTimer=setInterval(_doSilentRefresh,60000);
+  _startAgoCounter();
   if(typeof loggerInit==='function'){ loggerInit(); loggerRefreshStatus(); }
 });
