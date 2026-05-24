@@ -66,10 +66,22 @@ async function getSpotMeta() { return hlPost({ type:'spotMetaAndAssetCtxs' }); }
 async function getUserFills(w) { return hlPost({ type:'userFills', user:w }); }
 async function getUserFunding(w, days=30) { return hlPost({ type:'userFunding', user:w, startTime:Date.now()-days*86400000 }); }
 async function getLedgerUpdates(w, days=90) { return hlPost({ type:'userNonFundingLedgerUpdates', user:w, startTime:Date.now()-days*86400000 }); }
-async function getMetaAndAssetCtxs() { return hlPost({ type:'metaAndAssetCtxs' }); }
+async function getMetaAndAssetCtxs() {
+  const now = Date.now();
+  if (getMetaAndAssetCtxs._cache && now - getMetaAndAssetCtxs._ts < 2*60*1000) return getMetaAndAssetCtxs._cache;
+  const data = await hlPost({ type:'metaAndAssetCtxs' });
+  getMetaAndAssetCtxs._cache = data; getMetaAndAssetCtxs._ts = now;
+  return data;
+}
+const _candleCache = new Map();
 async function getCandles(coin, interval='1h', days=7) {
+  const key = `${coin}|${interval}|${days}`;
+  const hit = _candleCache.get(key);
+  if (hit && Date.now() - hit.ts < 5*60*1000) return hit.data;
   const endTime = Date.now();
-  return hlPost({ type:'candleSnapshot', req:{ coin, interval, startTime:endTime-days*86400000, endTime } });
+  const data = await hlPost({ type:'candleSnapshot', req:{ coin, interval, startTime:endTime-days*86400000, endTime } });
+  _candleCache.set(key, { data, ts: Date.now() });
+  return data;
 }
 async function getOpenOrders(w) { return hlPost({ type:'openOrders', user:w }); }
 
@@ -1291,7 +1303,8 @@ async function loadPhases(interval){
     const posCoinSet=new Set(positions.map(p=>p.coin));
     // Always show PHASE_COINS; append any open-position coins not in that list
     const allCoins=[...PHASE_COINS,...positions.map(p=>p.coin).filter(c=>!PHASE_COINS.includes(c))];
-    const days={'1h':30,'4h':60,'1d':90}[phaseInterval]||30;
+    // 1h: 14d (336 candles) is enough for Wyckoff + CVD; reduces payload vs old 30d/720 candles
+    const days={'1h':14,'4h':30,'1d':90}[phaseInterval]||14;
 
     el.innerHTML=`
       <div class="section-header">
@@ -1317,19 +1330,29 @@ async function loadPhases(interval){
         </div>
       </div>`;
 
+    // Render placeholder cards immediately so the user sees coins appearing as data arrives
+    const pcards=document.getElementById('phase-cards');
+    if(pcards) pcards.innerHTML=allCoins.map(coin=>`
+      <div id="pc-${coin}" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;opacity:0.5">
+        <div style="font-weight:700;color:var(--accent);margin-bottom:4px">${coin}</div>
+        <div class="muted" style="font-size:11px">fetching…</div>
+      </div>`).join('');
+
+    const phases=new Array(allCoins.length);
     const [results, phaseMeta] = await Promise.all([
-      Promise.allSettled(allCoins.map(async coin=>{
+      Promise.allSettled(allCoins.map(async (coin,i)=>{
         const candles=await getCandles(coin,phaseInterval,days);
-        return {coin,hasPosition:posCoinSet.has(coin),candles,...detectPhase(candles)};
+        const result={coin,hasPosition:posCoinSet.has(coin),candles,...detectPhase(candles)};
+        phases[i]=result;
+        // Update this coin's card as soon as its data is ready
+        const cardEl=document.getElementById(`pc-${coin}`);
+        if(cardEl) cardEl.outerHTML=phaseCard(result);
+        return result;
       })),
       getMetaAndAssetCtxs().catch(()=>null),
     ]);
-    const phases=results.map((r,i)=>
-      r.status==='fulfilled'?r.value:
-      {coin:allCoins[i],hasPosition:posCoinSet.has(allCoins[i]),phase:'NEUTRAL',confidence:0,signals:['fetch failed']}
-    );
-    const pcards=document.getElementById('phase-cards');
-    if(pcards) pcards.innerHTML=phases.map(phaseCard).join('');
+    // Fill any slots that errored
+    results.forEach((r,i)=>{ if(!phases[i]) phases[i]=r.status==='fulfilled'?r.value:{coin:allCoins[i],hasPosition:posCoinSet.has(allCoins[i]),phase:'NEUTRAL',confidence:0,signals:['fetch failed']}; });
 
     // CVD+OI scanner
     const cvdEl=document.getElementById('cvd-oi-table');
