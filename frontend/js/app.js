@@ -1145,6 +1145,19 @@ async function loadFlows(){
   }catch(e){if(!_silentRefresh)el.innerHTML=err(e);}
 }
 
+async function _showCVDCharts() {
+  const btn = document.getElementById('cvd-charts-btn');
+  const rows = window._pendingCVDRows;
+  if (!rows || !btn) return;
+  btn.textContent = 'Loading charts…';
+  btn.disabled = true;
+  const cvdEl = document.getElementById('cvd-oi-table');
+  if (cvdEl && typeof renderCVDOICharts === 'function') {
+    cvdEl.innerHTML = renderCVDOITable(rows) + renderCVDOICharts(rows);
+    if (typeof initCVDCharts === 'function') await initCVDCharts(rows);
+  }
+}
+
 // ── Global Markets / Money Flows ──────────────────────────────────────────────
 async function loadMarkets(){
   const el=document.getElementById('markets-content');
@@ -1381,8 +1394,15 @@ async function loadPhases(interval){
         return{coin:ph.coin,hasPosition:ph.hasPosition,price:closes.at(-1),priceChg,
                cvdUp:recentCVD>0,cvdArr,closes,currentOI,oiChgPct,sig};
       }).filter(Boolean);
-      cvdEl.innerHTML=renderCVDOITable(cvdRows)+renderCVDOICharts(cvdRows);
-      await initCVDCharts(cvdRows);
+      // Show signal table immediately — no chart init (fast path for trading decisions)
+      cvdEl.innerHTML = renderCVDOITable(cvdRows) + `
+        <div style="text-align:center;margin:12px 0 4px">
+          <button id="cvd-charts-btn" onclick="_showCVDCharts()"
+            style="padding:6px 18px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text-muted)">
+            Show CVD Charts
+          </button>
+        </div>`;
+      window._pendingCVDRows = cvdRows;
       if(typeof loadMoneyFlowSignals==='function') loadMoneyFlowSignals(allCoins);
       if(typeof loadHYPEIntel==='function') loadHYPEIntel(phaseMeta);
     }
