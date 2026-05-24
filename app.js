@@ -1,5 +1,6 @@
 // ── Config ───────────────────────────────────────────────────────────────────
-const HL = 'https://api.hyperliquid.xyz/info';
+// Use a Cloudflare Worker proxy URL for edge caching (set via Settings → Proxy URL)
+const HL = localStorage.getItem('hype_proxy_url') || 'https://api.hyperliquid.xyz/info';
 const HL_WS = 'wss://api.hyperliquid.xyz/ws';
 const DEFAULT_WALLET = '0x6e4c6da09f06690cc4db53d42ab539d3d4882015';
 let currentWallet = localStorage.getItem('hype_wallet') || DEFAULT_WALLET;
@@ -1145,18 +1146,6 @@ async function loadFlows(){
   }catch(e){if(!_silentRefresh)el.innerHTML=err(e);}
 }
 
-async function _showCVDCharts() {
-  const btn = document.getElementById('cvd-charts-btn');
-  const rows = window._pendingCVDRows;
-  if (!rows || !btn) return;
-  btn.textContent = 'Loading charts…';
-  btn.disabled = true;
-  const cvdEl = document.getElementById('cvd-oi-table');
-  if (cvdEl && typeof renderCVDOICharts === 'function') {
-    cvdEl.innerHTML = renderCVDOITable(rows) + renderCVDOICharts(rows);
-    if (typeof initCVDCharts === 'function') await initCVDCharts(rows);
-  }
-}
 
 // ── Global Markets / Money Flows ──────────────────────────────────────────────
 async function loadMarkets(){
@@ -1394,15 +1383,9 @@ async function loadPhases(interval){
         return{coin:ph.coin,hasPosition:ph.hasPosition,price:closes.at(-1),priceChg,
                cvdUp:recentCVD>0,cvdArr,closes,currentOI,oiChgPct,sig};
       }).filter(Boolean);
-      // Show signal table immediately — no chart init (fast path for trading decisions)
-      cvdEl.innerHTML = renderCVDOITable(cvdRows) + `
-        <div style="text-align:center;margin:12px 0 4px">
-          <button id="cvd-charts-btn" onclick="_showCVDCharts()"
-            style="padding:6px 18px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text-muted)">
-            Show CVD Charts
-          </button>
-        </div>`;
-      window._pendingCVDRows = cvdRows;
+      // SVG sparklines render instantly — no Chart.js init cost
+      cvdEl.innerHTML = renderCVDOITable(cvdRows) +
+        (typeof renderCVDOICharts === 'function' ? renderCVDOICharts(cvdRows) : '');
       if(typeof loadMoneyFlowSignals==='function') loadMoneyFlowSignals(allCoins);
       if(typeof loadHYPEIntel==='function') loadHYPEIntel(phaseMeta);
     }
@@ -1754,6 +1737,17 @@ async function loadMonitor() {
     </div>
 
     <div class="card" style="margin-top:14px">
+      <div class="card-title">⚡ API Proxy (Cloudflare Worker)</div>
+      <div class="muted" style="font-size:11px;margin-bottom:12px">Optional: paste your Cloudflare Worker URL for edge-cached API calls (faster in Indonesia). Leave blank to use Hyperliquid directly.</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <input class="input" id="proxy-url-input" placeholder="https://your-worker.your-user.workers.dev" value="${localStorage.getItem('hype_proxy_url')||''}" style="flex:1;font-family:var(--mono);font-size:11px">
+        <button class="btn btn-primary btn-sm" onclick="saveProxyUrl()">Save</button>
+        <button class="btn btn-ghost btn-sm" onclick="clearProxyUrl()">Clear</button>
+      </div>
+      <div id="proxy-status" style="font-size:11px;color:var(--text-muted);margin-top:6px">${localStorage.getItem('hype_proxy_url') ? '✓ Proxy active — reload page to apply' : 'Using direct Hyperliquid API'}</div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
       <div class="card-title">📲 Telegram Notifications</div>
       <div class="muted" style="font-size:11px;margin-bottom:12px">Token stored in your browser only — never committed to code or sent anywhere except Telegram.</div>
       <div style="display:flex;flex-direction:column;gap:10px">
@@ -2018,6 +2012,22 @@ async function getTGChatId() {
     if (chatEl) chatEl.value = tgChatId;
     tgSetStatus(`✓ Chat ID detected: ${tgChatId} (${chat.first_name || chat.username || 'you'})`, true);
   } catch(e) { tgSetStatus('Error: ' + e.message, false); }
+}
+
+function saveProxyUrl() {
+  const url = (document.getElementById('proxy-url-input')?.value || '').trim();
+  if (url) {
+    localStorage.setItem('hype_proxy_url', url);
+    document.getElementById('proxy-status').textContent = '✓ Proxy saved — reload page to apply';
+  } else {
+    clearProxyUrl();
+  }
+}
+
+function clearProxyUrl() {
+  localStorage.removeItem('hype_proxy_url');
+  if (document.getElementById('proxy-url-input')) document.getElementById('proxy-url-input').value = '';
+  document.getElementById('proxy-status').textContent = 'Cleared — using direct Hyperliquid API (reload to apply)';
 }
 
 function saveTGSettings() {

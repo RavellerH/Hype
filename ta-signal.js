@@ -341,35 +341,51 @@ async function fetchBinanceOI(coin, tf = '1h', limit = 60) {
   } catch { return null; }
 }
 
-// ── Chart instance registry ───────────────────────────────────────────────────
-const _cvdCharts = {};
-function _destroyCVDCharts() {
-  for (const k of Object.keys(_cvdCharts)) {
-    try { _cvdCharts[k].destroy(); } catch {}
-    delete _cvdCharts[k];
-  }
+// ── SVG sparkline helpers (no Chart.js — zero init cost) ─────────────────────
+function _svgSparkline(data, stroke, fill, w = 200, h = 36) {
+  if (!data?.length) return `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}"></svg>`;
+  const mn = Math.min(...data), mx = Math.max(...data);
+  const range = mx - mn || 1;
+  const xs = data.map((_, i) => (i / Math.max(data.length - 1, 1)) * w);
+  const ys = data.map(v => h - ((v - mn) / range) * (h - 4) - 2);
+  const pts = xs.map((x, i) => `${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ');
+  const area = `${xs[0].toFixed(1)},${h} ${pts} ${xs.at(-1).toFixed(1)},${h}`;
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="none" style="display:block">
+    <polygon points="${area}" fill="${fill}" opacity="0.4"/>
+    <polyline points="${pts}" fill="none" stroke="${stroke}" stroke-width="1.5"/>
+  </svg>`;
 }
 
-function _miniOpts(tooltipFmt) {
-  return {
-    animation: false, responsive: true, maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: tooltipFmt
-        ? { callbacks: { label: ctx => tooltipFmt(ctx.raw), title: () => '' } }
-        : { enabled: false },
-    },
-    scales: { x: { display: false }, y: { display: false } },
-  };
+function _svgSparklineWithZero(data, stroke, fill, w = 200, h = 36) {
+  if (!data?.length) return `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}"></svg>`;
+  const mn = Math.min(0, ...data), mx = Math.max(0, ...data);
+  const range = mx - mn || 1;
+  const xs = data.map((_, i) => (i / Math.max(data.length - 1, 1)) * w);
+  const ys = data.map(v => h - ((v - mn) / range) * (h - 4) - 2);
+  const zeroY = (h - ((0 - mn) / range) * (h - 4) - 2).toFixed(1);
+  const pts = xs.map((x, i) => `${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ');
+  const area = `${xs[0].toFixed(1)},${zeroY} ${pts} ${xs.at(-1).toFixed(1)},${zeroY}`;
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="none" style="display:block">
+    <line x1="0" y1="${zeroY}" x2="${w}" y2="${zeroY}" stroke="rgba(100,100,100,0.35)" stroke-width="1" stroke-dasharray="3,3"/>
+    <polygon points="${area}" fill="${fill}" opacity="0.4"/>
+    <polyline points="${pts}" fill="none" stroke="${stroke}" stroke-width="1.5"/>
+  </svg>`;
 }
 
-// ── Combined CVD+OI chart cards (Price / CVD / OI per coin) ───────────────────
+// ── Combined CVD+OI sparkline cards (Price / CVD / OI per coin) ───────────────
 function renderCVDOICharts(rows) {
   return `<div class="cvd-charts-grid">${rows.map(r => {
-    const oiAbs   = r.currentOI > 0 ? fmtB(r.currentOI) : '—';
+    const oiAbs = r.currentOI > 0 ? fmtB(r.currentOI) : '—';
     const oiChgHtml = r.oiChgPct != null
       ? `<span class="${r.oiChgPct >= 0 ? 'pos' : 'neg'}">${r.oiChgPct >= 0 ? '+' : ''}${r.oiChgPct.toFixed(1)}%</span>`
       : `<span class="cvd-track">tracking…</span>`;
+    const priceStroke = 'rgba(148,163,184,0.9)', priceFill = 'rgba(148,163,184,0.15)';
+    const cvdStroke = r.cvdUp ? 'rgba(74,222,128,0.9)' : 'rgba(248,113,113,0.9)';
+    const cvdFill   = r.cvdUp ? 'rgba(74,222,128,0.15)' : 'rgba(248,113,113,0.15)';
+    const oiVals = (r.oiHistory || []).map(e => e.oi);
+    const oiUp   = oiVals.length > 1 && oiVals.at(-1) > oiVals[0];
+    const oiStroke = oiUp ? 'rgba(251,191,36,0.9)' : 'rgba(156,163,175,0.8)';
+    const oiFill   = oiUp ? 'rgba(251,191,36,0.1)' : 'rgba(156,163,175,0.08)';
     return `<div class="cvd-chart-card${r.hasPosition ? ' cvd-chart-pos' : ''}">
       <div class="cvd-chart-hdr cvd-chart-toggle" onclick="toggleCVDCard('${r.coin}')">
         <div class="cvd-chart-left">
@@ -378,16 +394,16 @@ function renderCVDOICharts(rows) {
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           <span class="ta-sig-badge ta-${r.sig.cls}">${r.sig.label}</span>
-          <span id="cvd-tog-${r.coin}" class="cvd-toggle-icon">▼</span>
+          <span id="cvd-tog-${r.coin}" class="cvd-toggle-icon">▶</span>
         </div>
       </div>
-      <div id="cvd-body-${r.coin}" class="cvd-chart-body">
+      <div id="cvd-body-${r.coin}" class="cvd-chart-body" style="display:none">
         <div class="cvd-panel-label">Price · <span style="font-family:var(--mono)">${fmtPrice(r.price)}</span></div>
-        <div class="cvd-panel"><canvas id="cvdp-${r.coin}"></canvas></div>
+        <div class="cvd-panel">${_svgSparkline(r.closes, priceStroke, priceFill)}</div>
         <div class="cvd-panel-label">CVD · ${r.cvdUp ? '<span class="pos">▲ net buying</span>' : '<span class="neg">▼ net selling</span>'}</div>
-        <div class="cvd-panel"><canvas id="cvdc-${r.coin}"></canvas></div>
+        <div class="cvd-panel">${_svgSparklineWithZero(r.cvdArr, cvdStroke, cvdFill)}</div>
         <div class="cvd-panel-label">Open Interest · ${oiAbs} ${oiChgHtml}</div>
-        <div class="cvd-panel" id="cvdo-wrap-${r.coin}"><canvas id="cvdo-${r.coin}"></canvas></div>
+        <div class="cvd-panel">${oiVals.length > 1 ? _svgSparkline(oiVals, oiStroke, oiFill) : '<span class="muted" style="font-size:11px">No OI history yet</span>'}</div>
         <div class="cvd-analysis">${r.sig.detail || '—'}</div>
       </div>
     </div>`;
@@ -401,11 +417,6 @@ function toggleCVDCard(coin) {
   const open = body.style.display !== 'none';
   body.style.display = open ? 'none' : '';
   if (icon) icon.textContent = open ? '▶' : '▼';
-  if (!open) {
-    setTimeout(() => {
-      ['p_','c_','o_'].forEach(p => _cvdCharts[p + coin]?.resize?.());
-    }, 50);
-  }
 }
 
 // ── Smart Money Flow (Binance L/S + taker, CoinGecko dominance) ──────────────
@@ -758,80 +769,6 @@ async function loadHYPEIntel(phaseMeta) {
     if (el) el.innerHTML = `<div class="muted" style="font-size:11px">Error loading HYPE data: ${e.message}</div>`;
   }
 }
-  _destroyCVDCharts();
-
-  // Fetch Binance OI for all coins in parallel
-  const oiResults = await Promise.allSettled(
-    rows.map(r => fetchBinanceOI(r.coin, 'h1', Math.min(r.cvdArr?.length || 60, 200)))
-  );
-
-  for (let i = 0; i < rows.length; i++) {
-    const r = rows[i];
-    const n = r.cvdArr?.length || 0;
-
-    // ── Price chart ──────────────────────────────────────────────────────────
-    const priceC = document.getElementById(`cvdp-${r.coin}`);
-    if (priceC && r.closes?.length) {
-      _cvdCharts[`p_${r.coin}`] = new Chart(priceC, {
-        type: 'line',
-        data: {
-          labels: r.closes.map((_, j) => j),
-          datasets: [{ data: r.closes,
-            borderColor: 'rgba(148,163,184,0.9)', backgroundColor: 'rgba(148,163,184,0.06)',
-            borderWidth: 1.5, fill: true, tension: 0.3, pointRadius: 0 }],
-        },
-        options: _miniOpts(v => fmtPrice(v)),
-      });
-    }
-
-    // ── CVD chart ────────────────────────────────────────────────────────────
-    const cvdC = document.getElementById(`cvdc-${r.coin}`);
-    if (cvdC && r.cvdArr?.length) {
-      const col  = r.cvdUp ? 'rgba(74,222,128,0.9)' : 'rgba(248,113,113,0.9)';
-      const bg   = r.cvdUp ? 'rgba(74,222,128,0.08)' : 'rgba(248,113,113,0.08)';
-      _cvdCharts[`c_${r.coin}`] = new Chart(cvdC, {
-        type: 'line',
-        data: {
-          labels: r.cvdArr.map((_, j) => j),
-          datasets: [
-            { data: r.cvdArr, borderColor: col, backgroundColor: bg,
-              borderWidth: 1.5, fill: true, tension: 0.3, pointRadius: 0 },
-            { data: r.cvdArr.map(() => 0), borderColor: 'rgba(100,100,100,0.35)',
-              borderWidth: 1, borderDash: [3, 3], fill: false, pointRadius: 0 },
-          ],
-        },
-        options: _miniOpts(v => `CVD: ${Math.round(v).toLocaleString()}`),
-      });
-    }
-
-    // ── OI chart — Binance history or localStorage fallback ───────────────────
-    const oiC = document.getElementById(`cvdo-${r.coin}`);
-    const binanceOI = oiResults[i].status === 'fulfilled' ? oiResults[i].value : null;
-    const localOI   = (_oiHistGet()[r.coin] || []).map(e => ({ ts: e.ts, oi: e.oi }));
-    const oiSrc     = binanceOI || (localOI.length > 1 ? localOI : null);
-
-    if (oiC && oiSrc?.length) {
-      const oiVals = oiSrc.map(e => e.oi).slice(-Math.max(n, 30));
-      const oiUp   = oiVals.at(-1) > oiVals[0];
-      _cvdCharts[`o_${r.coin}`] = new Chart(oiC, {
-        type: 'line',
-        data: {
-          labels: oiVals.map((_, j) => j),
-          datasets: [{ data: oiVals,
-            borderColor: oiUp ? 'rgba(251,191,36,0.9)' : 'rgba(156,163,175,0.8)',
-            backgroundColor: oiUp ? 'rgba(251,191,36,0.07)' : 'rgba(156,163,175,0.05)',
-            borderWidth: 1.5, fill: true, tension: 0.3, pointRadius: 0 }],
-        },
-        options: _miniOpts(v => `OI: ${fmtB(v)}`),
-      });
-    } else if (oiC) {
-      // No OI data yet — show placeholder
-      const wrap = document.getElementById(`cvdo-wrap-${r.coin}`);
-      if (wrap) wrap.innerHTML = '<div class="cvd-oi-empty">OI data loading from Binance…</div>';
-    }
-  }
-}
-
 // ── Full TA build (async) ─────────────────────────────────────────────────────
 async function buildFullTA(coin, tf, candles, rawMarketCtx) {
   const opens  = candles.map(c=>parseFloat(c.o));
