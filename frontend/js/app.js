@@ -1381,8 +1381,20 @@ async function loadPhases(interval){
         const oiChgPct=(prevOI&&prevOI>0&&currentOI>0)?(currentOI-prevOI)/prevOI*100:null;
         const sig=sigCVDOI(priceChg,recentCVD,oiChgPct);
         return{coin:ph.coin,hasPosition:ph.hasPosition,price:closes.at(-1),priceChg,
-               cvdUp:recentCVD>0,cvdArr,closes,currentOI,oiChgPct,sig};
+               cvdUp:recentCVD>0,cvdArr,closes,currentOI,oiChgPct,sig,
+               oiHistory:typeof _oiHistGet==='function'?(_oiHistGet()[ph.coin]||[]):[]};
       }).filter(Boolean);
+
+      // Fetch Binance OI history in parallel and replace localStorage fallback when available
+      if(typeof fetchBinanceOI==='function'){
+        const oiTf = phaseInterval==='1d'?'1d':phaseInterval==='4h'?'4h':'1h';
+        const oiLimit = phaseInterval==='1d'?90:phaseInterval==='4h'?60:60;
+        const oiResults=await Promise.allSettled(cvdRows.map(r=>fetchBinanceOI(r.coin,oiTf,oiLimit)));
+        oiResults.forEach((res,i)=>{
+          if(res.status==='fulfilled'&&res.value?.length) cvdRows[i].oiHistory=res.value;
+        });
+      }
+
       // SVG sparklines render instantly — no Chart.js init cost
       cvdEl.innerHTML = renderCVDOITable(cvdRows) +
         (typeof renderCVDOICharts === 'function' ? renderCVDOICharts(cvdRows) : '');
