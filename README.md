@@ -1,21 +1,42 @@
-# ⚡ Hype — Hyperliquid Trade Analyzer & Bot
+# Hype — Hyperliquid Dashboard
 
-A full-stack platform for monitoring, analyzing, and auto-trading perpetuals on [Hyperliquid](https://hyperliquid.xyz). It combines a real-time web dashboard, a Wyckoff market-phase detector, smart-wallet tracking, and an optional automated trading bot.
+A personal trading dashboard for [Hyperliquid](https://hyperliquid.xyz). Runs entirely in the browser — no backend required for the web UI. Directly queries the Hyperliquid public API and connects over WebSocket for live price feeds.
+
+**Live:** [ravellerh.github.io/Hype](https://ravellerh.github.io/Hype)
 
 ---
 
-## Features
+## Tabs
 
-- **Live portfolio dashboard** — positions, P&L, open orders, all updating over WebSocket
-- **Trade history** — every fill, filterable and paginated
-- **Funding tracker** — funding paid/received by coin over any date range
-- **Inflow / Outflow** — ledger-level deposit/withdrawal analysis
-- **Wyckoff phase detector** — classifies each coin as Accumulation / Markup / Distribution / Markdown / Neutral in real time and records hourly history to CSV
-- **Wallet watchlist** — monitor any Hyperliquid address and get change alerts
-- **Smart-wallet signals** — tracks known top traders (Abraxas Capital, James Wynn, qwatio …) to use as entry confirmation
-- **Telegram notifications** — wallet changes and bot trades pushed straight to your chat
-- **PWA** — installable on mobile / desktop, works offline
-- **Trading bot** (optional) — phase-based auto-entry with smart-wallet confirmation, dynamic stop-loss, and backtesting
+| Tab | What it does |
+|-----|-------------|
+| **Portfolio** | Account value, open perp positions, spot holdings, unrealized PnL, open orders, portfolio growth chart, health score with risk flags. Supports unified accounts. |
+| **Trades** | Fill history split into Perp / Spot sub-tabs. Coin filter, realized PnL, win rate, fees. Sorted latest-first, 100 rows per view. |
+| **Funding** | Funding paid/received over 7 / 30 / 90 days. Daily bar chart, by-coin breakdown with avg rate, cost-alert pills for positions bleeding funding. |
+| **Flows** | Deposit & withdrawal history with historical USD/IDR rate at the exact transaction date (fetched from frankfurter.app), running balance, cumulative flow chart. |
+| **Live** | WebSocket price monitor — live mark prices and 24h change for all perp markets. |
+| **Markets** | Global market overview — volume, OI, funding, 24h change across all Hyperliquid perps. |
+| **Phases** | Wyckoff market-phase detector (Accumulation / Markup / Distribution / Markdown / Neutral) per coin and interval. |
+| **Intel** | Smart-money wallet tracking — open positions and recent trades of known top traders. |
+| **MVRV** | On-chain MVRV-Z score and market cycle context. |
+| **AI** | AI-assisted trade analysis and market commentary. |
+| **Watchlist** | Monitor any Hyperliquid address. Get alerts on position changes. |
+| **Journal** | Personal trade journal — log entries, notes, outcome tagging. |
+| **Indicators** | Technical indicator dashboard — RSI, MACD, Bollinger Bands across timeframes. |
+| **Smart Money** | Aggregated signal feed from tracked whale wallets. |
+| **Analytics** | PnL analytics, fee breakdown, win/loss streaks, equity curve. |
+| **KB** | Personal knowledge base for trading notes and playbooks. |
+
+---
+
+## Key Features
+
+- **Unified account support** — correctly reads `crossMarginSummary` vs `marginSummary` for accounts where spot USDC is perp collateral
+- **IDR conversion** — all monetary values can be viewed in Indonesian Rupiah using live and historical rates; Flows tab shows the exact IDR value at the time of each deposit/withdrawal
+- **Real-time WebSocket** — live prices, position updates, and wallet-change alerts without polling
+- **Portfolio health score** — composite risk score with per-position flags (leverage, liquidation distance, smart-money divergence, BMSB)
+- **PWA** — installable on iOS, Android, and desktop; works offline for cached views
+- **No sign-in** — enter any wallet address; read-only, no keys required
 
 ---
 
@@ -23,149 +44,96 @@ A full-stack platform for monitoring, analyzing, and auto-trading perpetuals on 
 
 ```
 Hype/
-├── backend/          # FastAPI server + Hyperliquid data layer
-│   ├── main.py           # REST API, WebSocket hub, scheduler
-│   ├── hyperliquid.py    # Hyperliquid API client
-│   ├── phase_detector.py # Wyckoff phase logic
-│   ├── phase_log.py      # Hourly phase recording (CSV)
-│   ├── wallet_tracker.py # Watchlist polling
-│   ├── telegram_bot.py   # Telegram alert dispatcher
-│   ├── config.py         # Env-driven config
+├── frontend/           # Static SPA — the main dashboard (no backend needed)
+│   ├── js/app.js           # All UI logic, API calls, WebSocket, charts
+│   └── css/styles.css
+│
+├── index.html          # Entry point (gh-pages root)
+├── styles.css
+├── app.js
+├── *.js                # Feature modules (intel, analytics, journal, kb, …)
+│
+├── backend/            # Optional FastAPI server (Telegram alerts, phase scheduling)
+│   ├── main.py
+│   ├── phase_detector.py
+│   ├── wallet_tracker.py
+│   ├── telegram_bot.py
 │   └── requirements.txt
 │
-├── bot/              # Autonomous trading bot (optional)
-│   ├── main.py           # Main trading loop
-│   ├── phase_analyzer.py # Entry-signal logic
-│   ├── phase_detector.py # Phase detection (bot copy)
-│   ├── phase_recorder.py # Phase history for the bot
-│   ├── risk_manager.py   # Position sizing & SL/TP
-│   ├── indicators.py     # Technical indicators
-│   ├── backtest.py       # Backtester
-│   ├── wallet_monitor.py # Smart-wallet watcher
-│   ├── telegram_notifier.py
-│   ├── config.py         # Risk params & smart-wallet list
+├── bot/                # Optional autonomous trading bot
+│   ├── main.py             # Trading loop
+│   ├── phase_analyzer.py
+│   ├── risk_manager.py
+│   ├── backtest.py
 │   └── requirements.txt
 │
-├── frontend/         # Vanilla JS/CSS single-page PWA
-│   ├── index.html
-│   ├── js/app.js
-│   ├── css/styles.css
-│   ├── manifest.json
-│   └── sw.js
-│
-├── start.sh          # One-command local startup
-├── vercel.json       # Frontend deployment config
-└── .env.example      # Environment variable template
+└── vercel.json         # Frontend deploy config
 ```
+
+The frontend calls the Hyperliquid public API (`api.hyperliquid.xyz`) and `frankfurter.app` (exchange rates) directly from the browser. The backend and bot are optional extras for Telegram notifications and automated trading.
 
 ---
 
 ## Quick Start
 
-### 1. Clone & configure
+### Dashboard only (no backend)
+
+Open [ravellerh.github.io/Hype](https://ravellerh.github.io/Hype) in a browser, or self-host the static files anywhere.
+
+### Self-host on Vercel
+
+```bash
+git clone https://github.com/ravellerh/hype.git
+cd hype
+vercel --prod
+```
+
+### Run with backend (Telegram alerts + phase scheduling)
 
 ```bash
 git clone https://github.com/ravellerh/hype.git
 cd hype
 cp .env.example .env
-```
-
-Edit `.env`:
-
-```env
-PRIMARY_WALLET=0xYourHyperliquidAddress
-TELEGRAM_BOT_TOKEN=          # optional — get from @BotFather
-TELEGRAM_CHAT_ID=            # optional — your Telegram chat/group ID
-POLL_INTERVAL=30             # wallet polling interval in seconds
-```
-
-### 2. Run the dashboard
-
-```bash
+# fill in PRIMARY_WALLET, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
 chmod +x start.sh
-./start.sh
+./start.sh          # starts FastAPI at http://localhost:8000
 ```
 
-This creates a virtualenv, installs dependencies, and starts the server at **http://localhost:8000**.
-
-### 3. (Optional) Run the trading bot
+### Trading bot (optional, trades on your behalf)
 
 ```bash
 cd bot
-cp .env.example .env   # fill in HL_PRIVATE_KEY, HL_WALLET_ADDRESS, TG_TOKEN, TG_CHAT_ID
+cp .env.example .env    # fill in HL_PRIVATE_KEY, HL_WALLET_ADDRESS
 pip install -r requirements.txt
 python main.py
 ```
 
 ---
 
-## API Reference
-
-All endpoints are served by the FastAPI backend.
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/positions` | Account summary + open positions |
-| `GET` | `/api/trades` | Fill history (`?limit=100`) |
-| `GET` | `/api/funding` | Funding paid/received (`?days=30`) |
-| `GET` | `/api/flows` | Inflow/outflow ledger (`?days=90`) |
-| `GET` | `/api/phase/{coin}` | Phase for a single coin (`?interval=1h&days=7`) |
-| `GET` | `/api/phase` | Phase for all open positions |
-| `GET` | `/api/phase/history` | Recorded phase log (`?coin=BTC&days=14`) |
-| `GET` | `/api/phase/history/export` | Download full phase_log.csv |
-| `GET` | `/api/mids` | All current mark prices |
-| `GET` | `/api/candles/{coin}` | OHLCV candles (`?interval=1h&days=7`) |
-| `GET` | `/api/watchlist` | All watched wallets + snapshots |
-| `POST` | `/api/watchlist` | Add wallet `{ address, label }` |
-| `DELETE` | `/api/watchlist/{address}` | Remove wallet |
-| `GET` | `/api/notifications` | In-memory notification list |
-| `POST` | `/api/notifications/{id}/read` | Mark one notification read |
-| `POST` | `/api/notifications/read-all` | Mark all read |
-| `POST` | `/api/telegram/configure` | Save Telegram credentials |
-| `GET` | `/api/telegram/status` | Check Telegram enabled |
-| `WS` | `/ws` | Real-time push (positions, wallet changes, notifications) |
-
----
-
 ## Trading Bot
 
-The bot in `bot/` runs independently and trades on your behalf.
-
-### Entry conditions (all must pass)
+Entry requires all of:
 
 | Condition | Default |
 |-----------|---------|
 | Coin phase | Accumulation |
 | Phase confidence | ≥ 40 % |
-| Recent volume vs average | ≥ 1.2× |
+| Volume vs average | ≥ 1.2× |
 | Smart-wallet longs | ≥ 1 |
 
-### Risk parameters
+Risk defaults:
 
-| Parameter | Default |
-|-----------|---------|
+| Parameter | Value |
+|-----------|-------|
 | Margin per trade | 10 % of account |
 | Leverage | 10× |
 | Stop-loss | 8 % |
-| Fixed take-profit | 75 % |
+| Take-profit | 75 % |
 | Max open bot positions | 3 |
 
-### Exit strategy
+Exit: phase flip to Distribution / Markdown, or trail to breakeven on Markup confirmation. Configurable in `bot/config.py`.
 
-- **Phase exit** — close when the coin flips to Distribution or Markdown
-- **Trail to breakeven** — move SL to entry once Markup is confirmed
-- Both can be toggled in `bot/config.py`
-
-### Smart wallets monitored
-
-Configurable in `bot/config.py`. Defaults include Abraxas Capital, James Wynn, qwatio, and several HLP whales. Replace placeholder addresses with real ones sourced from the Hyperliquid leaderboard or Nansen.
-
-### Backtesting
-
-```bash
-cd bot
-python backtest.py
-```
+Backtest: `cd bot && python backtest.py`
 
 ---
 
@@ -173,10 +141,10 @@ python backtest.py
 
 | Variable | Where | Description |
 |----------|-------|-------------|
-| `PRIMARY_WALLET` | `.env` (root) | Hyperliquid address to monitor |
-| `TELEGRAM_BOT_TOKEN` | `.env` (root) | Dashboard Telegram bot token |
-| `TELEGRAM_CHAT_ID` | `.env` (root) | Dashboard Telegram chat ID |
-| `POLL_INTERVAL` | `.env` (root) | Wallet poll interval (seconds, default 30) |
+| `PRIMARY_WALLET` | `.env` | Hyperliquid address to monitor |
+| `TELEGRAM_BOT_TOKEN` | `.env` | Dashboard Telegram bot token |
+| `TELEGRAM_CHAT_ID` | `.env` | Dashboard Telegram chat ID |
+| `POLL_INTERVAL` | `.env` | Wallet poll interval in seconds (default 30) |
 | `HL_PRIVATE_KEY` | `bot/.env` | Private key for bot trading |
 | `HL_WALLET_ADDRESS` | `bot/.env` | Bot wallet address |
 | `TG_TOKEN` | `bot/.env` | Bot Telegram token |
@@ -184,39 +152,18 @@ python backtest.py
 
 ---
 
-## Deployment
-
-### Frontend (Vercel)
-
-The `frontend/` directory is ready to deploy. `vercel.json` points Vercel at it with catch-all rewrites:
-
-```bash
-vercel --prod
-```
-
-### Backend (any Linux server)
-
-```bash
-cd backend
-python3 -m venv venv && venv/bin/pip install -r requirements.txt
-venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000
-```
-
-Use nginx + systemd for production.
-
----
-
 ## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Backend | Python 3.11+, FastAPI, uvicorn, APScheduler |
-| Data | httpx, pandas, numpy |
-| Notifications | python-telegram-bot |
+| Frontend | Vanilla JS, CSS custom properties, Chart.js |
+| Real-time | Hyperliquid WebSocket API |
+| Exchange rates | frankfurter.app (historical USD/IDR) |
+| PWA | Web App Manifest + Service Worker |
+| Backend (optional) | Python 3.11+, FastAPI, APScheduler |
 | Bot SDK | hyperliquid-python-sdk |
-| Frontend | Vanilla JS, CSS custom properties |
-| PWA | Web App Manifest, Service Worker |
-| Deploy | Vercel (frontend), uvicorn (backend) |
+| Notifications | python-telegram-bot |
+| Deploy | GitHub Pages (frontend), Vercel, or any static host |
 
 ---
 
