@@ -1,6 +1,13 @@
 // ── TA Recommendation Engine ──────────────────────────────────────────────────
 // Depends on iEMA/iMACD/iRSI/iStoch/iBB/iATR/iMoneyFlow/sig* from app.js
 
+// ── Shared TTL cache helpers ──────────────────────────────────────────────────
+function _cacheGet(cache, key, ttlMs) {
+  const hit = cache[key];
+  return (hit && Date.now() - hit.ts < ttlMs) ? hit.data : undefined;
+}
+function _cacheSet(cache, key, data) { cache[key] = { ts: Date.now(), data }; return data; }
+
 // ── Support / Resistance pivot detection ─────────────────────────────────────
 function findSR(highs, lows, closes, lb = 3) {
   const pH = [], pL = [];
@@ -86,16 +93,15 @@ function calcTradeSetup(direction, price, sr, atr) {
 const _lsrCache = {};
 async function fetchBinanceLSR(coin) {
   const key = coin + '_lsr';
-  if (_lsrCache[key] && Date.now() - _lsrCache[key].ts < 120000) return _lsrCache[key].data;
+  const hit = _cacheGet(_lsrCache, key, 120000);
+  if (hit !== undefined) return hit;
   try {
     const sym = coin.toUpperCase().replace(/^1000/, '') + 'USDT';
     const r = await fetch(`https://fapi.binance.com/futures/data/globalLongShortAccountRatio?symbol=${sym}&period=5m&limit=1`);
     if (!r.ok) return null;
     const d = await r.json();
     if (!Array.isArray(d) || !d[0]) return null;
-    const data = { longPct: parseFloat(d[0].longAccount)*100, shortPct: parseFloat(d[0].shortAccount)*100, ratio: parseFloat(d[0].longShortRatio) };
-    _lsrCache[key] = { ts: Date.now(), data };
-    return data;
+    return _cacheSet(_lsrCache, key, { longPct: parseFloat(d[0].longAccount)*100, shortPct: parseFloat(d[0].shortAccount)*100, ratio: parseFloat(d[0].longShortRatio) });
   } catch { return null; }
 }
 
@@ -115,15 +121,14 @@ const _cgCache = {};
 async function fetchCGData(coin) {
   const id = CG_IDS[coin.toUpperCase()];
   if (!id) return null;
-  if (_cgCache[id] && Date.now() - _cgCache[id].ts < 180000) return _cgCache[id].data;
+  const hit = _cacheGet(_cgCache, id, 180000);
+  if (hit !== undefined) return hit;
   try {
     const r = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd&include_24hr_change=true&include_7d_change=true&include_market_cap=true`);
     if (!r.ok) return null;
     const d = (await r.json())[id];
     if (!d) return null;
-    const data = { change24h: d.usd_24h_change, change7d: d.usd_7d_change, marketCap: d.usd_market_cap };
-    _cgCache[id] = { ts: Date.now(), data };
-    return data;
+    return _cacheSet(_cgCache, id, { change24h: d.usd_24h_change, change7d: d.usd_7d_change, marketCap: d.usd_market_cap });
   } catch { return null; }
 }
 
@@ -329,15 +334,14 @@ async function fetchBinanceOI(coin, tf = '1h', limit = 60) {
   const sym = coin.toUpperCase().replace(/^1000/, '') + 'USDT';
   const period = tf === '4h' ? '4h' : tf === '1d' ? '1d' : '1h';
   const key = `${sym}_${period}`;
-  if (_binanceOICache[key] && Date.now() - _binanceOICache[key].ts < 300000) return _binanceOICache[key].data;
+  const hit = _cacheGet(_binanceOICache, key, 300000);
+  if (hit !== undefined) return hit;
   try {
     const r = await fetch(`https://fapi.binance.com/futures/data/openInterestHist?symbol=${sym}&period=${period}&limit=${limit}`);
     if (!r.ok) return null;
     const d = await r.json();
     if (!Array.isArray(d) || !d.length) return null;
-    const data = d.map(e => ({ ts: e.timestamp, oi: parseFloat(e.sumOpenInterestValue) }));
-    _binanceOICache[key] = { ts: Date.now(), data };
-    return data;
+    return _cacheSet(_binanceOICache, key, d.map(e => ({ ts: e.timestamp, oi: parseFloat(e.sumOpenInterestValue) })));
   } catch { return null; }
 }
 
@@ -426,15 +430,12 @@ const _LS_TTL = 5 * 60 * 1000;
 
 async function _lsFetch(endpoint, sym, period = '1h', limit = 2) {
   const key = `${endpoint}_${sym}_${period}`;
-  const now = Date.now();
-  if (_lsCache[key] && now - _lsCache[key].ts < _LS_TTL) return _lsCache[key].data;
+  const hit = _cacheGet(_lsCache, key, _LS_TTL);
+  if (hit !== undefined) return hit;
   try {
-    const url = `https://fapi.binance.com/futures/data/${endpoint}?symbol=${sym}&period=${period}&limit=${limit}`;
-    const res = await fetch(url);
+    const res = await fetch(`https://fapi.binance.com/futures/data/${endpoint}?symbol=${sym}&period=${period}&limit=${limit}`);
     if (!res.ok) return null;
-    const data = await res.json();
-    _lsCache[key] = { ts: now, data };
-    return data;
+    return _cacheSet(_lsCache, key, await res.json());
   } catch { return null; }
 }
 
@@ -463,21 +464,19 @@ async function fetchMoneyFlow(coin) {
 
 async function fetchBTCDom() {
   const key = 'cg_global';
-  const now = Date.now();
-  if (_lsCache[key] && now - _lsCache[key].ts < _LS_TTL) return _lsCache[key].data;
+  const hit = _cacheGet(_lsCache, key, _LS_TTL);
+  if (hit !== undefined) return hit;
   try {
     const res = await fetch('https://api.coingecko.com/api/v3/global');
     if (!res.ok) return null;
     const { data: d } = await res.json();
     const mp = d.market_cap_percentage || {};
-    const result = {
+    return _cacheSet(_lsCache, key, {
       btcDom:    mp.btc || 0,
       ethDom:    mp.eth || 0,
       stablePct: (mp.usdt || 0) + (mp.usdc || 0),
       mcap24h:   d.market_cap_change_percentage_24h_usd || 0,
-    };
-    _lsCache[key] = { ts: now, data: result };
-    return result;
+    });
   } catch { return null; }
 }
 
