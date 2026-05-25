@@ -264,10 +264,47 @@
     /* ── Divider ── */
     .divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
 
+    /* ── Prev / Next navigation ── */
+    .page-nav {
+      display: flex; justify-content: space-between; align-items: stretch;
+      gap: 12px; margin-top: 64px; padding-top: 32px;
+      border-top: 1px solid var(--border);
+    }
+    .page-nav-btn {
+      display: flex; flex-direction: column; gap: 3px;
+      padding: 14px 18px; flex: 1; max-width: 48%;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; text-decoration: none; cursor: pointer;
+      transition: border-color .15s, background .15s;
+    }
+    .page-nav-btn:hover { border-color: var(--accent); background: var(--surface2); }
+    .page-nav-btn.next { text-align: right; }
+    .page-nav-btn.hidden { visibility: hidden; pointer-events: none; }
+    .page-nav-dir {
+      font-size: 11px; font-weight: 600; letter-spacing: .05em;
+      text-transform: uppercase; color: var(--text-faint);
+    }
+    .page-nav-title { font-size: 13px; font-weight: 600; color: var(--accent); }
+
+    /* ── Back to top ── */
+    .back-to-top {
+      position: fixed; bottom: 24px; right: 24px; z-index: 200;
+      width: 38px; height: 38px;
+      background: var(--surface); border: 1px solid var(--border-strong);
+      border-radius: 50%; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; color: var(--text-muted);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      opacity: 0; pointer-events: none;
+      transition: opacity .2s, color .15s, border-color .15s;
+    }
+    .back-to-top.visible { opacity: 1; pointer-events: auto; }
+    .back-to-top:hover { color: var(--accent); border-color: var(--accent); }
+
     /* ── Mobile sidebar toggle ── */
     .sidebar-toggle {
       display: none;
-      position: fixed; bottom: 20px; right: 20px; z-index: 200;
+      position: fixed; bottom: 72px; right: 20px; z-index: 200;
       width: 44px; height: 44px;
       background: var(--accent); color: var(--bg);
       border: none; border-radius: 50%; cursor: pointer;
@@ -293,6 +330,7 @@
       .sidebar-toggle { display: flex; }
       .sidebar-overlay.open { display: block; }
       .tab-grid { grid-template-columns: 1fr; }
+      .page-nav-btn { max-width: 50%; padding: 12px 14px; }
     }
   </style>
 </head>
@@ -1050,16 +1088,33 @@
       </div>
     </section>
 
+    <!-- Prev / Next navigation -->
+    <nav class="page-nav" id="page-nav">
+      <a class="page-nav-btn prev hidden" id="nav-prev" href="#">
+        <span class="page-nav-dir">← Previous</span>
+        <span class="page-nav-title" id="nav-prev-title"></span>
+      </a>
+      <a class="page-nav-btn next hidden" id="nav-next" href="#">
+        <span class="page-nav-dir">Next →</span>
+        <span class="page-nav-title" id="nav-next-title"></span>
+      </a>
+    </nav>
+
   </main>
 </div>
+
+<!-- Back to top -->
+<button class="back-to-top" id="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Back to top">↑</button>
 
 <!-- Mobile sidebar toggle button -->
 <button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle navigation">☰</button>
 
 <script>
+  // ── Sidebar helpers ───────────────────────────────────────────────────────────
   function setActive(el) {
     document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
     el.classList.add('active');
+    updatePageNav(el);
     closeSidebar();
   }
 
@@ -1073,22 +1128,75 @@
     document.getElementById('sidebar-overlay').classList.remove('open');
   }
 
-  // Update active nav link on scroll
+  // ── Prev / Next nav ───────────────────────────────────────────────────────────
+  const navLinks = Array.from(document.querySelectorAll('.nav-link'));
+
+  function updatePageNav(activeLink) {
+    const idx   = navLinks.indexOf(activeLink);
+    const prev  = navLinks[idx - 1];
+    const next  = navLinks[idx + 1];
+    const btnP  = document.getElementById('nav-prev');
+    const btnN  = document.getElementById('nav-next');
+
+    if (prev) {
+      btnP.classList.remove('hidden');
+      btnP.href = prev.getAttribute('href');
+      document.getElementById('nav-prev-title').textContent =
+        prev.querySelector('.icon').nextSibling.textContent.trim();
+    } else {
+      btnP.classList.add('hidden');
+    }
+
+    if (next) {
+      btnN.classList.remove('hidden');
+      btnN.href = next.getAttribute('href');
+      document.getElementById('nav-next-title').textContent =
+        next.querySelector('.icon').nextSibling.textContent.trim();
+    } else {
+      btnN.classList.add('hidden');
+    }
+  }
+
+  // Clicking prev/next also updates the active sidebar link
+  ['nav-prev','nav-next'].forEach(id => {
+    document.getElementById(id).addEventListener('click', function() {
+      const href = this.getAttribute('href');
+      const link = navLinks.find(l => l.getAttribute('href') === href);
+      if (link) {
+        navLinks.forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+        updatePageNav(link);
+      }
+    });
+  });
+
+  // ── Scroll spy (updates sidebar + prev/next) ──────────────────────────────────
   const sections = document.querySelectorAll('.doc-section');
-  const navLinks  = document.querySelectorAll('.nav-link');
 
   const observer = new IntersectionObserver(entries => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
-        const id = entry.target.id;
-        navLinks.forEach(l => {
-          l.classList.toggle('active', l.getAttribute('href') === '#' + id);
-        });
+        const id   = entry.target.id;
+        const link = navLinks.find(l => l.getAttribute('href') === '#' + id);
+        if (link) {
+          navLinks.forEach(l => l.classList.remove('active'));
+          link.classList.add('active');
+          updatePageNav(link);
+        }
       }
     });
   }, { rootMargin: '-20% 0px -70% 0px' });
 
   sections.forEach(s => observer.observe(s));
+
+  // ── Back to top ───────────────────────────────────────────────────────────────
+  const btt = document.getElementById('back-to-top');
+  window.addEventListener('scroll', () => {
+    btt.classList.toggle('visible', window.scrollY > 300);
+  }, { passive: true });
+
+  // ── Init ──────────────────────────────────────────────────────────────────────
+  updatePageNav(navLinks[0]);
 </script>
 
 </body>
