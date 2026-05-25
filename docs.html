@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Hype — Documentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:            #0a0a0a;
+      --surface:       #111111;
+      --surface2:      #1a1a1a;
+      --border:        #242424;
+      --border-strong: #383838;
+      --text:          #e2e2e2;
+      --text-muted:    #6b7280;
+      --text-faint:    #4b5563;
+      --accent:        #38bdf8;
+      --accent-subtle: rgba(56,189,248,0.10);
+      --green:         #4ade80;
+      --green-bg:      rgba(74,222,128,0.08);
+      --red:           #f87171;
+      --red-bg:        rgba(248,113,113,0.08);
+      --yellow:        #fbbf24;
+      --yellow-bg:     rgba(251,191,36,0.08);
+      --font:          'Inter', system-ui, sans-serif;
+      --mono:          'JetBrains Mono', monospace;
+      --sidebar-w:     260px;
+      --topbar-h:      50px;
+      --radius:        6px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: var(--font); font-size: 14px; line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Topbar ── */
+    .topbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: var(--topbar-h);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 0;
+    }
+    .topbar-logo {
+      width: var(--sidebar-w);
+      height: 100%;
+      display: flex; align-items: center; gap: 8px;
+      padding: 0 20px;
+      border-right: 1px solid var(--border);
+      flex-shrink: 0;
+      font-weight: 700; font-size: 15px; color: var(--accent);
+      text-decoration: none;
+    }
+    .topbar-logo span { color: var(--text); font-weight: 600; }
+    .topbar-right {
+      flex: 1; display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px;
+    }
+    .topbar-title { font-size: 13px; font-weight: 500; color: var(--text-muted); }
+    .back-btn {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 500; color: var(--text-muted);
+      text-decoration: none; padding: 5px 12px;
+      border: 1px solid var(--border); border-radius: var(--radius);
+      background: var(--surface2); transition: color .12s, border-color .12s;
+    }
+    .back-btn:hover { color: var(--text); border-color: var(--border-strong); }
+
+    /* ── Layout ── */
+    .layout {
+      display: flex;
+      padding-top: var(--topbar-h);
+      min-height: 100vh;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      position: fixed;
+      top: var(--topbar-h);
+      bottom: 0;
+      left: 0;
+      overflow-y: auto;
+      border-right: 1px solid var(--border);
+      padding: 20px 0 40px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .nav-group { margin-bottom: 6px; }
+    .nav-group-label {
+      display: block; padding: 6px 20px 4px;
+      font-size: 10px; font-weight: 700; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--text-faint);
+    }
+    .nav-link {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 20px;
+      font-size: 13px; color: var(--text-muted);
+      text-decoration: none; cursor: pointer;
+      border-left: 2px solid transparent;
+      transition: color .12s, background .12s, border-color .12s;
+      line-height: 1.3;
+    }
+    .nav-link:hover { color: var(--text); background: var(--surface2); }
+    .nav-link.active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-subtle); }
+    .nav-link .icon { font-size: 13px; width: 18px; text-align: center; flex-shrink: 0; }
+
+    /* ── Main content ── */
+    .main {
+      flex: 1;
+      margin-left: var(--sidebar-w);
+      max-width: 840px;
+      padding: 48px 48px 120px;
+    }
+
+    /* ── Section ── */
+    .doc-section {
+      margin-bottom: 64px;
+      scroll-margin-top: calc(var(--topbar-h) + 24px);
+    }
+
+    .section-eyebrow {
+      font-size: 11px; font-weight: 700; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--accent);
+      margin-bottom: 8px;
+    }
+    h1 { font-size: 28px; font-weight: 800; line-height: 1.2; margin-bottom: 14px; }
+    h2 { font-size: 20px; font-weight: 700; line-height: 1.3; margin-bottom: 12px; color: var(--text); }
+    h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; color: var(--text); }
+    p  { color: var(--text-muted); margin-bottom: 14px; line-height: 1.7; }
+    p:last-child { margin-bottom: 0; }
+
+    /* ── Tab cards ── */
+    .tab-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .tab-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      transition: border-color .15s, background .15s;
+    }
+    .tab-card:hover { border-color: var(--border-strong); background: var(--surface2); }
+    .tab-card-header {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
+    }
+    .tab-icon { font-size: 18px; }
+    .tab-name { font-size: 13px; font-weight: 700; color: var(--text); }
+    .tab-desc { font-size: 12px; color: var(--text-muted); line-height: 1.55; }
+
+    /* ── Detail section for each tab ── */
+    .tab-detail {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px 24px;
+      margin-bottom: 16px;
+    }
+    .tab-detail-header {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 12px;
+    }
+    .tab-badge {
+      font-size: 10px; font-weight: 700; letter-spacing: .05em;
+      text-transform: uppercase; padding: 2px 8px;
+      border-radius: 100px;
+    }
+    .badge-live { background: rgba(74,222,128,0.12); color: var(--green); }
+    .badge-ws   { background: rgba(56,189,248,0.12); color: var(--accent); }
+    .badge-local{ background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
+
+    /* ── Lists ── */
+    ul.doc-list, ol.doc-list {
+      padding-left: 18px; margin-bottom: 14px;
+    }
+    ul.doc-list li, ol.doc-list li {
+      color: var(--text-muted); font-size: 13px; line-height: 1.7; margin-bottom: 4px;
+    }
+    ul.doc-list li b, ol.doc-list li b { color: var(--text); }
+
+    /* ── Callout boxes ── */
+    .callout {
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 14px 16px;
+      border-radius: var(--radius);
+      margin-bottom: 16px;
+      border-left: 3px solid;
+    }
+    .callout-icon { font-size: 15px; margin-top: 1px; flex-shrink: 0; }
+    .callout-body { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+    .callout-body b { color: var(--text); }
+    .callout.tip    { background: var(--green-bg);  border-color: var(--green);  }
+    .callout.info   { background: var(--accent-subtle); border-color: var(--accent); }
+    .callout.warn   { background: var(--yellow-bg); border-color: var(--yellow); }
+    .callout.danger { background: var(--red-bg);    border-color: var(--red);    }
+
+    /* ── Code / mono ── */
+    code {
+      font-family: var(--mono);
+      font-size: 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      padding: 1px 6px;
+      border-radius: 4px;
+      color: var(--accent);
+    }
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      overflow-x: auto;
+      margin-bottom: 16px;
+    }
+    pre code {
+      background: none; border: none; padding: 0; font-size: 12px;
+      color: var(--text); line-height: 1.7;
+    }
+
+    /* ── Signal badges (matching app) ── */
+    .sig {
+      display: inline-block;
+      font-size: 10px; font-weight: 700; letter-spacing: .04em;
+      padding: 2px 8px; border-radius: 100px;
+      text-transform: uppercase;
+    }
+    .sig-bull  { background: rgba(74,222,128,0.12);  color: var(--green); }
+    .sig-bear  { background: rgba(248,113,113,0.12); color: var(--red); }
+    .sig-warn  { background: var(--yellow-bg);       color: var(--yellow); }
+    .sig-neut  { background: var(--surface2);        color: var(--text-muted); border: 1px solid var(--border); }
+    .sig-info  { background: var(--accent-subtle);   color: var(--accent); }
+
+    /* ── Table ── */
+    .doc-table {
+      width: 100%; border-collapse: collapse;
+      margin-bottom: 20px; font-size: 13px;
+    }
+    .doc-table th {
+      text-align: left; padding: 8px 12px;
+      font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+      color: var(--text-faint); border-bottom: 1px solid var(--border);
+    }
+    .doc-table td {
+      padding: 9px 12px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .doc-table td:first-child { color: var(--text); font-weight: 500; }
+    .doc-table tr:last-child td { border-bottom: none; }
+
+    /* ── Divider ── */
+    .divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+    /* ── Mobile sidebar toggle ── */
+    .sidebar-toggle {
+      display: none;
+      position: fixed; bottom: 20px; right: 20px; z-index: 200;
+      width: 44px; height: 44px;
+      background: var(--accent); color: var(--bg);
+      border: none; border-radius: 50%; cursor: pointer;
+      font-size: 18px; align-items: center; justify-content: center;
+      box-shadow: 0 4px 16px rgba(56,189,248,0.3);
+    }
+    .sidebar-overlay {
+      display: none; position: fixed; inset: 0; z-index: 150;
+      background: rgba(0,0,0,0.7); backdrop-filter: blur(2px);
+    }
+
+    @media (max-width: 768px) {
+      :root { --sidebar-w: 260px; }
+      .topbar-logo { width: auto; border-right: none; padding: 0 16px; }
+      .main { margin-left: 0; padding: 24px 18px 80px; }
+      .sidebar {
+        transform: translateX(-100%);
+        transition: transform .25s cubic-bezier(.4,0,.2,1);
+        z-index: 160;
+        background: var(--surface);
+      }
+      .sidebar.open { transform: translateX(0); }
+      .sidebar-toggle { display: flex; }
+      .sidebar-overlay.open { display: block; }
+      .tab-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Topbar -->
+<header class="topbar">
+  <a class="topbar-logo" href="index.html">⚡ <span>Hype</span></a>
+  <div class="topbar-right">
+    <span class="topbar-title">Documentation</span>
+    <a class="back-btn" href="index.html">← Back to App</a>
+  </div>
+</header>
+
+<!-- Sidebar overlay (mobile) -->
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+<div class="layout">
+
+  <!-- Sidebar -->
+  <nav class="sidebar" id="sidebar">
+    <div class="nav-group">
+      <span class="nav-group-label">Overview</span>
+      <a class="nav-link active" href="#about" onclick="setActive(this)">
+        <span class="icon">📖</span> About Hype
+      </a>
+      <a class="nav-link" href="#getting-started" onclick="setActive(this)">
+        <span class="icon">🚀</span> Getting Started
+      </a>
+      <a class="nav-link" href="#architecture" onclick="setActive(this)">
+        <span class="icon">🏗</span> Architecture
+      </a>
+    </div>
+
+    <div class="nav-group">
+      <span class="nav-group-label">Tabs Guide</span>
+      <a class="nav-link" href="#tab-portfolio" onclick="setActive(this)">
+        <span class="icon">💼</span> Portfolio
+      </a>
+      <a class="nav-link" href="#tab-trades" onclick="setActive(this)">
+        <span class="icon">📋</span> Trades
+      </a>
+      <a class="nav-link" href="#tab-funding" onclick="setActive(this)">
+        <span class="icon">💸</span> Funding
+      </a>
+      <a class="nav-link" href="#tab-flows" onclick="setActive(this)">
+        <span class="icon">🏦</span> Flows
+      </a>
+      <a class="nav-link" href="#tab-live" onclick="setActive(this)">
+        <span class="icon">⚡</span> Live Monitor
+      </a>
+      <a class="nav-link" href="#tab-markets" onclick="setActive(this)">
+        <span class="icon">🌐</span> Markets
+      </a>
+      <a class="nav-link" href="#tab-phases" onclick="setActive(this)">
+        <span class="icon">🔵</span> Phases
+      </a>
+      <a class="nav-link" href="#tab-intel" onclick="setActive(this)">
+        <span class="icon">🧠</span> Intel
+      </a>
+      <a class="nav-link" href="#tab-mvrv" onclick="setActive(this)">
+        <span class="icon">📊</span> MVRV
+      </a>
+      <a class="nav-link" href="#tab-ai" onclick="setActive(this)">
+        <span class="icon">🤖</span> AI
+      </a>
+      <a class="nav-link" href="#tab-watchlist" onclick="setActive(this)">
+        <span class="icon">👁</span> Watchlist
+      </a>
+      <a class="nav-link" href="#tab-journal" onclick="setActive(this)">
+        <span class="icon">📓</span> Journal
+      </a>
+      <a class="nav-link" href="#tab-indicators" onclick="setActive(this)">
+        <span class="icon">📈</span> Indicators
+      </a>
+      <a class="nav-link" href="#tab-smartmoney" onclick="setActive(this)">
+        <span class="icon">🐋</span> Smart Money
+      </a>
+      <a class="nav-link" href="#tab-analytics" onclick="setActive(this)">
+        <span class="icon">🔬</span> Analytics
+      </a>
+      <a class="nav-link" href="#tab-kb" onclick="setActive(this)">
+        <span class="icon">📚</span> KB
+      </a>
+    </div>
+
+    <div class="nav-group">
+      <span class="nav-group-label">How to Read</span>
+      <a class="nav-link" href="#reading-signals" onclick="setActive(this)">
+        <span class="icon">🎯</span> TA Signals
+      </a>
+      <a class="nav-link" href="#reading-phases" onclick="setActive(this)">
+        <span class="icon">🔄</span> Wyckoff Phases
+      </a>
+      <a class="nav-link" href="#reading-cvd" onclick="setActive(this)">
+        <span class="icon">🌊</span> CVD + OI
+      </a>
+      <a class="nav-link" href="#reading-smartmoney" onclick="setActive(this)">
+        <span class="icon">💡</span> Smart Money Flow
+      </a>
+    </div>
+
+    <div class="nav-group">
+      <span class="nav-group-label">Features</span>
+      <a class="nav-link" href="#feature-idr" onclick="setActive(this)">
+        <span class="icon">🇮🇩</span> IDR Conversion
+      </a>
+      <a class="nav-link" href="#feature-proxy" onclick="setActive(this)">
+        <span class="icon">☁️</span> CF Worker Proxy
+      </a>
+      <a class="nav-link" href="#feature-pwa" onclick="setActive(this)">
+        <span class="icon">📱</span> PWA / Install
+      </a>
+      <a class="nav-link" href="#feature-alerts" onclick="setActive(this)">
+        <span class="icon">🔔</span> Alerts & Telegram
+      </a>
+    </div>
+
+    <div class="nav-group">
+      <span class="nav-group-label">Reference</span>
+      <a class="nav-link" href="#faq" onclick="setActive(this)">
+        <span class="icon">❓</span> FAQ
+      </a>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <main class="main">
+
+    <!-- ABOUT -->
+    <section class="doc-section" id="about">
+      <div class="section-eyebrow">Introduction</div>
+      <h1>Hype Dashboard</h1>
+      <p>Hype is a personal trading dashboard for <b style="color:var(--text)">Hyperliquid</b> — a high-performance decentralised perpetuals and spot exchange. The entire dashboard runs in your browser with no backend required. It reads your wallet data directly from the Hyperliquid public API and connects over WebSocket for live price feeds.</p>
+      <p>No sign-in, no API keys, no server. Enter any wallet address — yours or anyone else's — and get a full read-only view of their portfolio, trades, funding history, and more.</p>
+
+      <div class="callout info">
+        <span class="callout-icon">🔒</span>
+        <div class="callout-body"><b>Read-only and non-custodial.</b> Hype never asks for your private key or signs any transactions. It only reads public data from the Hyperliquid API.</div>
+      </div>
+
+      <table class="doc-table">
+        <thead><tr><th>Property</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Live URL</td><td><code>ravellerh.github.io/Hype</code></td></tr>
+          <tr><td>Data source</td><td>Hyperliquid public API + Binance Futures + CoinGecko</td></tr>
+          <tr><td>Tech stack</td><td>Vanilla JS, CSS custom properties, Chart.js (minimal), SVG sparklines</td></tr>
+          <tr><td>Real-time</td><td>Hyperliquid WebSocket API</td></tr>
+          <tr><td>Exchange rates</td><td>frankfurter.app (historical USD/IDR)</td></tr>
+          <tr><td>Backend required</td><td>No — optional Cloudflare Worker for edge caching</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- GETTING STARTED -->
+    <section class="doc-section" id="getting-started">
+      <div class="section-eyebrow">Setup</div>
+      <h2>Getting Started</h2>
+      <p>Open the dashboard at <code>ravellerh.github.io/Hype</code>. By default it loads a demo wallet. To view your own data:</p>
+      <ol class="doc-list">
+        <li>Click the <b>wallet address</b> in the top-right corner of the topbar.</li>
+        <li>Paste your Hyperliquid wallet address (<code>0x…</code>).</li>
+        <li>Press Enter — all tabs reload with your data.</li>
+      </ol>
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">Your address is saved in <code>localStorage</code> so it persists across sessions. You can switch wallets any time — useful for tracking multiple accounts or watching a known trader.</div>
+      </div>
+
+      <h3>Optional: Speed up loading with a Cloudflare Worker</h3>
+      <p>If you're on a slow connection (common in Indonesia), deploy a Cloudflare Worker proxy to get edge-cached API responses. See the <a href="#feature-proxy" style="color:var(--accent)">CF Worker Proxy</a> section for instructions. Once deployed, paste your Worker URL in <b>Live → API Proxy</b>.</p>
+    </section>
+
+    <!-- ARCHITECTURE -->
+    <section class="doc-section" id="architecture">
+      <div class="section-eyebrow">Technical</div>
+      <h2>Architecture</h2>
+      <p>The dashboard is a single-page application (SPA) with no build step. All logic lives in plain JavaScript files loaded by <code>index.html</code>.</p>
+      <pre><code>Hype/
+├── index.html          ← Entry point, tab shell
+├── app.js              ← All tab logic, API calls, WebSocket, charts
+├── ta-signal.js        ← TA engine: indicators, CVD, OI, signal scoring
+├── analytics.js        ← PnL analytics, equity curve
+├── intel.js            ← Research snapshot, macro intel
+├── indicators.js       ← Fear & Greed, BMSB, Pi Cycle
+├── nansen.js           ← Smart Money wallet tracking
+├── mvrv-ai.js          ← MVRV Z-score, AI commentary
+├── kb.js               ← Knowledge base & trade journal
+├── position-meta.js    ← Per-position intent / thesis modal
+├── logger.js           ← Data logger & portfolio snapshots
+├── styles.css          ← All styles (single file, CSS variables)
+├── sw.js               ← Service worker (PWA caching)
+├── manifest.json       ← PWA manifest
+└── worker.js           ← Cloudflare Worker proxy (optional, deploy separately)</code></pre>
+
+      <p>All Hyperliquid API calls are <code>POST</code> requests to <code>api.hyperliquid.xyz/info</code>. The service worker only caches static assets — API responses are never cached by the browser (they use POST), which is why the optional Cloudflare Worker provides real TTL caching.</p>
+
+      <table class="doc-table">
+        <thead><tr><th>Cache layer</th><th>How it works</th><th>TTL</th></tr></thead>
+        <tbody>
+          <tr><td>Service Worker</td><td>Caches static JS/CSS files</td><td>Until SW update</td></tr>
+          <tr><td>In-memory (candles)</td><td><code>_candleCache</code> Map in app.js</td><td>5 min</td></tr>
+          <tr><td>In-memory (meta)</td><td><code>getMetaAndAssetCtxs._cache</code></td><td>2 min</td></tr>
+          <tr><td>CF Worker edge</td><td>Cloudflare cache near your location</td><td>5 s – 10 min per type</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <hr class="divider">
+
+    <!-- TABS GUIDE -->
+    <section class="doc-section" id="tab-portfolio">
+      <div class="section-eyebrow">Tabs Guide</div>
+      <h2>Portfolio</h2>
+      <div class="tab-detail">
+        <div class="tab-detail-header">
+          <span style="font-size:22px">💼</span>
+          <h3 style="margin:0">Portfolio Overview</h3>
+          <span class="tab-badge badge-live">Live data</span>
+        </div>
+        <p>The main account summary. Shows your total portfolio value, open perpetual positions, spot holdings, unrealized PnL, open orders, and a portfolio growth chart.</p>
+        <ul class="doc-list">
+          <li><b>Total Portfolio</b> — for unified accounts: <code>spot USDC + unrealized perp PnL</code>. For standard accounts: <code>account value + spot value</code>.</li>
+          <li><b>Health Score</b> — composite risk score (0–100). Flags high leverage, low liquidation distance, smart money divergence, and BMSB signal.</li>
+          <li><b>Portfolio Chart</b> — snapshots are saved to localStorage every time you load the tab. Switch between All / Perp / Spot views.</li>
+          <li><b>Open Orders</b> — live order book pulled on each load.</li>
+        </ul>
+        <div class="callout warn">
+          <span class="callout-icon">⚠️</span>
+          <div class="callout-body"><b>Unified accounts:</b> Hyperliquid unified accounts hold USDC in spot as perp collateral. The <code>crossMarginSummary.accountValue</code> field is 0 — Hype correctly calculates total portfolio as <code>spotTotalValue + perpUnrealizedPnL</code> to avoid double-counting.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="doc-section" id="tab-trades">
+      <h2>Trades</h2>
+      <div class="tab-detail">
+        <div class="tab-detail-header">
+          <span style="font-size:22px">📋</span>
+          <h3 style="margin:0">Fill History</h3>
+        </div>
+        <p>Complete fill history split into <b>Perp</b> and <b>Spot</b> sub-tabs. Shows 100 rows per view, sorted latest-first.</p>
+        <ul class="doc-list">
+          <li><b>Coin filter</b> — type any coin name to filter fills by asset.</li>
+          <li><b>Realized PnL</b> — shown per fill. Positive = profit, negative = loss.</li>
+          <li><b>Win Rate</b> — calculated from all visible fills. Shown in the stats strip at the top.</li>
+          <li><b>Fees</b> — total fees paid across visible fills.</li>
+          <li><b>BUY / SELL</b> labels — colored green for buys, red for sells.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="doc-section" id="tab-funding">
+      <h2>Funding</h2>
+      <div class="tab-detail">
+        <div class="tab-detail-header">
+          <span style="font-size:22px">💸</span>
+          <h3 style="margin:0">Funding Payments</h3>
+        </div>
+        <p>Funding paid or received over 7 / 30 / 90 day windows. Funding is the recurring payment between long and short holders to keep perpetual prices anchored to spot.</p>
+        <ul class="doc-list">
+          <li><b>Positive funding</b> — market is bullish (longs pay shorts). If you're long, you pay; if short, you receive.</li>
+          <li><b>Negative funding</b> — market is bearish (shorts pay longs). If you're short, you pay; if long, you receive.</li>
+          <li><b>Daily bar chart</b> — net funding per day. Red bars = net cost, green = net income.</li>
+          <li><b>Cost-alert pills</b> — positions with high daily funding cost are flagged.</li>
+          <li><b>Avg Rate column</b> — annualised average funding rate per coin.</li>
+        </ul>
+        <div class="callout info">
+          <span class="callout-icon">📌</span>
+          <div class="callout-body">Funding is charged every <b>1 hour</b> on Hyperliquid. A position held for 30 days pays funding 720 times. The Funding tab shows the cumulative cost so you can see if a trade is being slowly bled by funding.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="doc-section" id="tab-flows">
+      <h2>Flows</h2>
+      <div class="tab-detail">
+        <div class="tab-detail-header">
+          <span style="font-size:22px">🏦</span>
+          <h3 style="margin:0">Deposit &amp; Withdrawal History</h3>
+        </div>
+        <p>Full ledger of all deposits and withdrawals. Each transaction shows the <b>exact historical USD/IDR exchange rate at that date</b>, fetched from frankfurter.app.</p>
+        <ul class="doc-list">
+          <li><b>Running balance</b> — cumulative net flow column shows how much capital you've put in vs withdrawn.</li>
+          <li><b>IDR value</b> — each row shows the IDR amount at the transaction date. Useful for Indonesian tax reporting.</li>
+          <li><b>Cumulative chart</b> — area chart showing capital flow over time.</li>
+        </ul>
+        <div class="callout tip">
+          <span class="callout-icon">💡</span>
+          <div class="callout-body">Historical rates are fetched once per session and cached. All unique dates are fetched in parallel, so loading is fast even for large transaction histories.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="doc-section" id="tab-live">
+      <h2>Live Monitor</h2>
+      <div class="tab-detail">
+        <div class="tab-detail-header">
+          <span style="font-size:22px">⚡</span>
+          <h3 style="margin:0">Real-time WebSocket Feed</h3>
+          <span class="tab-badge badge-ws">WebSocket</span>
+        </div>
+        <p>Real-time price monitor powered by the Hyperliquid WebSocket API. Prices update on every tick — no polling.</p>
+        <ul class="doc-list">
+          <li><b>Live P&amp;L</b> — if you have open positions, current unrealized PnL updates in real-time.</li>
+          <li><b>Price sparklines</b> — mini charts update as prices move.</li>
+          <li><b>Price Alerts</b> — set above/below alerts for any coin. Triggers a browser notification and optionally Telegram when the condition is hit.</li>
+          <li><b>API Proxy settings</b> — configure your Cloudflare Worker URL here.</li>
+          <li><b>Telegram settings</b> — paste your bot token and chat ID to receive alerts on your phone.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="doc-section" id="tab-markets">
+      <h2>Markets</h2>
+      <div class="tab-detail">
+        <div class="tab-detail-header">
+          <span style="font-size:22px">🌐</span>
+          <h3 style="margin:0">Global Market Overview</h3>
+          <span class="tab-badge badge-live">Live data</span>
+        </div>
+        <p>Overview of all Hyperliquid perpetual markets. Sortable by volume, open interest, funding rate, or 24h change.</p>
+        <ul class="doc-list">
+          <li><b>Volume</b> — 24h trading volume in USD.</li>
+          <li><b>OI</b> — total open interest in USD. High OI relative to volume can indicate a crowded trade.</li>
+          <li><b>Funding rate</b> — current hourly funding rate (annualised). Extreme rates suggest crowding.</li>
+          <li><b>24h %</b> — price change from previous day.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="doc-section" id="tab-phases">
+      <h2>Phases</h2>
+      <div class="tab-detail">
+        <div class="tab-detail-header">
+          <span style="font-size:22px">🔵</span>
+          <h3 style="margin:0">Wyckoff Market Phase Detector</h3>
+        </div>
+        <p>Automatically classifies each tracked coin into a Wyckoff market phase using candle data across the selected timeframe (1h / 4h / 1d).</p>
+        <table class="doc-table">
+          <thead><tr><th>Phase</th><th>Meaning</th><th>Signal</th></tr></thead>
+          <tbody>
+            <tr><td>🔵 Accumulation</td><td>Smart money quietly buying. Price ranging. Volume low.</td><td>Potential long setup</td></tr>
+            <tr><td>🚀 Markup</td><td>Price trending up. Higher highs and higher lows. Volume expanding.</td><td>Ride the trend</td></tr>
+            <tr><td>🟡 Distribution</td><td>Smart money quietly selling. Price ranging at highs. Volume irregular.</td><td>Reduce / avoid longs</td></tr>
+            <tr><td>🔻 Markdown</td><td>Price trending down. Lower highs and lower lows.</td><td>Avoid longs, look for shorts</td></tr>
+            <tr><td>⚪ Neutral</td><td>No clear phase. Insufficient signal strength.</td><td>Wait for clarity</td></tr>
+          </tbody>
+        </table>
+        <p>Below the phase cards, the <b>CVD + OI Signal Table</b> gives a quick buy/sell/neutral read per coin based on Cumulative Volume Delta and Open Interest momentum.</p>
+        <p>Expand any CVD card to see sparkline charts for Price, CVD, and OI history.</p>
+      </div>
+    </section>
+
+    <section class="doc-section" id="tab-intel">
+      <h2>Intel</h2>
+      <div class="tab-detail">
+        <div class="tab-detail-header">
+          <span style="font-size:22px">🧠</span>
+          <h3 style="margin:0">Research Snapshot</h3>
+          <span class="tab-badge badge-local">Static snapshot</span>
+        </div>
+        <p>A curated macro + on-chain research snapshot sourced from cryptowatch.id. Updated manually when new research is published.</p>
+        <ul class="doc-list">
+          <li><b>Macro posture</b> — overall market stance: BUY / WAIT / SELL with confidence score.</li>
+          <li><b>Regime radar</b> — spider chart showing Macro, Cycle, OnChain, Derivatives, Funding, ETF, and Sentiment axes (0–10).</li>
+          <li><b>Evidence layers</b> — breakdown of supporting evidence per analysis layer.</li>
+          <li><b>Cohort behavior</b> — what LTH, ETF/TradFi, and Smart Money are doing.</li>
+          <li><b>Coin plays</b> — specific setups and narrative bets from the research.</li>
+        </ul>
+        <div class="callout warn">
+          <span class="callout-icon">⚠️</span>
+          <div class="callout-body">Intel is a <b>static snapshot</b> — it does not update automatically. Check the <code>snapshot_date</code> at the top of the page and treat stale data accordingly.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="doc-section" id="tab-mvrv">
+      <h2>MVRV</h2>
+      <div class="tab-detail">
+        <div class="tab-detail-header">
+          <span style="font-size:22px">📊</span>
+          <h3 style="margin:0">MVRV Z-Score &amp; Market Cycle</h3>
+        </div>
+        <p>On-chain MVRV Z-Score — a market cycle indicator that compares Bitcoin's market value to its realised value, normalised by standard deviation.</p>
+        <table class="doc-table">
+          <thead><tr><th>Z-Score Range</th><th>Zone</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>&gt; 7</code></td><td style="color:var(--red)">Extreme Top</td><td>Historically near cycle tops. Consider reducing exposure.</td></tr>
+            <tr><td><code>3 – 7</code></td><td style="color:var(--yellow)">Elevated</td><td>Bull market. Risk increasing. Take partial profits.</td></tr>
+            <tr><td><code>0 – 3</code></td><td style="color:var(--green)">Fair Value</td><td>Neutral zone. Market healthy.</td></tr>
+            <tr><td><code>-2 – 0</code></td><td style="color:var(--accent)">Undervalued</td><td>Historically near cycle lows. Accumulation zone.</td></tr>
+            <tr><td><code>&lt; -2</code></td><td style="color:var(--accent)">Extreme Bottom</td><td>Deep value. Strong historical buy signal.</td></tr>
+          </tbody>
+        </table>
+        <p>The MVRV tab also includes AI-generated market commentary that synthesises MVRV, Fear &amp; Greed, BTC dominance, and current phase signals into a plain-English read of the macro environment.</p>
+      </div>
+    </section>
+
+    <section class="doc-section" id="tab-ai">
+      <h2>AI</h2>
+      <div class="tab-detail">
+        <div class="tab-detail-header">
+          <span style="font-size:22px">🤖</span>
+          <h3 style="margin:0">AI Trade Analysis</h3>
+        </div>
+        <p>AI-assisted trade analysis that combines your current positions, TA signals, phase data, and market context into actionable commentary. Uses your configured AI provider (set in settings).</p>
+        <ul class="doc-list">
+          <li><b>Portfolio debrief</b> — review of your open positions with risk comments.</li>
+          <li><b>Market regime</b> — plain-English summary of current market conditions.</li>
+          <li><b>Trade ideas</b> — suggestions based on phase + signal confluence.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="doc-section" id="tab-watchlist">
+      <h2>Watchlist</h2>
+      <div class="tab-detail">
+        <div class="tab-detail-header">
+          <span style="font-size:22px">👁</span>
+          <h3 style="margin:0">Wallet Monitor</h3>
+          <span class="tab-badge badge-ws">WebSocket</span>
+        </div>
+        <p>Monitor any Hyperliquid wallet address. Useful for tracking known traders or your own secondary accounts.</p>
+        <ul class="doc-list">
+          <li>Add multiple wallet addresses to track.</li>
+          <li>Position changes trigger browser notifications.</li>
+          <li>Shows current open positions for each watched wallet.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="doc-section" id="tab-journal">
+      <h2>Journal</h2>
+      <div class="tab-detail">
+        <div class="tab-detail-header">
+          <span style="font-size:22px">📓</span>
+          <h3 style="margin:0">Trade Journal</h3>
+          <span class="tab-badge badge-local">localStorage</span>
+        </div>
+        <p>Personal trade journal stored entirely in your browser's localStorage. Log trade entries with notes, thesis, and outcome tagging.</p>
+        <ul class="doc-list">
+          <li><b>Entry</b> — coin, direction, entry price, size, leverage.</li>
+          <li><b>Thesis</b> — free-text rationale for the trade.</li>
+          <li><b>Outcome</b> — tag trades as WIN / LOSS / BREAKEVEN with exit price.</li>
+          <li><b>Notes</b> — post-trade review and lessons learned.</li>
+        </ul>
+        <div class="callout warn">
+          <span class="callout-icon">⚠️</span>
+          <div class="callout-body">Journal data lives in <b>localStorage only</b>. It is not synced anywhere. Clear browser data = lose your journal. Export regularly.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="doc-section" id="tab-indicators">
+      <h2>Indicators</h2>
+      <div class="tab-detail">
+        <div class="tab-detail-header">
+          <span style="font-size:22px">📈</span>
+          <h3 style="margin:0">Macro Indicators</h3>
+        </div>
+        <p>On-chain and sentiment indicators that provide macro market context.</p>
+        <table class="doc-table">
+          <thead><tr><th>Indicator</th><th>Source</th><th>What it tells you</th></tr></thead>
+          <tbody>
+            <tr><td>Fear &amp; Greed</td><td>Alternative.me</td><td>Crowd sentiment. Extreme fear = potential buy. Extreme greed = potential sell.</td></tr>
+            <tr><td>BMSB</td><td>Calculated</td><td>Bull/Bear Market Support Band. Price above BMSB = bull structure. Below = bear.</td></tr>
+            <tr><td>Pi Cycle Top</td><td>Calculated</td><td>When the 111d MA crosses above 2× the 350d MA, historically marks cycle tops.</td></tr>
+            <tr><td>MVRV Z-Score</td><td>On-chain</td><td>See MVRV tab.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="doc-section" id="tab-smartmoney">
+      <h2>Smart Money</h2>
+      <div class="tab-detail">
+        <div class="tab-detail-header">
+          <span style="font-size:22px">🐋</span>
+          <h3 style="margin:0">Whale Wallet Signals</h3>
+        </div>
+        <p>Aggregated signal feed from a curated list of top Hyperliquid traders. Shows what the best-performing wallets are positioned in right now.</p>
+        <ul class="doc-list">
+          <li>Open positions of tracked whale wallets.</li>
+          <li>Recent trades from each wallet.</li>
+          <li>Consensus signal — when multiple whales are on the same side of a trade, it carries more weight.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="doc-section" id="tab-analytics">
+      <h2>Analytics</h2>
+      <div class="tab-detail">
+        <div class="tab-detail-header">
+          <span style="font-size:22px">🔬</span>
+          <h3 style="margin:0">PnL Analytics</h3>
+        </div>
+        <p>Deep-dive into your trading performance metrics derived from your fill history.</p>
+        <ul class="doc-list">
+          <li><b>Equity curve</b> — cumulative PnL over time.</li>
+          <li><b>Win/Loss streaks</b> — longest winning and losing runs.</li>
+          <li><b>Fee breakdown</b> — total fees by coin and over time.</li>
+          <li><b>Average win vs average loss</b> — risk/reward ratio across your trades.</li>
+          <li><b>Best/worst coins</b> — which assets you perform best on.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="doc-section" id="tab-kb">
+      <h2>KB (Knowledge Base)</h2>
+      <div class="tab-detail">
+        <div class="tab-detail-header">
+          <span style="font-size:22px">📚</span>
+          <h3 style="margin:0">Personal Knowledge Base</h3>
+          <span class="tab-badge badge-local">localStorage</span>
+        </div>
+        <p>A personal wiki for trading notes, playbooks, and research. Stored in localStorage. Write notes in Markdown — they render with formatting.</p>
+        <ul class="doc-list">
+          <li>Create, edit, and delete articles.</li>
+          <li>Link articles to specific trades in your journal.</li>
+          <li>Tag entries for easy filtering.</li>
+        </ul>
+      </div>
+    </section>
+
+    <hr class="divider">
+
+    <!-- HOW TO READ SIGNALS -->
+    <section class="doc-section" id="reading-signals">
+      <div class="section-eyebrow">How to Read</div>
+      <h2>TA Signals</h2>
+      <p>The TA signal dashboard (bottom of the Live tab, and accessible in Phases) runs a full technical analysis on up to 200 candles of the selected coin and timeframe. Each signal produces one of these badges:</p>
+
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px">
+        <span class="sig sig-bull">BULL</span>
+        <span class="sig sig-bear">BEAR</span>
+        <span class="sig sig-warn">WARN</span>
+        <span class="sig sig-neut">NEUTRAL</span>
+        <span class="sig sig-info">INFO</span>
+      </div>
+
+      <table class="doc-table">
+        <thead><tr><th>Signal</th><th>Indicator</th><th>How it's calculated</th></tr></thead>
+        <tbody>
+          <tr><td>EMA Bias</td><td>EMA 20 / 50 / 200</td><td>Price above EMA20 &gt; EMA50 = bull. Below = bear. EMA200 cross = strong signal.</td></tr>
+          <tr><td>MACD</td><td>MACD(12,26,9)</td><td>Histogram positive and rising = bull. Negative and falling = bear.</td></tr>
+          <tr><td>RSI (14)</td><td>RSI 14-period</td><td>&gt;60 = bull momentum. &lt;40 = bear momentum. &gt;70 or &lt;30 = overbought/oversold.</td></tr>
+          <tr><td>Stochastic</td><td>Stoch(14,3,3)</td><td>%K crosses above %D in oversold zone = buy signal. Below in overbought = sell.</td></tr>
+          <tr><td>Bollinger Bands</td><td>BB(20, 2σ)</td><td>Price near lower band = oversold. Near upper band = overbought. Squeeze = breakout incoming.</td></tr>
+          <tr><td>ATR Volatility</td><td>ATR(14)</td><td>High ATR relative to history = volatile. Low = quiet. Used for stop-loss sizing.</td></tr>
+          <tr><td>Funding Rate</td><td>HL API</td><td>Positive &amp; high = longs crowded. Negative = shorts crowded. Extremes often mean-revert.</td></tr>
+          <tr><td>Open Interest</td><td>HL API</td><td>Rising OI + rising price = trend confirmed. Rising OI + falling price = potential squeeze.</td></tr>
+          <tr><td>L/S Ratio</td><td>Binance Futures</td><td>Ratio &gt; 1.5 = longs crowded. &lt; 0.7 = shorts crowded. See Smart Money Flow section.</td></tr>
+          <tr><td>CVD + OI</td><td>Calculated</td><td>See CVD + OI section below.</td></tr>
+        </tbody>
+      </table>
+
+      <p>The <b>Overall Signal</b> at the top of the card is a weighted composite of all individual signals. It considers the direction and strength of each signal, with more weight given to higher-timeframe signals.</p>
+    </section>
+
+    <section class="doc-section" id="reading-phases">
+      <h2>Wyckoff Phases</h2>
+      <p>The Wyckoff method describes market cycles as four recurring phases. Hype's phase detector analyses price action, volume, and trend structure to classify each coin.</p>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+        <div class="tab-card">
+          <div class="tab-card-header"><span class="tab-icon">🔵</span><span class="tab-name">Accumulation</span></div>
+          <p class="tab-desc">Price is ranging in a base after a downtrend. Volume is low and declining. Smart money is absorbing supply from panic sellers. <b>Best time to build a long position.</b></p>
+        </div>
+        <div class="tab-card">
+          <div class="tab-card-header"><span class="tab-icon">🚀</span><span class="tab-name">Markup</span></div>
+          <p class="tab-desc">Price is in a clear uptrend — higher highs, higher lows. Volume is expanding on up-moves. <b>Ride the trend; tighten stops as it extends.</b></p>
+        </div>
+        <div class="tab-card">
+          <div class="tab-card-header"><span class="tab-icon">🟡</span><span class="tab-name">Distribution</span></div>
+          <p class="tab-desc">Price is ranging at highs after a markup. Volume is high and irregular. Smart money is distributing to late buyers. <b>Reduce exposure; avoid new longs.</b></p>
+        </div>
+        <div class="tab-card">
+          <div class="tab-card-header"><span class="tab-icon">🔻</span><span class="tab-name">Markdown</span></div>
+          <p class="tab-desc">Price is in a clear downtrend — lower highs, lower lows. Volume expands on down-moves. <b>Avoid longs; short if confident.</b></p>
+        </div>
+      </div>
+
+      <div class="callout info">
+        <span class="callout-icon">📌</span>
+        <div class="callout-body"><b>Confidence score</b> — each phase card shows a percentage confidence. Below 40% means the signal is weak. Wait for confluence with other timeframes before acting.</div>
+      </div>
+    </section>
+
+    <section class="doc-section" id="reading-cvd">
+      <h2>CVD + OI</h2>
+      <p><b>Cumulative Volume Delta (CVD)</b> tracks the net buying or selling pressure over time by summing the difference between buy-side and sell-side volume on each candle.</p>
+
+      <table class="doc-table">
+        <thead><tr><th>Combination</th><th>Interpretation</th></tr></thead>
+        <tbody>
+          <tr><td>Price ↑ + CVD ↑ + OI ↑</td><td style="color:var(--green)"><b>Strong bull</b> — real buyers driving the move, open interest confirms conviction.</td></tr>
+          <tr><td>Price ↑ + CVD ↓</td><td style="color:var(--yellow)"><b>Suspicious pump</b> — price rising but sellers dominating. Could be short liquidations, not real buying.</td></tr>
+          <tr><td>Price ↓ + CVD ↓ + OI ↑</td><td style="color:var(--red)"><b>Strong bear</b> — real sellers driving the move with building short interest.</td></tr>
+          <tr><td>Price ↓ + CVD ↑</td><td style="color:var(--accent)"><b>Absorption</b> — price falling but buyers absorbing. Possible accumulation / reversal setup.</td></tr>
+          <tr><td>Price flat + OI ↑</td><td style="color:var(--yellow)"><b>Coiling</b> — positions building with no price move yet. Potential breakout either direction.</td></tr>
+          <tr><td>Price ↑ + OI ↓</td><td style="color:var(--text-muted)"><b>Short covering</b> — shorts closing, not new longs opening. Less reliable for continuation.</td></tr>
+        </tbody>
+      </table>
+
+      <p>In the Phases tab, expand any CVD card to see the Price, CVD, and OI sparklines. CVD is shown with a zero baseline — the colored fill shows whether net flow is positive (green = net buying) or negative (red = net selling) over the visible period.</p>
+    </section>
+
+    <section class="doc-section" id="reading-smartmoney">
+      <h2>Smart Money Flow</h2>
+      <p>The Smart Money Flow card synthesises three signals from Binance Futures data to detect institutional positioning:</p>
+
+      <table class="doc-table">
+        <thead><tr><th>Signal</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr><td><span class="sig sig-bull">SMART ACCUM</span></td><td>Top-20% traders net long + buy taker aggression. High-quality long setup.</td></tr>
+          <tr><td><span class="sig sig-bear">SMART DIST</span></td><td>Top-20% traders net short + sell taker aggression. Distribution signal.</td></tr>
+          <tr><td><span class="sig sig-bull">SQUEEZE ↑</span></td><td>Retail heavily short, smart money long — short squeeze risk is elevated.</td></tr>
+          <tr><td><span class="sig sig-bear">SQUEEZE ↓</span></td><td>Retail overleveraged long, smart money short — long squeeze risk.</td></tr>
+          <tr><td><span class="sig sig-warn">FAKE PUMP</span></td><td>Retail buyers aggressive, top traders short — potential bull trap.</td></tr>
+          <tr><td><span class="sig sig-warn">CROWDED LONG</span></td><td>Retail overleveraged long without smart money confirmation. Risky.</td></tr>
+          <tr><td><span class="sig sig-info">CROWDED SHORT</span></td><td>Retail heavily short — watch for squeeze if a catalyst appears.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <hr class="divider">
+
+    <!-- FEATURES -->
+    <section class="doc-section" id="feature-idr">
+      <div class="section-eyebrow">Features</div>
+      <h2>IDR Conversion</h2>
+      <p>All monetary values throughout the dashboard can be displayed in Indonesian Rupiah (IDR). Switch currency using the currency toggle in the topbar.</p>
+      <ul class="doc-list">
+        <li><b>Live rate</b> — current USD/IDR from the ECB/frankfurter.app.</li>
+        <li><b>Historical rates</b> — in the Flows tab, each deposit/withdrawal shows the IDR value at the <em>exact transaction date</em>. Rates are fetched for all unique dates in parallel, cached for the session.</li>
+      </ul>
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">The historical rate is useful for Indonesian tax reporting — you can see exactly how much IDR you put in and took out at each point in time.</div>
+      </div>
+    </section>
+
+    <section class="doc-section" id="feature-proxy">
+      <h2>Cloudflare Worker Proxy</h2>
+      <p>Hyperliquid's API uses <code>POST</code> requests, which cannot be cached by browsers or CDNs. If you're on a slow connection, you can deploy a <b>Cloudflare Worker</b> as a caching proxy.</p>
+
+      <h3>Deploy in 3 steps</h3>
+      <ol class="doc-list">
+        <li>Go to <b>dash.cloudflare.com</b> → Workers → Create Worker.</li>
+        <li>Paste the contents of <code>worker.js</code> from this repository.</li>
+        <li>Deploy. Copy your Worker URL (e.g. <code>https://hype.yourname.workers.dev</code>).</li>
+      </ol>
+      <p>Then in the dashboard: <b>Live tab → API Proxy → paste URL → Save → reload page</b>.</p>
+
+      <table class="doc-table">
+        <thead><tr><th>Request type</th><th>Cache TTL</th></tr></thead>
+        <tbody>
+          <tr><td>Candle snapshots</td><td>5 minutes</td></tr>
+          <tr><td>Meta + asset contexts</td><td>2 minutes</td></tr>
+          <tr><td>Spot metadata</td><td>10 minutes</td></tr>
+          <tr><td>Account state / positions</td><td>30 seconds</td></tr>
+          <tr><td>Open orders</td><td>20 seconds</td></tr>
+          <tr><td>Fill / funding history</td><td>60 seconds</td></tr>
+          <tr><td>All mid prices</td><td>5 seconds</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout info">
+        <span class="callout-icon">☁️</span>
+        <div class="callout-body">Cloudflare has 300+ edge locations worldwide. Your requests are served from the nearest data centre — typically reducing API round-trip time by 3–5× for users in Indonesia.</div>
+      </div>
+    </section>
+
+    <section class="doc-section" id="feature-pwa">
+      <h2>PWA / Install</h2>
+      <p>Hype is a Progressive Web App. You can install it to your home screen on iOS, Android, and desktop — it behaves like a native app.</p>
+      <ul class="doc-list">
+        <li><b>iOS</b> — Safari → Share → Add to Home Screen.</li>
+        <li><b>Android</b> — Chrome → ⋮ menu → Install App.</li>
+        <li><b>Desktop</b> — Chrome address bar → install icon on the right side.</li>
+      </ul>
+      <p>Once installed, the static assets (JS, CSS, fonts) are cached by the service worker. The app loads instantly even on a slow connection — only API data requires network access.</p>
+    </section>
+
+    <section class="doc-section" id="feature-alerts">
+      <h2>Alerts &amp; Telegram Notifications</h2>
+      <h3>Price Alerts</h3>
+      <p>Set price alerts from the Live tab. Enter a coin, select above/below, enter a price target, and click Set Alert. Alerts trigger browser notifications and optionally Telegram messages when the condition is hit.</p>
+
+      <h3>Telegram Setup</h3>
+      <ol class="doc-list">
+        <li>Create a Telegram bot via <b>@BotFather</b> — send <code>/newbot</code>, follow prompts, copy the token.</li>
+        <li>Send any message to your new bot.</li>
+        <li>In Hype: Live tab → Telegram Notifications → paste Bot Token → click Auto-detect Chat ID → Save.</li>
+        <li>Click <b>Send Test</b> to confirm it works.</li>
+      </ol>
+      <div class="callout tip">
+        <span class="callout-icon">🔒</span>
+        <div class="callout-body">Your bot token is stored in <b>localStorage only</b>. It is never sent anywhere except directly to the Telegram API from your browser.</div>
+      </div>
+
+      <h3>What triggers notifications</h3>
+      <ul class="doc-list">
+        <li>Price alert conditions (above/below target).</li>
+        <li>P&amp;L milestone — configurable dollar threshold (e.g. alert every $500 gain/loss).</li>
+        <li>New order fills detected via polling.</li>
+      </ul>
+    </section>
+
+    <hr class="divider">
+
+    <!-- FAQ -->
+    <section class="doc-section" id="faq">
+      <div class="section-eyebrow">Reference</div>
+      <h2>FAQ</h2>
+
+      <div style="display:flex;flex-direction:column;gap:16px">
+
+        <div class="tab-detail">
+          <h3>Why does my Total Portfolio show $0?</h3>
+          <p>You likely have a <b>Hyperliquid unified account</b>. In this account type, your USDC lives in the spot wallet and is used as perp collateral — <code>crossMarginSummary.accountValue</code> is 0 by design. Hype detects this and calculates total portfolio as <code>spot USDC balance + unrealized perp PnL</code>.</p>
+        </div>
+
+        <div class="tab-detail">
+          <h3>Why is the Phases tab slow to load?</h3>
+          <p>Phases fetches candle data for each tracked coin individually — by default BTC, ETH, SOL, and HYPE. Each coin requires a separate API call. Without a Cloudflare Worker proxy, these calls go to Hyperliquid's servers which may be geographically distant. <b>Deploying the CF Worker proxy</b> caches candle data for 5 minutes and typically makes phase loading 3–5× faster.</p>
+        </div>
+
+        <div class="tab-detail">
+          <h3>Is my data private?</h3>
+          <p>Yes. Hype sends your wallet address directly to the Hyperliquid public API. All wallet addresses on Hyperliquid are public — the same data is visible to anyone who visits the Hyperliquid explorer. Journal and KB data lives in your browser's localStorage and is never transmitted anywhere.</p>
+        </div>
+
+        <div class="tab-detail">
+          <h3>The OI sparklines show "No OI history yet"</h3>
+          <p>OI history comes from two sources: Binance's <code>openInterestHist</code> endpoint (fetched each time you load Phases), and a localStorage fallback that accumulates one point per load. If a coin isn't listed on Binance Futures (common for newer coins), only the localStorage history will be available — it builds up over multiple sessions.</p>
+        </div>
+
+        <div class="tab-detail">
+          <h3>Can I track someone else's wallet?</h3>
+          <p>Yes — all Hyperliquid data is public. Enter any <code>0x…</code> address in the wallet input at the top-right. The Watchlist tab is designed for ongoing monitoring of specific addresses with position-change alerts.</p>
+        </div>
+
+        <div class="tab-detail">
+          <h3>How do I add more coins to the Phases tab?</h3>
+          <p>The tracked coins are defined in <code>const PHASE_COINS</code> in <code>app.js</code>. Edit this array to add or remove coins. Note that each additional coin adds one more API call on every Phases load.</p>
+        </div>
+
+        <div class="tab-detail">
+          <h3>My Journal / KB data disappeared</h3>
+          <p>Journal and KB are stored in <code>localStorage</code>. Clearing browser data, using incognito mode, or clearing site data in DevTools will erase it. There is no backup. <b>Export your data regularly</b> using the export button in the Journal tab.</p>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Mobile sidebar toggle button -->
+<button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle navigation">☰</button>
+
+<script>
+  function setActive(el) {
+    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+    el.classList.add('active');
+    closeSidebar();
+  }
+
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('sidebar-overlay').classList.toggle('open');
+  }
+
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebar-overlay').classList.remove('open');
+  }
+
+  // Update active nav link on scroll
+  const sections = document.querySelectorAll('.doc-section');
+  const navLinks  = document.querySelectorAll('.nav-link');
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        navLinks.forEach(l => {
+          l.classList.toggle('active', l.getAttribute('href') === '#' + id);
+        });
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+
+</body>
+</html>
