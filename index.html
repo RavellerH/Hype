@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <meta name="theme-color" content="#38bdf8">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Hype">
+  <title>Hype — Analyzer</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-logo">⚡</div>
+    <button class="hamburger-btn" id="hamburger-btn" onclick="toggleDrawer()" aria-label="Open menu">
+      <div class="hbars"><span></span><span></span><span></span></div>
+    </button>
+
+    <nav class="topbar-nav">
+      <button class="topbar-tab active" data-page="overview"  onclick="navigate('overview')">Portfolio</button>
+      <button class="topbar-tab"        data-page="trades"    onclick="navigate('trades')">Trades</button>
+      <button class="topbar-tab"        data-page="funding"   onclick="navigate('funding')">Funding</button>
+      <button class="topbar-tab"        data-page="flows"     onclick="navigate('flows')">Flows</button>
+      <button class="topbar-tab"        data-page="monitor"   onclick="navigate('monitor')">Live</button>
+      <button class="topbar-tab"        data-page="markets"   onclick="navigate('markets')">Markets</button>
+      <button class="topbar-tab"        data-page="phases"    onclick="navigate('phases')">Phases</button>
+      <button class="topbar-tab"        data-page="intel"     onclick="navigate('intel')">Intel</button>
+      <button class="topbar-tab"        data-page="mvrv"      onclick="navigate('mvrv')">MVRV</button>
+      <button class="topbar-tab"        data-page="ai"        onclick="navigate('ai')">AI</button>
+      <button class="topbar-tab"        data-page="watchlist" onclick="navigate('watchlist')">Watchlist</button>
+      <button class="topbar-tab"        data-page="journal"     onclick="navigate('journal')">Journal</button>
+      <button class="topbar-tab"        data-page="indicators"  onclick="navigate('indicators')">Indicators</button>
+      <button class="topbar-tab"        data-page="smartmoney"  onclick="navigate('smartmoney')">Smart Money</button>
+      <button class="topbar-tab"        data-page="analytics"   onclick="navigate('analytics')">Analytics</button>
+      <button class="topbar-tab"        data-page="kb"          onclick="navigate('kb')">KB</button>
+    </nav>
+
+    <div class="topbar-right">
+      <a href="docs.html" class="btn btn-ghost btn-sm" style="text-decoration:none;font-size:11px" title="Documentation">Docs</a>
+      <span class="refresh-info" id="refresh-info"></span>
+      <button class="btn btn-ghost btn-sm" onclick="refreshAll()">↺</button>
+      <span id="logger-dot" class="logger-dot off" id="logger-dot" title="Data Logger"></span>
+      <span id="logger-tip" class="logger-tip" style="display:none"></span>
+      <span class="wallet-badge" id="wallet-display">0x6e4c…2015</span>
+      <div id="ws-status" class="status-dot off" title="WebSocket"></div>
+      <button class="btn btn-ghost btn-sm" id="install-btn" onclick="installPWA()" title="Install app">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v13m0 0l-4-4m4 4l4-4"/><path d="M2 17v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2"/></svg>
+        Install
+      </button>
+    </div>
+  </header>
+
+  <!-- Sidebar icon rail (desktop) -->
+  <nav class="sidebar">
+    <a class="nav-item active" data-page="overview"  onclick="navigate('overview')"  title="Portfolio"><span class="icon">📊</span></a>
+    <a class="nav-item"        data-page="trades"    onclick="navigate('trades')"    title="Trades"><span class="icon">🔄</span></a>
+    <a class="nav-item"        data-page="funding"   onclick="navigate('funding')"   title="Funding"><span class="icon">💹</span></a>
+    <a class="nav-item"        data-page="flows"     onclick="navigate('flows')"     title="Flows"><span class="icon">💰</span></a>
+    <a class="nav-item"        data-page="monitor"   onclick="navigate('monitor')"   title="Live"><span class="icon">⚡</span></a>
+    <a class="nav-item"        data-page="markets"   onclick="navigate('markets')"   title="Markets"><span class="icon">🌊</span></a>
+    <a class="nav-item"        data-page="phases"    onclick="navigate('phases')"    title="Phases"><span class="icon">🔵</span></a>
+    <a class="nav-item"        data-page="intel"     onclick="navigate('intel')"     title="Intel"><span class="icon">📡</span></a>
+    <a class="nav-item"        data-page="mvrv"      onclick="navigate('mvrv')"      title="MVRV"><span class="icon">📈</span></a>
+    <a class="nav-item"        data-page="ai"        onclick="navigate('ai')"        title="AI"><span class="icon">🤖</span></a>
+    <a class="nav-item"        data-page="watchlist" onclick="navigate('watchlist')" title="Watchlist"><span class="icon">👛</span></a>
+    <a class="nav-item"        data-page="journal"     onclick="navigate('journal')"     title="Journal"><span class="icon">📓</span></a>
+    <a class="nav-item"        data-page="indicators"  onclick="navigate('indicators')"  title="Indicators"><span class="icon">📊</span></a>
+    <a class="nav-item"        data-page="smartmoney"  onclick="navigate('smartmoney')"  title="Smart Money"><span class="icon">🧠</span></a>
+    <a class="nav-item"        data-page="analytics"   onclick="navigate('analytics')"   title="Analytics"><span class="icon">🤖</span></a>
+    <a class="nav-item"        data-page="kb"          onclick="navigate('kb')"          title="Knowledge Base"><span class="icon">📚</span></a>
+  </nav>
+
+  <!-- Mobile bottom nav -->
+  <nav class="bottom-nav">
+    <button class="bottom-nav-item active" data-page="overview" onclick="navigate('overview')">
+      <span class="bnav-icon">📊</span><span>Portfolio</span>
+    </button>
+    <button class="bottom-nav-item" data-page="monitor" onclick="navigate('monitor')">
+      <span class="bnav-icon">⚡</span><span>Live</span>
+    </button>
+    <button class="bottom-nav-item" data-page="intel" onclick="navigate('intel')">
+      <span class="bnav-icon">📡</span><span>Intel</span>
+    </button>
+    <button class="bottom-nav-item" data-page="mvrv" onclick="navigate('mvrv')">
+      <span class="bnav-icon">📈</span><span>MVRV</span>
+    </button>
+    <button class="bottom-nav-item" data-page="ai" onclick="navigate('ai')">
+      <span class="bnav-icon">🤖</span><span>AI</span>
+    </button>
+    <button class="bottom-nav-item" data-page="markets" onclick="navigate('markets')">
+      <span class="bnav-icon">🌊</span><span>Markets</span>
+    </button>
+    <button class="bottom-nav-item" data-page="trades" onclick="navigate('trades')">
+      <span class="bnav-icon">🔄</span><span>Trades</span>
+    </button>
+    <button class="bottom-nav-item" data-page="phases" onclick="navigate('phases')">
+      <span class="bnav-icon">🔵</span><span>Phase</span>
+    </button>
+    <button class="bottom-nav-item" data-page="watchlist" onclick="navigate('watchlist')">
+      <span class="bnav-icon">👛</span><span>Watch</span>
+    </button>
+    <button class="bottom-nav-item" data-page="kb" onclick="navigate('kb')">
+      <span class="bnav-icon">🧠</span><span>KB</span>
+    </button>
+  </nav>
+
+  <!-- Nav drawer overlay -->
+  <div id="nav-overlay" class="nav-overlay" onclick="closeDrawer()"></div>
+
+  <!-- Slide-in nav drawer -->
+  <nav id="nav-drawer" class="nav-drawer">
+    <div class="nav-drawer-header">
+      <span class="nav-drawer-logo">⚡ Hype</span>
+      <button class="nav-drawer-close" onclick="closeDrawer()" aria-label="Close menu">✕</button>
+    </div>
+    <div class="nav-drawer-body">
+      <div class="nav-drawer-section">Main</div>
+      <button class="drawer-item active" data-page="overview"  onclick="navigate('overview')"><span class="drawer-item-icon">📊</span>Portfolio</button>
+      <button class="drawer-item"        data-page="trades"    onclick="navigate('trades')"><span class="drawer-item-icon">🔄</span>Trades</button>
+      <button class="drawer-item"        data-page="funding"   onclick="navigate('funding')"><span class="drawer-item-icon">💹</span>Funding</button>
+      <button class="drawer-item"        data-page="flows"     onclick="navigate('flows')"><span class="drawer-item-icon">💰</span>Flows</button>
+      <button class="drawer-item"        data-page="monitor"   onclick="navigate('monitor')"><span class="drawer-item-icon">⚡</span>Live Monitor</button>
+      <div class="nav-drawer-section">Analysis</div>
+      <button class="drawer-item"        data-page="markets"   onclick="navigate('markets')"><span class="drawer-item-icon">🌊</span>Markets</button>
+      <button class="drawer-item"        data-page="phases"    onclick="navigate('phases')"><span class="drawer-item-icon">🔵</span>Phases</button>
+      <button class="drawer-item"        data-page="intel"     onclick="navigate('intel')"><span class="drawer-item-icon">📡</span>Intel</button>
+      <button class="drawer-item"        data-page="mvrv"      onclick="navigate('mvrv')"><span class="drawer-item-icon">📈</span>MVRV</button>
+      <button class="drawer-item"        data-page="ai"        onclick="navigate('ai')"><span class="drawer-item-icon">🤖</span>AI</button>
+      <div class="nav-drawer-section">Tools</div>
+      <button class="drawer-item"        data-page="watchlist"  onclick="navigate('watchlist')"><span class="drawer-item-icon">👛</span>Watchlist</button>
+      <button class="drawer-item"        data-page="journal"    onclick="navigate('journal')"><span class="drawer-item-icon">📓</span>Journal</button>
+      <button class="drawer-item"        data-page="indicators" onclick="navigate('indicators')"><span class="drawer-item-icon">📊</span>Indicators</button>
+      <button class="drawer-item"        data-page="smartmoney" onclick="navigate('smartmoney')"><span class="drawer-item-icon">🧠</span>Smart Money</button>
+      <button class="drawer-item"        data-page="analytics"  onclick="navigate('analytics')"><span class="drawer-item-icon">📊</span>Analytics</button>
+      <button class="drawer-item"        data-page="kb"         onclick="navigate('kb')"><span class="drawer-item-icon">📚</span>KB</button>
+    </div>
+  </nav>
+
+  <main class="main">
+    <div class="page active"  id="page-overview"><div id="overview-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
+    <div class="page"         id="page-trades"><div id="trades-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
+    <div class="page"         id="page-funding"><div id="funding-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
+    <div class="page"         id="page-flows"><div id="flows-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
+    <div class="page"         id="page-monitor"><div id="monitor-content"><div class="loading"><div class="spinner"></div> Connecting…</div></div></div>
+    <div class="page"         id="page-markets"><div id="markets-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
+    <div class="page"         id="page-phases"><div id="phases-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
+    <div class="page"         id="page-intel"><div id="intel-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
+    <div class="page"         id="page-mvrv"><div id="mvrv-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
+    <div class="page"         id="page-ai"><div id="ai-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
+    <div class="page"         id="page-watchlist"><div id="watchlist-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
+    <div class="page"         id="page-journal"><div id="journal-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
+    <div class="page"         id="page-indicators"><div id="indicators-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
+    <div class="page"         id="page-smartmoney"><div id="smartmoney-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
+    <div class="page"         id="page-analytics"><div id="analytics-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
+    <div class="page"         id="page-kb"><div id="kb-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
+  </main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="intel.js"></script>
+<script src="position-meta.js"></script>
+<script src="journal.js"></script>
+<script src="indicators.js"></script>
+<script src="nansen.js"></script>
+<script src="analytics.js"></script>
+<script src="logger.js"></script>
+<script src="app.js"></script>
+<script src="ta-signal.js"></script>
+<script src="mvrv-ai.js"></script>
+<script src="kb.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW:', err));
+  }
+
+  let _installPrompt = null;
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    _installPrompt = e;
+  });
+  window.addEventListener('appinstalled', () => {
+    document.getElementById('install-btn').style.display = 'none';
+    _installPrompt = null;
+  });
+  function installPWA() {
+    if (_installPrompt) {
+      _installPrompt.prompt();
+      _installPrompt.userChoice.then(() => { _installPrompt = null; });
+    } else if (isIOS) {
+      alert('To install: tap the Share button 📤 then "Add to Home Screen"');
+    } else {
+      alert('To install: open in Chrome or Edge and use the browser menu → "Install app"');
+    }
+  }
+</script>
+</body>
+</html>
