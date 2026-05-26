@@ -1243,11 +1243,34 @@ function marketFeaturedCard(d){
   </div>`;
 }
 
+function marketBias(fr, chgPct) {
+  let score = 0;
+  // Funding rate (primary signal — 8h rate from HL)
+  if      (fr >  0.001)   score += 3;  // >0.1%/8h — very crowded long
+  else if (fr >  0.0003)  score += 2;  // >0.03%/8h — elevated long
+  else if (fr >  0.00005) score += 1;  // >0.005%/8h — mild long
+  else if (fr < -0.001)   score -= 3;
+  else if (fr < -0.0003)  score -= 2;
+  else if (fr < -0.00005) score -= 1;
+  // Price momentum (secondary)
+  if      (chgPct >  5)  score += 2;
+  else if (chgPct >  2)  score += 1;
+  else if (chgPct < -5)  score -= 2;
+  else if (chgPct < -2)  score -= 1;
+  if (score >=  4) return '🔥 Strong Bull';
+  if (score >=  2) return '🟢 Bullish';
+  if (score >=  1) return '🔵 Mild Bull';
+  if (score <= -4) return '🔥 Strong Bear';
+  if (score <= -2) return '🔴 Bearish';
+  if (score <= -1) return '🟡 Mild Bear';
+  return '⚪ Neutral';
+}
+
 function marketRow(d,rank){
   const chg=d.change_pct;
   const fr=d.funding;
   const frClass=Math.abs(fr)<0.001?'funding-neu':fr>=0?'funding-pos':'funding-neg';
-  const bias=fr>0.005?'🟢 Longs':fr<-0.005?'🔴 Shorts':'⚪ Neutral';
+  const bias=marketBias(fr, chg);
   return `<tr>
     <td class="muted">${rank}</td>
     <td class="accent" style="font-weight:600">${d.coin}</td>
