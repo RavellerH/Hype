@@ -14,6 +14,7 @@ const _SKIP_SILENT = new Set(['phases','monitor','journal','analytics','kb','mvr
 let marketSortKey = 'volume';
 let allMarketData = [];
 let _recentPnlHours = 24;
+let _recentPnlOpen  = true;
 
 // ── WebSocket state ───────────────────────────────────────────────────────────
 let ws = null;
@@ -2321,19 +2322,32 @@ function _fillDirLabel(dir) {
   return { label:'—', cls:'muted' };
 }
 
+function toggleRecentPnL() {
+  _recentPnlOpen = !_recentPnlOpen;
+  const body    = document.getElementById('recent-pnl-body');
+  const chevron = document.getElementById('recent-pnl-chevron');
+  if (body)    body.style.display    = _recentPnlOpen ? '' : 'none';
+  if (chevron) chevron.textContent   = _recentPnlOpen ? '▼' : '▶';
+}
+
 function renderRecentPnLWidget(allFills) {
   const hrs    = _recentPnlHours;
   const cutoff = Date.now() - hrs * 3600000;
   const fills  = (allFills||[]).filter(f => f.time >= cutoff && !f.isSpot).slice(0, 100);
 
-  const timeBtns = `<div style="display:flex;gap:2px">
-    ${[24, 168].map(h=>`<button class="tab${_recentPnlHours===h?' active':''}" onclick="_recentPnlHours=${h};renderOverviewTab()" style="font-size:11px;padding:3px 10px">${h===24?'24h':'7d'}</button>`).join('')}
-  </div>`;
+  const chevron  = `<span id="recent-pnl-chevron" style="font-size:10px;color:var(--text-faint);margin-left:6px">${_recentPnlOpen?'▼':'▶'}</span>`;
+  const headerRow = `<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;cursor:pointer" onclick="toggleRecentPnL()">
+      <div class="card-title" style="margin:0;user-select:none">📊 Recent PnL${chevron}</div>
+      <div style="display:flex;gap:2px" onclick="event.stopPropagation()">
+        ${[24, 168].map(h=>`<button class="tab${_recentPnlHours===h?' active':''}" onclick="_recentPnlHours=${h};renderOverviewTab()" style="font-size:11px;padding:3px 10px">${h===24?'24h':'7d'}</button>`).join('')}
+      </div>
+    </div>`;
 
   if (!fills.length) return `<div class="card" style="margin-top:14px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <div class="card-title" style="margin:0">📊 Recent PnL</div>${timeBtns}</div>
-    <div class="muted" style="padding:16px 0;text-align:center;font-size:12px">No perp fills in the last ${hrs===24?'24h':'7 days'}</div>
+    ${headerRow}
+    <div id="recent-pnl-body" style="${_recentPnlOpen?'':'display:none'}">
+      <div class="muted" style="padding:16px 0;text-align:center;font-size:12px">No perp fills in the last ${hrs===24?'24h':'7 days'}</div>
+    </div>
   </div>`;
 
   const closingFills = fills.filter(f => f.closed_pnl !== 0);
@@ -2361,50 +2375,48 @@ function renderRecentPnLWidget(allFills) {
   const coinRows = Object.values(byCoin).sort((a,b)=>Math.abs(b.pnl)-Math.abs(a.pnl));
 
   return `<div class="card" style="margin-top:14px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-      <div class="card-title" style="margin:0">📊 Recent PnL
-        ${liqCount>0?`<span style="margin-left:6px;font-size:10px;background:rgba(248,113,113,0.15);color:var(--red);padding:2px 7px;border-radius:100px;font-weight:700">⚡ ${liqCount} LIQ</span>`:''}
+    ${headerRow}
+    <div id="recent-pnl-body" style="margin-top:12px;${_recentPnlOpen?'':'display:none'}">
+      ${liqCount>0?`<div style="margin-bottom:10px"><span style="font-size:10px;background:rgba(248,113,113,0.15);color:var(--red);padding:2px 7px;border-radius:100px;font-weight:700">⚡ ${liqCount} LIQ detected</span></div>`:''}
+      <div style="display:flex;gap:20px;flex-wrap:wrap;padding:10px 0 14px;border-bottom:1px solid var(--border);margin-bottom:14px">
+        <div><div class="stat-label">Realized PnL</div><div class="mono ${totalPnl>=0?'pos':'neg'}" style="font-size:15px;font-weight:700">${totalPnl>=0?'+':''}${fmt$(totalPnl)}</div></div>
+        <div><div class="stat-label">Fees</div><div class="mono neg" style="font-size:15px;font-weight:700">−${fmt$(totalFees)}</div></div>
+        <div style="border-left:1px solid var(--border);padding-left:20px"><div class="stat-label">Net PnL</div><div class="mono ${netPnl>=0?'pos':'neg'}" style="font-size:15px;font-weight:700">${netPnl>=0?'+':''}${fmt$(netPnl)}</div></div>
+        <div><div class="stat-label">Win Rate</div><div class="mono" style="font-size:15px;font-weight:700">${winRate}</div><div class="muted" style="font-size:10px">${wins}W / ${losses}L</div></div>
+        <div><div class="stat-label">Fills</div><div class="mono" style="font-size:15px;font-weight:700">${fills.length}</div></div>
       </div>
-      ${timeBtns}
+      <div class="table-wrap" style="margin-bottom:14px">
+        <table class="mobile-cards">
+          <thead><tr><th>Time</th><th>Coin</th><th>Type</th><th>Dir</th><th>Price</th><th>Size</th><th>PnL</th><th>Fee</th></tr></thead>
+          <tbody>${fills.map(f=>{
+            const m = _fillMeta(f.dir);
+            const dv= _fillDirLabel(f.dir);
+            return `<tr>
+              <td data-label="Time" class="muted" style="font-size:11px;white-space:nowrap">${fmtAge(f.time)}</td>
+              <td data-label="Coin" class="accent" style="font-weight:600">${f.coin}</td>
+              <td data-label="Type"><span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:100px;background:${m.bg};color:${m.color};letter-spacing:.03em">${m.label}</span></td>
+              <td data-label="Dir"><span class="side-badge ${dv.cls}" style="font-size:10px">${dv.label}</span></td>
+              <td data-label="Price" class="mono">${fmtPrice(f.price)}</td>
+              <td data-label="Size" class="mono">${f.size}</td>
+              <td data-label="PnL" class="${f.closed_pnl>0?'pos':f.closed_pnl<0?'neg':'muted'} mono">${f.closed_pnl!==0?fmt$(f.closed_pnl):'—'}</td>
+              <td data-label="Fee" class="neg mono">${f.fee>0?'−'+fmt$(f.fee):'—'}</td>
+            </tr>`;
+          }).join('')}</tbody>
+        </table>
+      </div>
+      ${coinRows.length>1?`
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);margin-bottom:6px">By Coin</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Coin</th><th>Trades</th><th>PnL</th><th>Fees</th><th>Net</th></tr></thead>
+        <tbody>${coinRows.map(r=>`<tr>
+          <td class="accent" style="font-weight:600">${r.coin}</td>
+          <td class="muted">${r.count}</td>
+          <td class="${r.pnl>=0?'pos':'neg'} mono">${r.pnl!==0?fmt$(r.pnl):'—'}</td>
+          <td class="neg mono">−${fmt$(r.fees)}</td>
+          <td class="${r.pnl-r.fees>=0?'pos':'neg'} mono">${fmt$(r.pnl-r.fees)}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>`:''}
     </div>
-    <div style="display:flex;gap:20px;flex-wrap:wrap;padding:10px 0 14px;border-bottom:1px solid var(--border);margin-bottom:14px">
-      <div><div class="stat-label">Realized PnL</div><div class="mono ${totalPnl>=0?'pos':'neg'}" style="font-size:15px;font-weight:700">${totalPnl>=0?'+':''}${fmt$(totalPnl)}</div></div>
-      <div><div class="stat-label">Fees</div><div class="mono neg" style="font-size:15px;font-weight:700">−${fmt$(totalFees)}</div></div>
-      <div style="border-left:1px solid var(--border);padding-left:20px"><div class="stat-label">Net PnL</div><div class="mono ${netPnl>=0?'pos':'neg'}" style="font-size:15px;font-weight:700">${netPnl>=0?'+':''}${fmt$(netPnl)}</div></div>
-      <div><div class="stat-label">Win Rate</div><div class="mono" style="font-size:15px;font-weight:700">${winRate}</div><div class="muted" style="font-size:10px">${wins}W / ${losses}L</div></div>
-      <div><div class="stat-label">Fills</div><div class="mono" style="font-size:15px;font-weight:700">${fills.length}</div></div>
-    </div>
-    <div class="table-wrap" style="margin-bottom:14px">
-      <table class="mobile-cards">
-        <thead><tr><th>Time</th><th>Coin</th><th>Type</th><th>Dir</th><th>Price</th><th>Size</th><th>PnL</th><th>Fee</th></tr></thead>
-        <tbody>${fills.map(f=>{
-          const m = _fillMeta(f.dir);
-          const dv= _fillDirLabel(f.dir);
-          return `<tr>
-            <td data-label="Time" class="muted" style="font-size:11px;white-space:nowrap">${fmtAge(f.time)}</td>
-            <td data-label="Coin" class="accent" style="font-weight:600">${f.coin}</td>
-            <td data-label="Type"><span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:100px;background:${m.bg};color:${m.color};letter-spacing:.03em">${m.label}</span></td>
-            <td data-label="Dir"><span class="side-badge ${dv.cls}" style="font-size:10px">${dv.label}</span></td>
-            <td data-label="Price" class="mono">${fmtPrice(f.price)}</td>
-            <td data-label="Size" class="mono">${f.size}</td>
-            <td data-label="PnL" class="${f.closed_pnl>0?'pos':f.closed_pnl<0?'neg':'muted'} mono">${f.closed_pnl!==0?fmt$(f.closed_pnl):'—'}</td>
-            <td data-label="Fee" class="neg mono">${f.fee>0?'−'+fmt$(f.fee):'—'}</td>
-          </tr>`;
-        }).join('')}</tbody>
-      </table>
-    </div>
-    ${coinRows.length>1?`
-    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);margin-bottom:6px">By Coin</div>
-    <div class="table-wrap"><table>
-      <thead><tr><th>Coin</th><th>Trades</th><th>PnL</th><th>Fees</th><th>Net</th></tr></thead>
-      <tbody>${coinRows.map(r=>`<tr>
-        <td class="accent" style="font-weight:600">${r.coin}</td>
-        <td class="muted">${r.count}</td>
-        <td class="${r.pnl>=0?'pos':'neg'} mono">${r.pnl!==0?fmt$(r.pnl):'—'}</td>
-        <td class="neg mono">−${fmt$(r.fees)}</td>
-        <td class="${r.pnl-r.fees>=0?'pos':'neg'} mono">${fmt$(r.pnl-r.fees)}</td>
-      </tr>`).join('')}</tbody>
-    </table></div>`:''}
   </div>`;
 }
 
