@@ -2531,48 +2531,65 @@ function renderOrderScenarios(positions, orders) {
   const posMap = {};
   (positions || []).forEach(p => { posMap[p.coin] = p; });
 
-  // Build scenario rows for orders that close/reduce an existing position
   const rows = [];
   orders.forEach(o => {
     const pos = posMap[o.coin];
-    if (!pos) return; // no position → opening order, skip scenario
+    if (!pos) return;
 
     const orderSide = o.side === 'B' ? 'buy' : 'sell';
     const isReduce = (pos.side === 'long' && orderSide === 'sell') ||
                      (pos.side === 'short' && orderSide === 'buy');
-    if (!isReduce) return; // scale-in order, not a close
+    if (!isReduce) return;
 
-    // Use triggerPx if limitPx is absent (stop-market orders)
     const execPx = parseFloat(o.limitPx || o.triggerPx || 0);
     if (!execPx) return;
 
-    const sz      = parseFloat(o.sz || 0);
-    const entry   = pos.entry_price;
-    const rawPnl  = pos.side === 'long'
+    const sz     = parseFloat(o.sz || 0);
+    const entry  = pos.entry_price;
+
+    // Dollar PnL = price-diff × contracts (correct regardless of leverage)
+    const rawPnl = pos.side === 'long'
       ? (execPx - entry) * sz
       : (entry - execPx) * sz;
-    const fee     = sz * execPx * HL_TAKER_FEE;
-    const netPnl  = rawPnl - fee;
-    const pctPos  = pos.size > 0 ? (sz / pos.size * 100) : 0;
+    const fee    = sz * execPx * HL_TAKER_FEE;
+    const netPnl = rawPnl - fee;
 
-    // Auto-label: TP if profitable direction, SL if loss direction
+    // % of this position's margin that this order outcome represents
+    // margin_used covers the full position; scale by sz/pos.size for partial closes
+    const marginSlice = pos.margin_used > 0
+      ? pos.margin_used * (sz / pos.size)
+      : 0;
+    const pctMargin = marginSlice > 0 ? (netPnl / marginSlice * 100) : null;
+
+    const pctPos = pos.size > 0 ? (sz / pos.size * 100) : 0;
+
+    // Auto-label TP / SL
     let typeLabel, typeCls;
-    if (rawPnl > 0) { typeLabel = 'TP'; typeCls = 'tp'; }
-    else if (rawPnl < 0) { typeLabel = 'SL'; typeCls = 'sl'; }
-    else { typeLabel = 'FLAT'; typeCls = 'flat'; }
+    if (rawPnl > 0)      { typeLabel = 'TP';   typeCls = 'tp'; }
+    else if (rawPnl < 0) { typeLabel = 'SL';   typeCls = 'sl'; }
+    else                 { typeLabel = 'FLAT';  typeCls = 'flat'; }
 
-    rows.push({ coin: o.coin, pos, typeLabel, typeCls, orderSide, execPx, sz, pctPos, rawPnl, fee, netPnl });
+    // Liquidation check: will liq fire before this SL can fill?
+    let liqFirst = false;
+    const liq = pos.liquidation_price;
+    if (liq > 0 && typeLabel === 'SL') {
+      liqFirst = (pos.side === 'long'  && liq >= execPx) ||
+                 (pos.side === 'short' && liq <= execPx);
+    }
+
+    rows.push({ coin: o.coin, pos, typeLabel, typeCls, orderSide,
+                execPx, sz, pctPos, rawPnl, fee, netPnl, pctMargin, liqFirst });
   });
 
   if (!rows.length) return '';
 
-  // Totals
-  const tpRows = rows.filter(r => r.typeLabel === 'TP');
-  const slRows = rows.filter(r => r.typeLabel === 'SL');
+  const tpRows   = rows.filter(r => r.typeLabel === 'TP');
+  const slRows   = rows.filter(r => r.typeLabel === 'SL');
   const bestNet  = tpRows.reduce((a, r) => a + r.netPnl, 0);
   const worstNet = slRows.reduce((a, r) => a + r.netPnl, 0);
+  const liqFirstCount = rows.filter(r => r.liqFirst).length;
 
-  // Group by coin to find R:R pairs
+  // R:R by coin
   const byGroup = {};
   rows.forEach(r => {
     if (!byGroup[r.coin]) byGroup[r.coin] = { tp: null, sl: null };
@@ -2580,47 +2597,68 @@ function renderOrderScenarios(positions, orders) {
     else if (r.typeLabel === 'SL') byGroup[r.coin].sl = r;
   });
 
+  const typeColor = { tp: 'var(--green)', sl: 'var(--red)', flat: 'var(--text-muted)' };
+  const typeBg    = { tp: 'rgba(74,222,128,0.15)', sl: 'rgba(248,113,113,0.15)', flat: 'rgba(100,100,100,0.15)' };
+  const rowBg     = { tp: 'rgba(74,222,128,0.03)', sl: 'rgba(248,113,113,0.03)', flat: '' };
+
   const tableRows = rows.map(r => {
     const pnlCls = r.netPnl >= 0 ? 'pos' : 'neg';
     const pnlStr = (r.netPnl >= 0 ? '+' : '') + fmt$(r.netPnl);
-    const rawStr = (r.rawPnl >= 0 ? '+' : '') + fmt$(r.rawPnl);
 
-    // R:R badge if this coin has both a TP and SL
-    const g = byGroup[r.coin];
-    let rrBadge = '';
-    if (g.tp && g.sl) {
-      const rr = Math.abs(g.tp.netPnl / g.sl.netPnl);
-      const rrCls = rr >= 1.5 ? 'pos' : rr >= 1 ? 'yellow' : 'neg';
-      rrBadge = `<span class="mono ${rrCls}" style="font-size:10px;margin-left:4px" title="Risk:Reward">R:R ${rr.toFixed(2)}</span>`;
+    const pctMStr = r.pctMargin !== null
+      ? `<span class="mono ${r.pctMargin >= 0 ? 'pos' : 'neg'}" style="font-size:11px">${r.pctMargin >= 0 ? '+' : ''}${r.pctMargin.toFixed(0)}%</span>`
+      : '<span class="muted">—</span>';
+
+    // Note cell: liq warning OR R:R badge
+    let note = '';
+    if (r.liqFirst) {
+      note = `<span style="font-size:10px;color:var(--red);font-weight:700" title="Liquidation at ${fmtPrice(r.pos.liquidation_price)} fires before this SL">⚠ Liq ${fmtPrice(r.pos.liquidation_price)}</span>`;
+    } else {
+      const g = byGroup[r.coin];
+      if (g.tp && g.sl) {
+        const rr = Math.abs(g.tp.netPnl / g.sl.netPnl);
+        const rrCls = rr >= 2 ? 'pos' : rr >= 1 ? 'yellow' : 'neg';
+        note = `<span class="mono ${rrCls}" style="font-size:10px">R:R ${rr.toFixed(1)}</span>`;
+      }
     }
 
-    return `<tr style="background:${r.typeCls==='tp'?'rgba(74,222,128,0.04)':r.typeCls==='sl'?'rgba(248,113,113,0.04)':''}">
-      <td class="accent" style="font-weight:600">${r.coin}</td>
-      <td><span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:100px;background:${r.typeCls==='tp'?'rgba(74,222,128,0.15)':r.typeCls==='sl'?'rgba(248,113,113,0.15)':'rgba(100,100,100,0.15)'};color:${r.typeCls==='tp'?'var(--green)':r.typeCls==='sl'?'var(--red)':'var(--text-muted)'}">${r.typeLabel}</span>${rrBadge}</td>
-      <td><span class="side-badge ${r.pos.side}">${r.pos.side.toUpperCase()}</span></td>
-      <td class="mono">${fmtPrice(r.execPx)}</td>
-      <td class="mono">${r.sz}</td>
-      <td class="muted" style="font-size:11px">${r.pctPos.toFixed(0)}%</td>
-      <td class="mono muted" style="font-size:11px">−${fmt$(r.fee)}</td>
-      <td class="mono ${pnlCls}" style="font-weight:700">${pnlStr}</td>
+    return `<tr style="background:${rowBg[r.typeCls]}">
+      <td data-label="Coin" class="accent" style="font-weight:600">${r.coin}
+        <span style="font-size:10px;color:var(--text-faint);margin-left:4px">${r.pos.leverage_value}x</span></td>
+      <td data-label="Type"><span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:100px;background:${typeBg[r.typeCls]};color:${typeColor[r.typeCls]}">${r.typeLabel}</span></td>
+      <td data-label="Dir"><span class="side-badge ${r.pos.side}" style="font-size:10px">${r.pos.side.toUpperCase()}</span></td>
+      <td data-label="Exec Px" class="mono">${fmtPrice(r.execPx)}</td>
+      <td data-label="% Pos" class="muted" style="font-size:11px">${r.pctPos.toFixed(0)}%</td>
+      <td data-label="Net PnL" class="mono ${pnlCls}" style="font-weight:700">${pnlStr}</td>
+      <td data-label="% Margin">${pctMStr}</td>
+      <td data-label="Note" style="font-size:11px">${note}</td>
     </tr>`;
   }).join('');
 
-  const summaryLine = (tpRows.length || slRows.length) ? `
+  const liqWarningBanner = liqFirstCount > 0
+    ? `<div style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.3);border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:12px;font-size:12px;color:var(--red)">
+        ⚠ <strong>${liqFirstCount} SL order${liqFirstCount>1?'s':''} unreachable</strong> — liquidation price fires first. Your account will be liquidated before the stop fills.
+       </div>` : '';
+
+  const summaryLine = `
     <div style="display:flex;gap:20px;flex-wrap:wrap;padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">
-      ${tpRows.length ? `<div><div class="stat-label">Best case (${tpRows.length} TP${tpRows.length>1?'s':''})</div><div class="mono pos" style="font-weight:700">${bestNet>=0?'+':''}${fmt$(bestNet)}</div></div>` : ''}
+      ${tpRows.length ? `<div><div class="stat-label">Best case (${tpRows.length} TP${tpRows.length>1?'s':''})</div><div class="mono pos" style="font-weight:700">+${fmt$(bestNet)}</div></div>` : ''}
       ${slRows.length ? `<div><div class="stat-label">Worst case (${slRows.length} SL${slRows.length>1?'s':''})</div><div class="mono neg" style="font-weight:700">${fmt$(worstNet)}</div></div>` : ''}
-      ${tpRows.length && slRows.length ? `<div style="border-left:1px solid var(--border);padding-left:20px"><div class="stat-label">Net if all hit</div><div class="mono ${bestNet+worstNet>=0?'pos':'neg'}" style="font-weight:700">${bestNet+worstNet>=0?'+':''}${fmt$(bestNet+worstNet)}</div></div>` : ''}
-    </div>` : '';
+      ${tpRows.length && slRows.length ? `<div style="border-left:1px solid var(--border);padding-left:20px">
+        <div class="stat-label">Net if all hit</div>
+        <div class="mono ${bestNet+worstNet>=0?'pos':'neg'}" style="font-weight:700">${bestNet+worstNet>=0?'+':''}${fmt$(bestNet+worstNet)}</div>
+      </div>` : ''}
+    </div>`;
 
   return `<div class="card" style="margin-top:14px">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
       <div class="card-title" style="margin:0">🎯 Order Scenarios</div>
-      <span class="muted" style="font-size:11px">what happens if orders hit · est. 0.035% taker fee</span>
+      <span class="muted" style="font-size:11px">if orders hit · dollar PnL = Δprice × contracts · 0.035% taker fee</span>
     </div>
+    ${liqWarningBanner}
     <div class="table-wrap">
       <table class="mobile-cards">
-        <thead><tr><th>Coin</th><th>Type</th><th>Position</th><th>Exec Price</th><th>Size</th><th>% Pos</th><th>Fee</th><th>Net PnL</th></tr></thead>
+        <thead><tr><th>Coin</th><th>Type</th><th>Dir</th><th>Exec Price</th><th>% Pos</th><th>Net PnL</th><th>% Margin</th><th>Note</th></tr></thead>
         <tbody>${tableRows}</tbody>
       </table>
     </div>
