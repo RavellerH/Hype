@@ -1,4 +1,4 @@
-const CACHE = 'hype-v7';
+const CACHE = 'hype-v8';
 const STATIC = [
   './',
   './styles.css',
@@ -11,6 +11,8 @@ const STATIC = [
   './logger.js',
   './nansen.js',
   './mvrv-ai.js',
+  './kb.js',
+  './docs.html',
   './icons/icon.svg',
   './manifest.json',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap',
