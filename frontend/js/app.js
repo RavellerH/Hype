@@ -1271,7 +1271,7 @@ function marketRow(d,rank){
   const fr=d.funding;
   const frClass=Math.abs(fr)<0.001?'funding-neu':fr>=0?'funding-pos':'funding-neg';
   const bias=marketBias(fr, chg);
-  return `<tr>
+  return `<tr class="mkt-row-click" onclick="openMarketDetail('${d.coin}')">
     <td class="muted">${rank}</td>
     <td class="accent" style="font-weight:600">${d.coin}</td>
     <td>${fmtPrice(d.price)}</td>
@@ -1281,6 +1281,203 @@ function marketRow(d,rank){
     <td><span class="funding-pill ${frClass}">${(fr*100).toFixed(4)}%</span></td>
     <td style="font-size:11px">${bias}</td>
   </tr>`;
+}
+
+// ── Market Detail Modal ───────────────────────────────────────────────────────
+function closeMktDetail() {
+  document.getElementById('mkt-detail-overlay').classList.remove('open');
+}
+
+async function openMarketDetail(coin) {
+  const overlay = document.getElementById('mkt-detail-overlay');
+  const inner   = document.getElementById('mkt-detail-inner');
+  const d = allMarketData.find(x => x.coin === coin);
+  if (!d) return;
+
+  const chgCls = d.change_pct >= 0 ? 'pos' : 'neg';
+  const chgStr = (d.change_pct >= 0 ? '+' : '') + d.change_pct.toFixed(2) + '%';
+
+  inner.innerHTML = `
+    <div class="mkt-modal-head">
+      <div style="display:flex;align-items:baseline;flex-wrap:wrap;gap:4px">
+        <span class="mkt-modal-coin">${coin}</span>
+        <span class="mkt-modal-price">${fmtPrice(d.price)}</span>
+        <span class="mkt-modal-chg ${chgCls}">${chgStr}</span>
+      </div>
+      <button class="mkt-close" onclick="closeMktDetail()">✕</button>
+    </div>
+    <div class="mkt-modal-body" style="text-align:center;padding:40px 20px">${spinnerHtml()} Analyzing ${coin}…</div>`;
+  overlay.classList.add('open');
+
+  const [candlesRes, lsrRes, oiRes] = await Promise.allSettled([
+    getCandles(coin, '1h', 7),
+    typeof fetchBinanceLSR === 'function' ? fetchBinanceLSR(coin) : Promise.resolve(null),
+    typeof fetchBinanceOI  === 'function' ? fetchBinanceOI(coin, '1h', 48) : Promise.resolve(null),
+  ]);
+
+  const candles = candlesRes.status === 'fulfilled' ? candlesRes.value : null;
+  const lsr     = lsrRes.status    === 'fulfilled' ? lsrRes.value    : null;
+  const oiHist  = oiRes.status     === 'fulfilled' ? oiRes.value     : null;
+
+  inner.innerHTML = `
+    <div class="mkt-modal-head">
+      <div style="display:flex;align-items:baseline;flex-wrap:wrap;gap:4px">
+        <span class="mkt-modal-coin">${coin}</span>
+        <span class="mkt-modal-price">${fmtPrice(d.price)}</span>
+        <span class="mkt-modal-chg ${chgCls}">${chgStr}</span>
+        <span style="margin-left:6px;font-size:12px">${marketBias(d.funding, d.change_pct)}</span>
+      </div>
+      <button class="mkt-close" onclick="closeMktDetail()">✕</button>
+    </div>
+    <div class="mkt-modal-body">
+      ${_mktStats(d)}
+      ${_mktPhase(candles)}
+      ${_mktTA(candles, d)}
+      ${_mktLSR(lsr)}
+      ${_mktOI(oiHist, d)}
+    </div>`;
+}
+
+function _mktStats(d) {
+  const apr = (d.funding * 3 * 365 * 100).toFixed(1);
+  const frSign = d.funding >= 0 ? '+' : '';
+  return `<div class="mkt-stats-grid">
+    <div class="mkt-stat"><div class="mkt-stat-label">OI (USD)</div><div class="mkt-stat-val">${fmtB(d.oi_usd)}</div></div>
+    <div class="mkt-stat"><div class="mkt-stat-label">24h Volume</div><div class="mkt-stat-val">${fmtB(d.volume)}</div></div>
+    <div class="mkt-stat"><div class="mkt-stat-label">Funding /8h</div><div class="mkt-stat-val ${d.funding>=0?'pos':'neg'}">${frSign}${(d.funding*100).toFixed(4)}%</div></div>
+    <div class="mkt-stat"><div class="mkt-stat-label">Funding APR</div><div class="mkt-stat-val ${d.funding>=0?'pos':'neg'}">${frSign}${apr}%</div></div>
+    <div class="mkt-stat"><div class="mkt-stat-label">Mark Price</div><div class="mkt-stat-val">${fmtPrice(d.price)}</div></div>
+    <div class="mkt-stat"><div class="mkt-stat-label">Prev Close</div><div class="mkt-stat-val muted">${fmtPrice(d.prev_price)}</div></div>
+  </div>`;
+}
+
+function _mktPhase(candles) {
+  if (!candles || candles.length < 20) return `<div class="mkt-section">
+    <div class="mkt-section-title">Phase Analysis (Wyckoff)</div>
+    <div class="mkt-phase-box"><span class="muted" style="font-size:12px">Not enough candle data</span></div>
+  </div>`;
+
+  const p = detectPhase(candles);
+  const confPct = Math.round(p.confidence * 100);
+  const phaseColors = {ACCUMULATION:'#38bdf8',MARKUP:'#4ade80',DISTRIBUTION:'#facc15',MARKDOWN:'#f87171',NEUTRAL:'#666'};
+  const col = phaseColors[p.phase] || '#666';
+  return `<div class="mkt-section">
+    <div class="mkt-section-title">Phase Analysis (Wyckoff · 1h · 7d)</div>
+    <div class="mkt-phase-box">
+      <div class="mkt-phase-row">
+        <span class="phase-badge phase-${p.phase}" style="font-size:12px;padding:3px 10px">${p.phase}</span>
+        <span class="muted" style="font-size:11px">Confidence: <span class="mono" style="color:${col}">${confPct}%</span></span>
+      </div>
+      <div class="mkt-conf-bar"><div class="mkt-conf-fill" style="width:${confPct}%;background:${col}"></div></div>
+      <div class="mkt-signals-list">${p.signals.slice(0,6).map(s=>`<div class="mkt-signal-item">${s}</div>`).join('')}</div>
+    </div>
+  </div>`;
+}
+
+function _mktTA(candles, d) {
+  if (!candles || candles.length < 20) return `<div class="mkt-section">
+    <div class="mkt-section-title">Technical Analysis</div>
+    <div class="muted" style="font-size:12px">Not enough candle data</div>
+  </div>`;
+
+  const closes  = candles.map(c => parseFloat(c.c));
+  const highs   = candles.map(c => parseFloat(c.h));
+  const lows    = candles.map(c => parseFloat(c.l));
+  const ema20   = iEMA(closes, 20);
+  const ema50   = closes.length >= 50 ? iEMA(closes, 50) : null;
+  const ema200  = closes.length >= 200 ? iEMA(closes, 200) : null;
+  const {macd, hist} = iMACD(closes);
+  const rsiArr  = iRSI(closes);
+  const bbArr   = iBB(closes);
+  const stoch   = iStoch(highs, lows, closes);
+  const atrArr  = iATR(highs, lows, closes);
+
+  const price   = closes.at(-1);
+  const e20     = ema20.at(-1);
+  const e50     = ema50 ? ema50.at(-1) : null;
+  const e200    = ema200 ? ema200.at(-1) : null;
+  const rsiVal  = rsiArr.filter(v => v !== null).at(-1) || 50;
+  const bbLast  = bbArr.filter(v => v !== null).at(-1);
+  const stochK  = stoch.k.filter(v => v !== null).at(-1) || 50;
+  const stochD  = stoch.d.filter(v => v !== null).at(-1) || 50;
+  const atrLast = atrArr.filter(v => v !== null).at(-1) || 0;
+
+  const rows = [
+    ['EMA',     sigEMA(price, e20, e50, e200)],
+    ['RSI',     sigRSI(rsiVal)],
+    ['MACD',    sigMACD(hist, macd)],
+    ...(bbLast ? [['BB',  sigBB(bbLast)]] : []),
+    ['Stoch',   sigStoch(stochK, stochD)],
+    ['ATR',     sigATR(atrLast, price)],
+    ['Funding', sigFunding(d.funding)],
+  ];
+
+  return `<div class="mkt-section">
+    <div class="mkt-section-title">Technical Signals (1h · 7d)</div>
+    <div style="background:var(--surface2);border-radius:var(--radius);padding:6px 12px">
+      ${rows.map(([name, s]) => `<div class="mkt-sig-row ta-${s.cls}">
+        <span class="mkt-sig-name">${name}</span>
+        <span class="ta-sig-badge">${s.label}</span>
+        <span class="mkt-sig-sub">${s.sub}</span>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function _mktLSR(lsr) {
+  if (!lsr) return `<div class="mkt-section">
+    <div class="mkt-section-title">Long / Short Ratio (Binance)</div>
+    <div class="muted" style="font-size:12px">Not available for this coin</div>
+  </div>`;
+
+  const longPct  = lsr.longPct.toFixed(1);
+  const shortPct = lsr.shortPct.toFixed(1);
+  const bias     = lsr.longPct > 55 ? '🟢 Long dominant' : lsr.longPct < 45 ? '🔴 Short dominant' : '⚪ Balanced';
+  return `<div class="mkt-section">
+    <div class="mkt-section-title">Long / Short Ratio (Binance Global Accounts)</div>
+    <div style="background:var(--surface2);border-radius:var(--radius);padding:10px 14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:13px">${bias}</span>
+        <span class="mono" style="font-size:11px;color:var(--text-faint)">Ratio ${lsr.ratio.toFixed(2)}</span>
+      </div>
+      <div class="mkt-lsr-bar">
+        <div class="mkt-lsr-long" style="width:${lsr.longPct}%"></div>
+        <div class="mkt-lsr-short" style="width:${lsr.shortPct}%"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:5px;font-size:11px">
+        <span class="pos mono">Longs ${longPct}%</span>
+        <span class="neg mono">Shorts ${shortPct}%</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+function _mktOI(oiHist, d) {
+  if (!oiHist || !oiHist.length) return `<div class="mkt-section">
+    <div class="mkt-section-title">Open Interest History (Binance)</div>
+    <div class="muted" style="font-size:12px">Not available for this coin</div>
+  </div>`;
+
+  const vals    = oiHist.map(x => x.oi);
+  const first   = vals[0], last = vals.at(-1);
+  const oiChg   = first > 0 ? ((last - first) / first * 100) : 0;
+  const oiChgCls= oiChg >= 0 ? 'pos' : 'neg';
+  const stroke  = oiChg >= 0 ? 'var(--green)' : 'var(--red)';
+  const fill    = oiChg >= 0 ? 'rgba(74,222,128,0.15)' : 'rgba(248,113,113,0.15)';
+  const spark   = typeof _svgSparkline === 'function'
+    ? _svgSparkline(vals, stroke, fill, 600, 50)
+    : '';
+
+  return `<div class="mkt-section">
+    <div class="mkt-section-title">Open Interest History — last 48h (Binance · 1h)</div>
+    <div class="mkt-oi-wrap">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span class="muted" style="font-size:11px">OI now: <span class="mono">${fmtB(last)}</span></span>
+        <span class="mono ${oiChgCls}" style="font-size:12px">${oiChg >= 0 ? '+' : ''}${oiChg.toFixed(1)}% over 48h</span>
+      </div>
+      ${spark}
+    </div>
+  </div>`;
 }
 
 function flowSummaryBar(data){
@@ -2525,6 +2722,9 @@ document.addEventListener('visibilitychange',()=>{
   if(!document.hidden&&Date.now()-_lastRefreshTs>60000) _doSilentRefresh();
 });
 
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeMktDetail();
+});
 document.addEventListener('DOMContentLoaded',()=>{
   const wl=getWatchlist();
   if(!wl.find(w=>w.address===DEFAULT_WALLET.toLowerCase())){
