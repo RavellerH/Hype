@@ -13,6 +13,7 @@ let _lastRefreshTs = 0;
 const _SKIP_SILENT = new Set(['phases','monitor','journal','analytics','kb','mvrv','ai']);
 let marketSortKey = 'volume';
 let allMarketData = [];
+let _recentPnlHours = 24;
 
 // ── WebSocket state ───────────────────────────────────────────────────────────
 let ws = null;
@@ -293,7 +294,7 @@ function parseAccountSummary(state) {
     total_ntl_pos:parseFloat(m.totalNtlPos||0), withdrawable:parseFloat(state.withdrawable||0), isUnified };
 }
 function parseFills(fills) {
-  return (fills||[]).map(f=>({time:f.time,coin:f.coin,side:f.side,price:parseFloat(f.px||0),size:parseFloat(f.sz||0),fee:parseFloat(f.fee||0),closed_pnl:parseFloat(f.closedPnl||0)})).sort((a,b)=>b.time-a.time);
+  return (fills||[]).map(f=>({time:f.time,coin:f.coin,side:f.side,dir:f.dir||'',price:parseFloat(f.px||0),size:parseFloat(f.sz||0),fee:parseFloat(f.fee||0),closed_pnl:parseFloat(f.closedPnl||0)})).sort((a,b)=>b.time-a.time);
 }
 function parseFunding(funding) {
   return (funding||[]).map(f=>({time:f.time,coin:(f.delta||{}).coin,funding_rate:parseFloat((f.delta||{}).fundingRate||0),usdc:parseFloat((f.delta||{}).usdc||0)})).sort((a,b)=>b.time-a.time);
@@ -616,7 +617,8 @@ function renderOverviewTab() {
         <div class="stat-card"><div class="stat-label">Perp Margin Used</div><div class="stat-value">${fmt$(s.total_margin_used)}</div><div class="stat-sub">${s.account_value>0?((s.total_margin_used/s.account_value)*100).toFixed(1):0}% of perp acct</div></div>
         <div class="stat-card"><div class="stat-label">Withdrawable</div><div class="stat-value">${fmt$(s.withdrawable)}</div><div class="stat-sub">USDC spot ${fmt$(usdcBalance)}</div></div>
       </div>
-      <div class="card">
+      ${renderRecentPnLWidget(_ovData.recentFills||[])}
+      <div class="card" style="margin-top:14px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px">
           <div class="card-title" style="margin:0">📈 Portfolio Growth — 7 Days</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
@@ -779,11 +781,12 @@ async function loadOverview(){
   _spotEnriched = false;
   try{
     setStatus(true);
-    const [state, orders, spotStateRaw, spotMetaRaw, perpMetaRaw] = await Promise.all([
+    const [state, orders, spotStateRaw, spotMetaRaw, perpMetaRaw, rawFillsOv] = await Promise.all([
       getClearinghouseState(currentWallet), getOpenOrders(currentWallet),
       getSpotState(currentWallet).catch(()=>null),
       getSpotMeta().catch(()=>null),
-      getMetaAndAssetCtxs().catch(()=>null)
+      getMetaAndAssetCtxs().catch(()=>null),
+      getUserFills(currentWallet).catch(()=>null),
     ]);
     checkOrderFills(orders);
     const s = parseAccountSummary(state), positions = parsePositions(state);
@@ -812,7 +815,9 @@ async function loadOverview(){
       ? spotTotalValue + perpUnrPnl
       : s.account_value + spotTotalValue;
 
-    _ovData = {s, positions, spotBals, usdcBalance, orders, totalPortfolio, spotTotalValue, spotUnrPnl, totalUnr, marketCtx, spotMetaRaw};
+    const spotIndexMapOv = buildSpotIndexMap(spotMetaRaw);
+    const recentFills = rawFillsOv ? tagFills(parseFills(rawFillsOv), spotIndexMapOv) : [];
+    _ovData = {s, positions, spotBals, usdcBalance, orders, totalPortfolio, spotTotalValue, spotUnrPnl, totalUnr, marketCtx, spotMetaRaw, recentFills};
     window._rawMeta = perpMetaRaw;
     if(typeof fetchIndicators==='function')fetchIndicators().catch(()=>{});
     enrichSpotCostBasis().catch(()=>{});
@@ -2295,6 +2300,114 @@ function fmt$(n){
   if(abs>=1e3) return sign+'$'+abs.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
   return sign+'$'+abs.toFixed(2);
 }
+function fmtAge(ms) {
+  const s = Math.floor((Date.now() - ms) / 1000);
+  if (s < 60)   return s + 's ago';
+  if (s < 3600) return Math.floor(s/60) + 'm ago';
+  if (s < 86400)return Math.floor(s/3600) + 'h ago';
+  return Math.floor(s/86400) + 'd ago';
+}
+
+function _fillMeta(dir) {
+  const d = (dir||'').toLowerCase();
+  if (d.includes('liq'))   return { label:'LIQ',   bg:'rgba(248,113,113,0.15)', color:'var(--red)',      dirCls:'neg'  };
+  if (d.startsWith('open'))return { label:'OPEN',  bg:'rgba(56,189,248,0.10)',  color:'var(--accent)',   dirCls:''     };
+  return                          { label:'CLOSE', bg:'var(--surface2)',         color:'var(--text-muted)', dirCls:'' };
+}
+function _fillDirLabel(dir) {
+  const d = (dir||'').toLowerCase();
+  if (d.includes('long'))  return { label:'LONG',  cls:'long'  };
+  if (d.includes('short')) return { label:'SHORT', cls:'short' };
+  return { label:'—', cls:'muted' };
+}
+
+function renderRecentPnLWidget(allFills) {
+  const hrs    = _recentPnlHours;
+  const cutoff = Date.now() - hrs * 3600000;
+  const fills  = (allFills||[]).filter(f => f.time >= cutoff && !f.isSpot).slice(0, 100);
+
+  const timeBtns = `<div style="display:flex;gap:2px">
+    ${[24, 168].map(h=>`<button class="tab${_recentPnlHours===h?' active':''}" onclick="_recentPnlHours=${h};renderOverviewTab()" style="font-size:11px;padding:3px 10px">${h===24?'24h':'7d'}</button>`).join('')}
+  </div>`;
+
+  if (!fills.length) return `<div class="card" style="margin-top:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div class="card-title" style="margin:0">📊 Recent PnL</div>${timeBtns}</div>
+    <div class="muted" style="padding:16px 0;text-align:center;font-size:12px">No perp fills in the last ${hrs===24?'24h':'7 days'}</div>
+  </div>`;
+
+  const closingFills = fills.filter(f => f.closed_pnl !== 0);
+  const totalPnl  = closingFills.reduce((a,f)=>a+f.closed_pnl, 0);
+  const totalFees = fills.reduce((a,f)=>a+f.fee, 0);
+  const netPnl    = totalPnl - totalFees;
+  const wins      = closingFills.filter(f=>f.closed_pnl>0).length;
+  const losses    = closingFills.filter(f=>f.closed_pnl<0).length;
+  const liqCount  = fills.filter(f=>(f.dir||'').toLowerCase().includes('liq')).length;
+  const winRate   = wins+losses>0 ? (wins/(wins+losses)*100).toFixed(0)+'%' : '—';
+
+  // By-coin totals (closing fills only)
+  const byCoin = {};
+  closingFills.forEach(f => {
+    if(!byCoin[f.coin]) byCoin[f.coin] = {coin:f.coin, count:0, pnl:0, fees:0};
+    byCoin[f.coin].count++;
+    byCoin[f.coin].pnl  += f.closed_pnl;
+    byCoin[f.coin].fees += f.fee;
+  });
+  // add fees from opening fills too
+  fills.filter(f=>f.closed_pnl===0).forEach(f => {
+    if(!byCoin[f.coin]) byCoin[f.coin] = {coin:f.coin, count:0, pnl:0, fees:0};
+    byCoin[f.coin].fees += f.fee;
+  });
+  const coinRows = Object.values(byCoin).sort((a,b)=>Math.abs(b.pnl)-Math.abs(a.pnl));
+
+  return `<div class="card" style="margin-top:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div class="card-title" style="margin:0">📊 Recent PnL
+        ${liqCount>0?`<span style="margin-left:6px;font-size:10px;background:rgba(248,113,113,0.15);color:var(--red);padding:2px 7px;border-radius:100px;font-weight:700">⚡ ${liqCount} LIQ</span>`:''}
+      </div>
+      ${timeBtns}
+    </div>
+    <div style="display:flex;gap:20px;flex-wrap:wrap;padding:10px 0 14px;border-bottom:1px solid var(--border);margin-bottom:14px">
+      <div><div class="stat-label">Realized PnL</div><div class="mono ${totalPnl>=0?'pos':'neg'}" style="font-size:15px;font-weight:700">${totalPnl>=0?'+':''}${fmt$(totalPnl)}</div></div>
+      <div><div class="stat-label">Fees</div><div class="mono neg" style="font-size:15px;font-weight:700">−${fmt$(totalFees)}</div></div>
+      <div style="border-left:1px solid var(--border);padding-left:20px"><div class="stat-label">Net PnL</div><div class="mono ${netPnl>=0?'pos':'neg'}" style="font-size:15px;font-weight:700">${netPnl>=0?'+':''}${fmt$(netPnl)}</div></div>
+      <div><div class="stat-label">Win Rate</div><div class="mono" style="font-size:15px;font-weight:700">${winRate}</div><div class="muted" style="font-size:10px">${wins}W / ${losses}L</div></div>
+      <div><div class="stat-label">Fills</div><div class="mono" style="font-size:15px;font-weight:700">${fills.length}</div></div>
+    </div>
+    <div class="table-wrap" style="margin-bottom:14px">
+      <table class="mobile-cards">
+        <thead><tr><th>Time</th><th>Coin</th><th>Type</th><th>Dir</th><th>Price</th><th>Size</th><th>PnL</th><th>Fee</th></tr></thead>
+        <tbody>${fills.map(f=>{
+          const m = _fillMeta(f.dir);
+          const dv= _fillDirLabel(f.dir);
+          return `<tr>
+            <td data-label="Time" class="muted" style="font-size:11px;white-space:nowrap">${fmtAge(f.time)}</td>
+            <td data-label="Coin" class="accent" style="font-weight:600">${f.coin}</td>
+            <td data-label="Type"><span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:100px;background:${m.bg};color:${m.color};letter-spacing:.03em">${m.label}</span></td>
+            <td data-label="Dir"><span class="side-badge ${dv.cls}" style="font-size:10px">${dv.label}</span></td>
+            <td data-label="Price" class="mono">${fmtPrice(f.price)}</td>
+            <td data-label="Size" class="mono">${f.size}</td>
+            <td data-label="PnL" class="${f.closed_pnl>0?'pos':f.closed_pnl<0?'neg':'muted'} mono">${f.closed_pnl!==0?fmt$(f.closed_pnl):'—'}</td>
+            <td data-label="Fee" class="neg mono">${f.fee>0?'−'+fmt$(f.fee):'—'}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>
+    </div>
+    ${coinRows.length>1?`
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);margin-bottom:6px">By Coin</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Coin</th><th>Trades</th><th>PnL</th><th>Fees</th><th>Net</th></tr></thead>
+      <tbody>${coinRows.map(r=>`<tr>
+        <td class="accent" style="font-weight:600">${r.coin}</td>
+        <td class="muted">${r.count}</td>
+        <td class="${r.pnl>=0?'pos':'neg'} mono">${r.pnl!==0?fmt$(r.pnl):'—'}</td>
+        <td class="neg mono">−${fmt$(r.fees)}</td>
+        <td class="${r.pnl-r.fees>=0?'pos':'neg'} mono">${fmt$(r.pnl-r.fees)}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`:''}
+  </div>`;
+}
+
 function fmtB(n){
   if(!n) return '—';
   if(n>=1e9) return '$'+(n/1e9).toFixed(2)+'B';
