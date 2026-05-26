@@ -88,11 +88,12 @@ function renderFGSparkline(history, containerId) {
   if (!history || !window.Chart) return;
   const el = document.getElementById(containerId);
   if (!el) return;
+  if (el._chart) { el._chart.destroy(); el._chart = null; }
   const slice = history.slice(0, 30).reverse();
   const labels = slice.map(() => '');
   const values = slice.map(d => d.v);
   const colors = values.map(v => fgBarColor(v));
-  new Chart(el, {
+  el._chart = new Chart(el, {
     type: 'bar',
     data: { labels, datasets: [{ data: values, backgroundColor: colors, borderWidth: 0 }] },
     options: {

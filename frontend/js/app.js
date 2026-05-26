@@ -20,6 +20,7 @@ let _recentPnlOpen  = false;
 let ws = null;
 let wsReconnectTimer = null;
 let wsConnected = false;
+let _wsRetries = 0;
 let livePrices = {};
 let livePrevDay = {};
 let livePositions = [];
@@ -693,7 +694,7 @@ function renderOverviewTab() {
           </table></div>
         </div>`;
       })()}`;
-    requestAnimationFrame(() => renderPortfolioChart(totalPortfolio));
+    requestAnimationFrame(() => renderPortfolioChart(totalPortfolio).catch(e => console.warn('[chart]', e)));
   }
 
   else if (overviewTab === 'perp') {
@@ -1285,11 +1286,15 @@ function marketRow(d,rank){
 }
 
 // ── Market Detail Modal ───────────────────────────────────────────────────────
+let _mktDetailCoin = null;
+
 function closeMktDetail() {
+  _mktDetailCoin = null;
   document.getElementById('mkt-detail-overlay').classList.remove('open');
 }
 
 async function openMarketDetail(coin) {
+  _mktDetailCoin = coin;
   const overlay = document.getElementById('mkt-detail-overlay');
   const inner   = document.getElementById('mkt-detail-inner');
   const d = allMarketData.find(x => x.coin === coin);
@@ -1315,6 +1320,8 @@ async function openMarketDetail(coin) {
     typeof fetchBinanceLSR === 'function' ? fetchBinanceLSR(coin) : Promise.resolve(null),
     typeof fetchBinanceOI  === 'function' ? fetchBinanceOI(coin, '1h', 48) : Promise.resolve(null),
   ]);
+
+  if (_mktDetailCoin !== coin) return; // superseded by a newer click
 
   const candles = candlesRes.status === 'fulfilled' ? candlesRes.value : null;
   const lsr     = lsrRes.status    === 'fulfilled' ? lsrRes.value    : null;
@@ -1719,6 +1726,7 @@ function connectWS() {
   try { ws = new WebSocket(HL_WS); } catch(e) { scheduleReconnect(); return; }
   ws.onopen = () => {
     wsConnected = true;
+    _wsRetries = 0;
     ws.send(JSON.stringify({method:'subscribe', subscription:{type:'allMids'}}));
     setWSStatus(true);
     if (wsReconnectTimer) { clearTimeout(wsReconnectTimer); wsReconnectTimer = null; }
@@ -1735,7 +1743,8 @@ function connectWS() {
 
 function scheduleReconnect() {
   if (wsReconnectTimer) return;
-  wsReconnectTimer = setTimeout(() => { wsReconnectTimer = null; if (monitorActive) connectWS(); }, 3000);
+  const delay = Math.min(3000 * Math.pow(2, _wsRetries++), 30000);
+  wsReconnectTimer = setTimeout(() => { wsReconnectTimer = null; if (monitorActive) connectWS(); }, delay);
 }
 
 function disconnectWS() {
@@ -2197,9 +2206,8 @@ async function renderPortfolioChart(totalPortfolio) {
 
   let taggedFills = [], funding = [];
   try {
-    const rawFills = await getUserFills(currentWallet);
-    const spotIndexMap = buildSpotIndexMap(_ovData?.spotMetaRaw);
-    taggedFills = tagFills(parseFills(rawFills), spotIndexMap);
+    // Reuse fills already fetched by loadOverview rather than fetching again
+    taggedFills = _ovData?.recentFills || [];
     funding = await getUserFunding(currentWallet, 7).then(parseFunding).catch(() => []);
   } catch(_) {}
 
@@ -2823,6 +2831,7 @@ function err(e){return `<div class="loading">Error: ${e.message}</div>`;}
 function _doSilentRefresh(){
   if(document.hidden) return;
   if(_SKIP_SILENT.has(currentPage)) return;
+  if(_silentRefresh) return; // prevent concurrent refresh
   const main=document.querySelector('.main');
   const sy=main?main.scrollTop:0;
   _silentRefresh=true;
@@ -2836,7 +2845,7 @@ function _doSilentRefresh(){
   p.catch(()=>{}).finally(()=>{
     _silentRefresh=false;
     _lastRefreshTs=Date.now();
-    if(main) requestAnimationFrame(()=>{main.scrollTop=sy;});
+    if(main && Math.abs(main.scrollTop - sy) < 20) requestAnimationFrame(()=>{main.scrollTop=sy;});
     const ri=document.getElementById('refresh-info');
     if(ri){ri.classList.add('refresh-flash');setTimeout(()=>ri.classList.remove('refresh-flash'),500);}
   });

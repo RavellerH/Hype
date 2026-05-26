@@ -3,12 +3,23 @@ import time
 from typing import Any
 from config import HL_API_URL
 
+_hl_client: httpx.AsyncClient | None = None
+
+
+def _get_client() -> httpx.AsyncClient:
+    global _hl_client
+    if _hl_client is None or _hl_client.is_closed:
+        _hl_client = httpx.AsyncClient(
+            timeout=15,
+            limits=httpx.Limits(max_connections=20, max_keepalive_connections=10),
+        )
+    return _hl_client
+
 
 async def _post(payload: dict) -> Any:
-    async with httpx.AsyncClient(timeout=15) as client:
-        r = await client.post(HL_API_URL, json=payload)
-        r.raise_for_status()
-        return r.json()
+    r = await _get_client().post(HL_API_URL, json=payload)
+    r.raise_for_status()
+    return r.json()
 
 
 # ── Perp positions & account state ───────────────────────────────────────────

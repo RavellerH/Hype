@@ -73,7 +73,11 @@ def push_notification(event_type: str, message: str, data: dict | None = None):
 
 # ── Background polling task ───────────────────────────────────────────────────
 
+_poll_failures = 0
+
+
 async def polling_task():
+    global _poll_failures
     try:
         events = await poll_all_wallets()
         if events:
@@ -92,8 +96,15 @@ async def polling_task():
             "positions": positions,
             "timestamp": int(time.time() * 1000),
         })
+        _poll_failures = 0
     except Exception as e:
-        print(f"[poll] error: {e}")
+        _poll_failures += 1
+        print(f"[poll] error #{_poll_failures}: {e}")
+        if _poll_failures == 5:
+            try:
+                await dispatch_wallet_events([{"type": "POLL_FAILURE", "message": f"Backend polling failed 5 times in a row: {e}"}])
+            except Exception:
+                pass
 
 
 # ── App lifecycle ─────────────────────────────────────────────────────────────
@@ -111,9 +122,11 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Hype Trade Analyzer", lifespan=lifespan)
+_ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:8000,http://127.0.0.1:8000").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_ALLOWED_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -373,49 +386,47 @@ async def get_mvrv():
         except Exception:
             prices_now = {}
 
-        for symbol, cg_id in _MVRV_COINS.items():
+        async def _fetch_coin(symbol: str, cg_id: str) -> tuple[str, dict]:
             now = prices_now.get(cg_id, {})
             current_price = now.get("usd") or 0.0
             market_cap    = now.get("usd_market_cap") or 0.0
             change_24h    = now.get("usd_24h_change") or 0.0
-
             chart: list[dict] = []
             mvrv    = 1.0
             avg_90d = current_price
-
             try:
                 rh = await client.get(
                     f"{cg_base}/coins/{cg_id}/market_chart",
                     params={"vs_currency": "usd", "days": "90", "interval": "daily"},
                 )
                 if rh.status_code == 200:
-                    raw = rh.json().get("prices", [])  # [[ts_ms, price], ...]
+                    raw = rh.json().get("prices", [])
                     if len(raw) >= 10:
                         tss    = [p[0] for p in raw]
                         prices = [p[1] for p in raw]
                         avg_90d = sum(prices) / len(prices)
                         mvrv    = prices[-1] / avg_90d if avg_90d else 1.0
-                        # Rolling 30-day window MVRV for the chart
                         for i in range(30, len(prices)):
                             window = prices[i - 30: i]
                             avg_w  = sum(window) / len(window)
-                            chart.append({
-                                "t": tss[i],
-                                "v": round(prices[i] / avg_w, 4) if avg_w else 1.0,
-                            })
+                            chart.append({"t": tss[i], "v": round(prices[i] / avg_w, 4) if avg_w else 1.0})
             except Exception:
                 pass
-
-            results[symbol] = {
-                "symbol":     symbol,
-                "price":      current_price,
-                "market_cap": market_cap,
-                "change_24h": round(change_24h, 2),
-                "mvrv":       round(mvrv, 4),
-                "avg_90d":    round(avg_90d, 4),
-                "zone":       _mvrv_zone(mvrv),
-                "chart":      chart,
+            return symbol, {
+                "symbol": symbol, "price": current_price, "market_cap": market_cap,
+                "change_24h": round(change_24h, 2), "mvrv": round(mvrv, 4),
+                "avg_90d": round(avg_90d, 4), "zone": _mvrv_zone(mvrv), "chart": chart,
             }
+
+        coin_results = await asyncio.gather(
+            *[_fetch_coin(s, c) for s, c in _MVRV_COINS.items()],
+            return_exceptions=True,
+        )
+        for item in coin_results:
+            if isinstance(item, Exception):
+                continue
+            symbol, data = item
+            results[symbol] = data
 
     payload: dict[str, Any] = {
         "coins":   results,
@@ -502,8 +513,13 @@ class TelegramConfig(BaseModel):
     chat_id: str
 
 
+_BOT_TOKEN_RE = __import__('re').compile(r'^\d+:[A-Za-z0-9_\-]{35,}$')
+
+
 @app.post("/api/telegram/configure")
 async def configure_telegram(body: TelegramConfig):
+    if body.bot_token and not _BOT_TOKEN_RE.match(body.bot_token):
+        raise HTTPException(400, "Invalid bot token format — expected <id>:<hash>")
     import config as cfg
     cfg.TELEGRAM_BOT_TOKEN = body.bot_token
     cfg.TELEGRAM_CHAT_ID = body.chat_id
