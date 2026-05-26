@@ -2326,8 +2326,8 @@ function toggleRecentPnL() {
   _recentPnlOpen = !_recentPnlOpen;
   const body    = document.getElementById('recent-pnl-body');
   const chevron = document.getElementById('recent-pnl-chevron');
-  if (body)    body.style.display    = _recentPnlOpen ? '' : 'none';
-  if (chevron) chevron.textContent   = _recentPnlOpen ? '▼' : '▶';
+  if (body)    body.style.display  = _recentPnlOpen ? '' : 'none';
+  if (chevron) chevron.textContent = _recentPnlOpen ? '▼' : '▶';
 }
 
 function renderRecentPnLWidget(allFills) {
@@ -2335,9 +2335,20 @@ function renderRecentPnLWidget(allFills) {
   const cutoff = Date.now() - hrs * 3600000;
   const fills  = (allFills||[]).filter(f => f.time >= cutoff && !f.isSpot).slice(0, 100);
 
-  const chevron  = `<span id="recent-pnl-chevron" style="font-size:10px;color:var(--text-faint);margin-left:6px">${_recentPnlOpen?'▼':'▶'}</span>`;
+  const closingFills = fills.filter(f => f.closed_pnl !== 0);
+  const totalPnl  = closingFills.reduce((a,f)=>a+f.closed_pnl, 0);
+  const totalFees = fills.reduce((a,f)=>a+f.fee, 0);
+  const netPnl    = totalPnl - totalFees;
+  const liqCount  = fills.filter(f=>(f.dir||'').toLowerCase().includes('liq')).length;
+
+  const chevron  = `<span id="recent-pnl-chevron" style="font-size:10px;color:var(--text-faint);margin-left:4px">${_recentPnlOpen?'▼':'▶'}</span>`;
+  const netBadge = fills.length ? `<span class="mono ${netPnl>=0?'pos':'neg'}" style="font-size:12px;font-weight:700;margin-left:10px">${netPnl>=0?'+':''}${fmt$(netPnl)}</span>` : '';
+  const liqBadge = liqCount>0 ? `<span style="margin-left:6px;font-size:10px;background:rgba(248,113,113,0.15);color:var(--red);padding:2px 6px;border-radius:100px;font-weight:700">⚡${liqCount}</span>` : '';
   const headerRow = `<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;cursor:pointer" onclick="toggleRecentPnL()">
-      <div class="card-title" style="margin:0;user-select:none">📊 Recent PnL${chevron}</div>
+      <div style="display:flex;align-items:center;gap:0;user-select:none">
+        <div class="card-title" style="margin:0">📊 Recent PnL${chevron}</div>
+        ${netBadge}${liqBadge}
+      </div>
       <div style="display:flex;gap:2px" onclick="event.stopPropagation()">
         ${[24, 168].map(h=>`<button class="tab${_recentPnlHours===h?' active':''}" onclick="_recentPnlHours=${h};renderOverviewTab()" style="font-size:11px;padding:3px 10px">${h===24?'24h':'7d'}</button>`).join('')}
       </div>
@@ -2345,18 +2356,13 @@ function renderRecentPnLWidget(allFills) {
 
   if (!fills.length) return `<div class="card" style="margin-top:14px">
     ${headerRow}
-    <div id="recent-pnl-body" style="${_recentPnlOpen?'':'display:none'}">
-      <div class="muted" style="padding:16px 0;text-align:center;font-size:12px">No perp fills in the last ${hrs===24?'24h':'7 days'}</div>
+    <div id="recent-pnl-body" style="${_recentPnlOpen?'margin-top:8px':'display:none'}">
+      <div class="muted" style="padding:12px 0;text-align:center;font-size:12px">No perp fills in the last ${hrs===24?'24h':'7 days'}</div>
     </div>
   </div>`;
 
-  const closingFills = fills.filter(f => f.closed_pnl !== 0);
-  const totalPnl  = closingFills.reduce((a,f)=>a+f.closed_pnl, 0);
-  const totalFees = fills.reduce((a,f)=>a+f.fee, 0);
-  const netPnl    = totalPnl - totalFees;
   const wins      = closingFills.filter(f=>f.closed_pnl>0).length;
   const losses    = closingFills.filter(f=>f.closed_pnl<0).length;
-  const liqCount  = fills.filter(f=>(f.dir||'').toLowerCase().includes('liq')).length;
   const winRate   = wins+losses>0 ? (wins/(wins+losses)*100).toFixed(0)+'%' : '—';
 
   // By-coin totals (closing fills only)
@@ -2377,7 +2383,6 @@ function renderRecentPnLWidget(allFills) {
   return `<div class="card" style="margin-top:14px">
     ${headerRow}
     <div id="recent-pnl-body" style="margin-top:12px;${_recentPnlOpen?'':'display:none'}">
-      ${liqCount>0?`<div style="margin-bottom:10px"><span style="font-size:10px;background:rgba(248,113,113,0.15);color:var(--red);padding:2px 7px;border-radius:100px;font-weight:700">⚡ ${liqCount} LIQ detected</span></div>`:''}
       <div style="display:flex;gap:20px;flex-wrap:wrap;padding:10px 0 14px;border-bottom:1px solid var(--border);margin-bottom:14px">
         <div><div class="stat-label">Realized PnL</div><div class="mono ${totalPnl>=0?'pos':'neg'}" style="font-size:15px;font-weight:700">${totalPnl>=0?'+':''}${fmt$(totalPnl)}</div></div>
         <div><div class="stat-label">Fees</div><div class="mono neg" style="font-size:15px;font-weight:700">−${fmt$(totalFees)}</div></div>
