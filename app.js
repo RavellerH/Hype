@@ -736,7 +736,8 @@ function renderOverviewTab() {
             <td class="mono">${o.limitPx?fmt$(parseFloat(o.limitPx)):'—'}</td>
           </tr>`).join('')}</tbody>
         </table></div>
-      </div>`:'<div class="card"><div class="empty-state">No open orders</div></div>'}`;
+      </div>`:'<div class="card"><div class="empty-state">No open orders</div></div>'}
+      ${renderOrderScenarios(positions, orders)}`;
   }
 
   else if (overviewTab === 'spot') {
@@ -2521,6 +2522,112 @@ function fmt$(n){
   if(abs>=1e3) return sign+'$'+abs.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
   return sign+'$'+abs.toFixed(2);
 }
+// ── Order Scenario Analysis ───────────────────────────────────────────────────
+const HL_TAKER_FEE = 0.00035; // 0.035% taker fee
+
+function renderOrderScenarios(positions, orders) {
+  if (!orders || !orders.length) return '';
+
+  const posMap = {};
+  (positions || []).forEach(p => { posMap[p.coin] = p; });
+
+  // Build scenario rows for orders that close/reduce an existing position
+  const rows = [];
+  orders.forEach(o => {
+    const pos = posMap[o.coin];
+    if (!pos) return; // no position → opening order, skip scenario
+
+    const orderSide = o.side === 'B' ? 'buy' : 'sell';
+    const isReduce = (pos.side === 'long' && orderSide === 'sell') ||
+                     (pos.side === 'short' && orderSide === 'buy');
+    if (!isReduce) return; // scale-in order, not a close
+
+    // Use triggerPx if limitPx is absent (stop-market orders)
+    const execPx = parseFloat(o.limitPx || o.triggerPx || 0);
+    if (!execPx) return;
+
+    const sz      = parseFloat(o.sz || 0);
+    const entry   = pos.entry_price;
+    const rawPnl  = pos.side === 'long'
+      ? (execPx - entry) * sz
+      : (entry - execPx) * sz;
+    const fee     = sz * execPx * HL_TAKER_FEE;
+    const netPnl  = rawPnl - fee;
+    const pctPos  = pos.size > 0 ? (sz / pos.size * 100) : 0;
+
+    // Auto-label: TP if profitable direction, SL if loss direction
+    let typeLabel, typeCls;
+    if (rawPnl > 0) { typeLabel = 'TP'; typeCls = 'tp'; }
+    else if (rawPnl < 0) { typeLabel = 'SL'; typeCls = 'sl'; }
+    else { typeLabel = 'FLAT'; typeCls = 'flat'; }
+
+    rows.push({ coin: o.coin, pos, typeLabel, typeCls, orderSide, execPx, sz, pctPos, rawPnl, fee, netPnl });
+  });
+
+  if (!rows.length) return '';
+
+  // Totals
+  const tpRows = rows.filter(r => r.typeLabel === 'TP');
+  const slRows = rows.filter(r => r.typeLabel === 'SL');
+  const bestNet  = tpRows.reduce((a, r) => a + r.netPnl, 0);
+  const worstNet = slRows.reduce((a, r) => a + r.netPnl, 0);
+
+  // Group by coin to find R:R pairs
+  const byGroup = {};
+  rows.forEach(r => {
+    if (!byGroup[r.coin]) byGroup[r.coin] = { tp: null, sl: null };
+    if (r.typeLabel === 'TP') byGroup[r.coin].tp = r;
+    else if (r.typeLabel === 'SL') byGroup[r.coin].sl = r;
+  });
+
+  const tableRows = rows.map(r => {
+    const pnlCls = r.netPnl >= 0 ? 'pos' : 'neg';
+    const pnlStr = (r.netPnl >= 0 ? '+' : '') + fmt$(r.netPnl);
+    const rawStr = (r.rawPnl >= 0 ? '+' : '') + fmt$(r.rawPnl);
+
+    // R:R badge if this coin has both a TP and SL
+    const g = byGroup[r.coin];
+    let rrBadge = '';
+    if (g.tp && g.sl) {
+      const rr = Math.abs(g.tp.netPnl / g.sl.netPnl);
+      const rrCls = rr >= 1.5 ? 'pos' : rr >= 1 ? 'yellow' : 'neg';
+      rrBadge = `<span class="mono ${rrCls}" style="font-size:10px;margin-left:4px" title="Risk:Reward">R:R ${rr.toFixed(2)}</span>`;
+    }
+
+    return `<tr style="background:${r.typeCls==='tp'?'rgba(74,222,128,0.04)':r.typeCls==='sl'?'rgba(248,113,113,0.04)':''}">
+      <td class="accent" style="font-weight:600">${r.coin}</td>
+      <td><span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:100px;background:${r.typeCls==='tp'?'rgba(74,222,128,0.15)':r.typeCls==='sl'?'rgba(248,113,113,0.15)':'rgba(100,100,100,0.15)'};color:${r.typeCls==='tp'?'var(--green)':r.typeCls==='sl'?'var(--red)':'var(--text-muted)'}">${r.typeLabel}</span>${rrBadge}</td>
+      <td><span class="side-badge ${r.pos.side}">${r.pos.side.toUpperCase()}</span></td>
+      <td class="mono">${fmtPrice(r.execPx)}</td>
+      <td class="mono">${r.sz}</td>
+      <td class="muted" style="font-size:11px">${r.pctPos.toFixed(0)}%</td>
+      <td class="mono muted" style="font-size:11px">−${fmt$(r.fee)}</td>
+      <td class="mono ${pnlCls}" style="font-weight:700">${pnlStr}</td>
+    </tr>`;
+  }).join('');
+
+  const summaryLine = (tpRows.length || slRows.length) ? `
+    <div style="display:flex;gap:20px;flex-wrap:wrap;padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">
+      ${tpRows.length ? `<div><div class="stat-label">Best case (${tpRows.length} TP${tpRows.length>1?'s':''})</div><div class="mono pos" style="font-weight:700">${bestNet>=0?'+':''}${fmt$(bestNet)}</div></div>` : ''}
+      ${slRows.length ? `<div><div class="stat-label">Worst case (${slRows.length} SL${slRows.length>1?'s':''})</div><div class="mono neg" style="font-weight:700">${fmt$(worstNet)}</div></div>` : ''}
+      ${tpRows.length && slRows.length ? `<div style="border-left:1px solid var(--border);padding-left:20px"><div class="stat-label">Net if all hit</div><div class="mono ${bestNet+worstNet>=0?'pos':'neg'}" style="font-weight:700">${bestNet+worstNet>=0?'+':''}${fmt$(bestNet+worstNet)}</div></div>` : ''}
+    </div>` : '';
+
+  return `<div class="card" style="margin-top:14px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <div class="card-title" style="margin:0">🎯 Order Scenarios</div>
+      <span class="muted" style="font-size:11px">what happens if orders hit · est. 0.035% taker fee</span>
+    </div>
+    <div class="table-wrap">
+      <table class="mobile-cards">
+        <thead><tr><th>Coin</th><th>Type</th><th>Position</th><th>Exec Price</th><th>Size</th><th>% Pos</th><th>Fee</th><th>Net PnL</th></tr></thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+    </div>
+    ${summaryLine}
+  </div>`;
+}
+
 function fmtAge(ms) {
   const s = Math.floor((Date.now() - ms) / 1000);
   if (s < 60)   return s + 's ago';
