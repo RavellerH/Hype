@@ -14,7 +14,7 @@ const _SKIP_SILENT = new Set(['phases','monitor','journal','analytics','kb','mvr
 let marketSortKey = 'volume';
 let allMarketData = [];
 let _recentPnlHours = 24;
-let _recentPnlOpen  = true;
+let _recentPnlOpen  = false;
 
 // ── WebSocket state ───────────────────────────────────────────────────────────
 let ws = null;
