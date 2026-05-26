@@ -165,6 +165,13 @@
     <div class="page"         id="page-kb"><div id="kb-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
   </main>
 
+<!-- Market Detail Modal -->
+<div id="mkt-detail-overlay" class="mkt-overlay" onclick="closeMktDetail()">
+  <div id="mkt-detail-modal" class="mkt-modal" onclick="event.stopPropagation()">
+    <div id="mkt-detail-inner"></div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="intel.js"></script>
 <script src="position-meta.js"></script>
