@@ -33,7 +33,7 @@ A personal trading dashboard for [Hyperliquid](https://hyperliquid.xyz). Runs en
 
 - **Unified account support** — correctly reads `crossMarginSummary` vs `marginSummary` for accounts where spot USDC is perp collateral
 - **IDR conversion** — all monetary values can be viewed in Indonesian Rupiah using live and historical rates; Flows tab shows the exact IDR value at the time of each deposit/withdrawal
-- **Real-time WebSocket** — live prices, position updates, and wallet-change alerts without polling
+- **Real-time WebSocket** — live prices, position updates, and wallet-change alerts without polling; exponential backoff reconnect (3 s → 30 s max) prevents hammering the server during outages
 - **Portfolio health score** — composite risk score with per-position flags (leverage, liquidation distance, smart-money divergence, BMSB)
 - **PWA** — installable on iOS, Android, and desktop; works offline for cached views
 - **No sign-in** — enter any wallet address; read-only, no keys required
@@ -71,6 +71,8 @@ Hype/
 ```
 
 The frontend calls the Hyperliquid public API (`api.hyperliquid.xyz`) and `frankfurter.app` (exchange rates) directly from the browser. The backend and bot are optional extras for Telegram notifications and automated trading.
+
+The backend uses a shared persistent `httpx.AsyncClient` (connection pooling) for all Hyperliquid API calls, and parallelises independent fetches with `asyncio.gather` where possible.
 
 ---
 
@@ -145,10 +147,27 @@ Backtest: `cd bot && python backtest.py`
 | `TELEGRAM_BOT_TOKEN` | `.env` | Dashboard Telegram bot token |
 | `TELEGRAM_CHAT_ID` | `.env` | Dashboard Telegram chat ID |
 | `POLL_INTERVAL` | `.env` | Wallet poll interval in seconds (default 30) |
+| `ALLOWED_ORIGINS` | `.env` | Comma-separated CORS origins (default `http://localhost:8000,http://127.0.0.1:8000`) |
 | `HL_PRIVATE_KEY` | `bot/.env` | Private key for bot trading |
 | `HL_WALLET_ADDRESS` | `bot/.env` | Bot wallet address |
 | `TG_TOKEN` | `bot/.env` | Bot Telegram token |
 | `TG_CHAT_ID` | `bot/.env` | Bot Telegram chat ID |
+
+---
+
+## Reliability & Security Notes
+
+| Area | Detail |
+|------|--------|
+| **WS reconnect** | Exponential backoff — 3 s, 6 s, 12 s, 24 s, 30 s max. Retry counter resets on successful connect. |
+| **Silent refresh** | 60 s auto-refresh is concurrency-guarded; a second call while one is in flight is a no-op. Scroll position is preserved if the user hasn't moved. |
+| **Market modal** | Stale-request cancellation — clicking a coin while the previous modal is still loading discards the old result. |
+| **Chart.js** | Indicator sparklines destroy the previous Chart instance before re-creating to prevent canvas memory leaks. |
+| **Backend HTTP** | Single shared `httpx.AsyncClient` with connection pooling replaces per-call client construction. |
+| **MVRV endpoint** | CoinGecko chart fetches for all coins are parallelised; previously ran sequentially. |
+| **Polling failures** | Backend counts consecutive poll errors and sends a Telegram alert after 5 in a row. |
+| **CORS** | Restricted to `localhost` by default; override via `ALLOWED_ORIGINS` env var for custom deployments. |
+| **Telegram config** | Bot token validated against `<id>:<hash>` format before being written to `.env`. |
 
 ---
 
