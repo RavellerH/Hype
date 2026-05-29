@@ -27,18 +27,50 @@ MAX_OPEN_BOT_POSITIONS = 3
 PHASE_EXIT        = True
 TRAIL_BREAKEVEN   = True
 
+# ── DSL (Dynamic Stop Loss) ratcheting trailing stop tiers
+# (price_gain_pct, lock_fraction): at +X% price gain, SL locks lock_frac of that gain.
+# Example: at +10%, SL = entry + 3.5%; at +20%, SL = entry + 11%; at +35%, SL = entry + 24.5%.
+# Inspired by Senpi AI's two-phase DSL exit engine.
+DSL_TIERS = [
+    (0.10, 0.35),
+    (0.20, 0.55),
+    (0.35, 0.70),
+]
+
 # ── Entry conditions
-MIN_PHASE_CONFIDENCE = 0.40   # accumulation confidence threshold
-MIN_VOLUME_RATIO     = 1.20   # recent vol must be 1.2× average
-MIN_WALLET_SIGNALS   = 1      # at least 1 smart wallet must be long
+MIN_PHASE_CONFIDENCE  = 0.40   # accumulation confidence threshold
+MIN_VOLUME_RATIO      = 1.20   # recent vol must be 1.2× average
+MIN_WALLET_SIGNALS    = 1      # at least 1 smart wallet must be long
+MIN_CONFLUENCE_SCORE  = 5      # minimum score (0-10) to allow entry
+
+# ── Funding rate filter (8h rate from metaAndAssetCtxs)
+# Skip long entry if funding is extremely positive (crowded longs paying too much)
+MAX_LONG_FUNDING_RATE  = 0.0020   # 0.20% per 8h — too crowded to go long
+# Skip short entry if funding is extremely negative (crowded shorts)
+MAX_SHORT_FUNDING_RATE = 0.0015   # 0.15% per 8h short funding ceiling
+
+# ── Risk guardrails
+MAX_DAILY_LOSS_PCT     = 0.03   # halt new entries if realized daily loss > 3% account
+MAX_CONSECUTIVE_LOSSES = 3      # halt new entries after N straight losing trades
+HALT_HOURS             = 24     # cool-down period in hours after guardrail trips
+ASSET_COOLDOWN_MINUTES = 120    # per-asset cool-down (minutes) after a loss on that asset
+
+# ── BTC macro gate: skip entries if BTC 4h move is hostile (blocks trades into momentum)
+BTC_MACRO_GATE_PCT  = 0.03   # block long if BTC 4h dropped >3%; short if BTC 4h gained >3%
+
+# ── LLM veto layer: pass top signals through Claude for final judgment
+# Activated automatically when ANTHROPIC_API_KEY is set in the environment.
+LLM_VETO_ENABLED      = bool(os.getenv("ANTHROPIC_API_KEY", ""))
+LLM_VETO_MIN_SCORE    = 6       # only run LLM veto when confluence score >= this
+LLM_VETO_MODEL        = "claude-haiku-4-5-20251001"  # fast + cheap for gatekeeping
 
 # ── Coins the bot can trade
 WATCH_COINS = ["BTC", "ETH", "SOL", "HYPE", "SUI", "AVAX"]
 
 # ── Scan intervals (seconds)
-PHASE_SCAN_INTERVAL  = 300    # 5 min
-WALLET_SCAN_INTERVAL = 900    # 15 min
-POSITION_POLL_INTERVAL = 30   # 30 sec (SL/TP monitor)
+PHASE_SCAN_INTERVAL    = 300    # 5 min
+WALLET_SCAN_INTERVAL   = 900    # 15 min
+POSITION_POLL_INTERVAL = 30     # 30 sec (SL/TP monitor)
 
 # ── Smart wallets to monitor
 # Format: { "label": "address" }

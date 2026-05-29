@@ -114,26 +114,43 @@ python main.py
 
 ## Trading Bot
 
-Entry requires all of:
+Entry requires **all** of:
 
 | Condition | Default |
 |-----------|---------|
-| Coin phase | Accumulation |
+| Coin phase | Wyckoff Accumulation (4h) |
 | Phase confidence | ≥ 40 % |
+| Accumulation age | Not late-stage (< 80 % of typical duration) |
+| 1h TA | EMA bullish + MACD bullish + RSI > 50 |
+| 15m TA | MACD bullish + RSI > 50 |
 | Volume vs average | ≥ 1.2× |
-| Smart-wallet longs | ≥ 1 |
+| Funding rate | < 0.20 %/8h (not crowded) |
+| Smart-wallet longs | ≥ 1 confirmed wallet |
+| Confluence score | ≥ 5 / 10 (multi-pillar scoring) |
+| BTC macro gate | BTC 4h move not > −3 % (hostile) |
+| Risk guardrails | Daily loss < 3 %, no streak of ≥ 3 straight losses |
+
+Confluence score (0–10) weights: phase confidence (0–3 pts), 1h TA signals (0–3 pts), 15m momentum (0–1 pt), volume strength (0–1 pt), smart-wallet consensus (0–2 pts). Leverage scales 3×–10× with score.
+
+**LLM veto layer** (optional): when `ANTHROPIC_API_KEY` is set, Claude reviews signals scoring ≥ 6 as a final judgment gate, filtering ~30–40 % of borderline entries.
 
 Risk defaults:
 
 | Parameter | Value |
 |-----------|-------|
 | Margin per trade | 10 % of account |
-| Leverage | 10× |
+| Leverage | 3×–10× (scales with confluence score) |
 | Stop-loss | 8 % |
-| Take-profit | 75 % |
+| Take-profit | 75 % (fallback) |
 | Max open bot positions | 3 |
+| Per-asset loss cooldown | 120 min |
 
-Exit: phase flip to Distribution / Markdown, or trail to breakeven on Markup confirmation. Configurable in `bot/config.py`.
+**Exit strategy:**
+- **DSL ratcheting trail** — at +10 % gain: locks 3.5 %; at +20 %: locks 11 %; at +35 %: locks 24.5 %. Inspired by Senpi AI's two-phase DSL exit engine.
+- **Phase exit** — closes on flip to Distribution / Markdown.
+- **Breakeven trail** — fallback SL move to entry + 0.3 % buffer when phase reaches Markup.
+
+**Risk guardrails** — halt new entries if: daily realised loss > 3 % of account, or 3+ consecutive losses (24 h cooldown), or individual asset lost (120 min cooldown).
 
 Backtest: `cd bot && python backtest.py`
 
@@ -152,6 +169,7 @@ Backtest: `cd bot && python backtest.py`
 | `HL_WALLET_ADDRESS` | `bot/.env` | Bot wallet address |
 | `TG_TOKEN` | `bot/.env` | Bot Telegram token |
 | `TG_CHAT_ID` | `bot/.env` | Bot Telegram chat ID |
+| `ANTHROPIC_API_KEY` | `bot/.env` | Enables LLM veto layer (Claude reviews top signals) |
 
 ---
 

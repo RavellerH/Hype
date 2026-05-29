@@ -72,8 +72,22 @@ def round_price(price: float, tick: float = 0.1) -> float:
     return math.floor(price / tick + 0.5) * tick
 
 
-def risk_summary(account_value: float, price: float, confidence: float, is_long: bool) -> dict:
-    lev      = scale_leverage(confidence)
+def scale_leverage_by_score(score: int, max_score: int = 10, max_lev: int = MAX_LEVERAGE) -> int:
+    """
+    Map confluence score (0-10) to leverage.
+    Score 5 (min entry) → 3x; score 10 (max) → MAX_LEVERAGE.
+    Scores below 5 are treated as 5 (should have been filtered before calling).
+    """
+    cap   = safe_leverage(SL_PCT, max_lev)
+    floor = min(3, cap)
+    ratio = max(0.0, (score - 5) / 5.0)   # 0 at score 5, 1.0 at score 10
+    lev   = floor + round(ratio * (cap - floor))
+    return max(floor, min(lev, cap))
+
+
+def risk_summary(account_value: float, price: float, confidence: float, is_long: bool,
+                 score: int | None = None) -> dict:
+    lev      = scale_leverage_by_score(score) if score is not None else scale_leverage(confidence)
     sz       = position_size(account_value, price, lev)
     entry    = price
     sl       = sl_price(entry, is_long)
