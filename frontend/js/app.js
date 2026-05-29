@@ -528,7 +528,7 @@ function navigate(page) {
     pageEl.classList.add('active');
     document.querySelectorAll(`[data-page="${page}"]`).forEach(el=>el.classList.add('active'));
     currentPage = page;
-    const loaders={overview:loadOverview,trades:loadTrades,funding:loadFunding,flows:loadFlows,monitor:loadMonitor,markets:loadMarkets,phases:loadPhases,intel:typeof loadIntel!=='undefined'?loadIntel:null,watchlist:loadWatchlist,journal:typeof loadJournal!=='undefined'?loadJournal:null,indicators:typeof loadIndicators!=='undefined'?loadIndicators:null,smartmoney:typeof loadNansen!=='undefined'?loadNansen:null,analytics:typeof loadAnalytics!=='undefined'?loadAnalytics:null};
+    const loaders={overview:loadOverview,trades:loadTrades,funding:loadFunding,flows:loadFlows,monitor:loadMonitor,markets:loadMarkets,phases:loadPhases,intel:typeof loadIntel!=='undefined'?loadIntel:null,watchlist:loadWatchlist,journal:typeof loadJournal!=='undefined'?loadJournal:null,indicators:typeof loadIndicators!=='undefined'?loadIndicators:null,smartmoney:typeof loadNansen!=='undefined'?loadNansen:null,analytics:typeof loadAnalytics!=='undefined'?loadAnalytics:null,signals:typeof loadSignals!=='undefined'?loadSignals:null};
     if(loaders[page]) loaders[page]();
   } catch(e) { console.error('navigate error:', e); }
 }
@@ -2839,7 +2839,8 @@ function _doSilentRefresh(){
     flows:loadFlows,markets:loadMarkets,watchlist:loadWatchlist,
     intel:typeof loadIntel!=='undefined'?loadIntel:null,
     indicators:typeof loadIndicators!=='undefined'?loadIndicators:null,
-    smartmoney:typeof loadNansen!=='undefined'?loadNansen:null};
+    smartmoney:typeof loadNansen!=='undefined'?loadNansen:null,
+    signals:typeof loadSignals!=='undefined'?loadSignals:null};
   const loader=loaders[currentPage];
   const p=loader?Promise.resolve(loader()):Promise.resolve();
   p.catch(()=>{}).finally(()=>{
