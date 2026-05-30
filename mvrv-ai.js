@@ -133,9 +133,10 @@ async function fetchMVRVData() {
   if (_mvrvCache && Date.now() - _mvrvCacheTs < 300000) return _mvrvCache;
   const CG  = 'https://api.coingecko.com/api/v3';
   const ids = Object.values(MVRV_CG_IDS).join(',');
+  const cgH = typeof _cgDemoKey !== 'undefined' && _cgDemoKey ? { 'x-cg-demo-api-key': _cgDemoKey } : {};
   let pricesNow = {};
   try {
-    const r = await fetch(`${CG}/simple/price?ids=${ids}&vs_currencies=usd&include_market_cap=true&include_24hr_change=true`);
+    const r = await fetch(`${CG}/simple/price?ids=${ids}&vs_currencies=usd&include_market_cap=true&include_24hr_change=true`, { headers: cgH });
     pricesNow = await r.json();
   } catch(e) {}
 
@@ -146,7 +147,7 @@ async function fetchMVRVData() {
     const change24h    = now.usd_24h_change || 0;
     let chart = [], mvrv = 1.0, avg90d = currentPrice;
     try {
-      const rh = await fetch(`${CG}/coins/${cgId}/market_chart?vs_currency=usd&days=90&interval=daily`);
+      const rh = await fetch(`${CG}/coins/${cgId}/market_chart?vs_currency=usd&days=90&interval=daily`, { headers: cgH });
       if (rh.ok) {
         const raw = (await rh.json()).prices || [];
         if (raw.length >= 10) {

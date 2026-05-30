@@ -15,6 +15,9 @@ let marketSortKey = 'volume';
 let allMarketData = [];
 let _recentPnlHours = 24;
 let _recentPnlOpen  = false;
+// CoinGecko demo API key — get a free one at https://www.coingecko.com/en/api
+// Set via the monitor settings panel (stored in localStorage)
+let _cgDemoKey = localStorage.getItem('hype_cg_key') || '';
 
 // ── WebSocket state ───────────────────────────────────────────────────────────
 let ws = null;
@@ -90,9 +93,12 @@ async function getOpenOrders(w) { return hlPost({ type:'openOrders', user:w }); 
 
 // ── Shared CoinGecko cache (3-min TTL, shared by intel.js + fundamentals.js) ─
 const _cgShared = { global: null, globalTs: 0, markets: null, marketsTs: 0 };
+function _cgHeaders() {
+  return _cgDemoKey ? { 'x-cg-demo-api-key': _cgDemoKey } : {};
+}
 async function getCGGlobal() {
   if (_cgShared.global && Date.now() - _cgShared.globalTs < 3*60*1000) return _cgShared.global;
-  const r = await fetch('https://api.coingecko.com/api/v3/global');
+  const r = await fetch('https://api.coingecko.com/api/v3/global', { headers: _cgHeaders() });
   if (!r.ok) throw new Error('CG global ' + r.status);
   _cgShared.global = (await r.json()).data;
   _cgShared.globalTs = Date.now();
@@ -100,7 +106,7 @@ async function getCGGlobal() {
 }
 async function getCGMarkets() {
   if (_cgShared.markets && Date.now() - _cgShared.marketsTs < 3*60*1000) return _cgShared.markets;
-  const r = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false&price_change_percentage=24h,7d,30d');
+  const r = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false&price_change_percentage=24h,7d,30d', { headers: _cgHeaders() });
   if (!r.ok) throw new Error('CG markets ' + r.status);
   _cgShared.markets = await r.json();
   _cgShared.marketsTs = Date.now();
@@ -2006,6 +2012,17 @@ async function loadMonitor() {
     </div>
 
     <div class="card" style="margin-top:14px">
+      <div class="card-title">🦎 CoinGecko Demo API Key</div>
+      <div class="muted" style="font-size:11px;margin-bottom:12px">Free tier: get your key at <span style="color:var(--accent)">coingecko.com/en/api</span> → "Get Free API Key". Without a key the public endpoint is rate-limited and Fundamentals/Intel tabs may show empty data.</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <input class="input" id="cg-key-input" type="password" placeholder="CG-xxxxxxxxxxxxxxxxxxxx" value="${localStorage.getItem('hype_cg_key')||''}" style="flex:1;font-family:var(--mono);font-size:11px">
+        <button class="btn btn-primary btn-sm" onclick="saveCGKey()">Save</button>
+        <button class="btn btn-ghost btn-sm" onclick="clearCGKey()">Clear</button>
+      </div>
+      <div id="cg-key-status" style="font-size:11px;color:var(--text-muted);margin-top:6px">${localStorage.getItem('hype_cg_key') ? '✓ CoinGecko key active — 30 req/min, 10k/month' : 'No key — using unauthenticated public endpoint (may rate-limit)'}</div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
       <div class="card-title">📲 Telegram Notifications</div>
       <div class="muted" style="font-size:11px;margin-bottom:12px">Token stored in your browser only — never committed to code or sent anywhere except Telegram.</div>
       <div style="display:flex;flex-direction:column;gap:10px">
@@ -2296,6 +2313,24 @@ function clearProxyUrl() {
   localStorage.removeItem('hype_proxy_url');
   if (document.getElementById('proxy-url-input')) document.getElementById('proxy-url-input').value = '';
   document.getElementById('proxy-status').textContent = 'Cleared — using direct Hyperliquid API (reload to apply)';
+}
+
+function saveCGKey() {
+  const key = (document.getElementById('cg-key-input')?.value || '').trim();
+  if (key) {
+    _cgDemoKey = key;
+    localStorage.setItem('hype_cg_key', key);
+    _cgShared.global = null; _cgShared.markets = null; // bust cache so next fetch uses the key
+    document.getElementById('cg-key-status').textContent = '✓ Key saved — CoinGecko will use demo tier (30 req/min)';
+  } else {
+    clearCGKey();
+  }
+}
+function clearCGKey() {
+  _cgDemoKey = '';
+  localStorage.removeItem('hype_cg_key');
+  if (document.getElementById('cg-key-input')) document.getElementById('cg-key-input').value = '';
+  document.getElementById('cg-key-status').textContent = 'Cleared — using unauthenticated public endpoint';
 }
 
 function saveTGSettings() {
