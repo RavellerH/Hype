@@ -1551,6 +1551,36 @@ tr:hover td { background: var(--surface-hover); }
 .ind-regime-bullets { display:flex; flex-direction:column; gap:4px; }
 .ind-regime-bullet { display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--text-muted); line-height:1.5; }
 
+/* ── Auto-Journal ─────────────────────────────────────────────────────────── */
+.aj-panel { border-bottom:2px solid var(--border); }
+.aj-toolbar { display:flex; align-items:center; gap:10px; padding:10px 14px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+.aj-toolbar-btns { display:flex; gap:6px; flex-wrap:wrap; margin-left:auto; }
+.aj-section-title { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-faint); }
+.aj-weekly-review { margin:10px 14px; padding:10px 12px; background:var(--surface2); border-radius:var(--radius-lg); border-left:3px solid var(--accent); }
+.aj-review-text { font-size:12px; color:var(--text-muted); line-height:1.6; margin-top:6px; }
+.aj-snap-pill { margin:8px 14px 0; font-size:11px; color:var(--text-faint); padding:5px 10px; background:var(--surface2); border-radius:var(--radius-pill); display:inline-block; }
+.aj-ai-notice { margin:8px 14px; padding:8px 12px; font-size:11px; color:var(--text-faint); background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.15); border-radius:var(--radius-md); }
+.aj-empty { padding:24px 14px; font-size:13px; color:var(--text-faint); }
+#aj-entries { display:flex; flex-direction:column; }
+.aj-entry { padding:10px 14px; border-bottom:1px solid var(--border); }
+.aj-entry:last-child { border-bottom:none; }
+.aj-entry-head { display:flex; align-items:center; gap:8px; margin-bottom:7px; flex-wrap:wrap; }
+.aj-coin { font-weight:700; font-size:13px; }
+.aj-side { font-size:10px; font-weight:700; padding:2px 6px; border-radius:3px; }
+.aj-side-long  { background:rgba(74,222,128,0.15);  color:#4ade80; }
+.aj-side-short { background:rgba(248,113,113,0.15); color:#f87171; }
+.aj-pnl { font-size:13px; font-weight:700; }
+.aj-hold { font-size:11px; }
+.aj-date { font-size:11px; }
+.aj-tags { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:6px; }
+.aj-tag-btn { padding:2px 9px; font-size:10px; font-weight:700; cursor:pointer; border-radius:4px; border:1px solid; transition:all .12s; }
+.aj-tag-btn:hover { opacity:0.85; }
+.aj-lesson { font-size:11px; color:var(--text-muted); margin-bottom:5px; font-style:italic; line-height:1.4; }
+.aj-note-row { margin-top:3px; }
+.aj-note-input { width:100%; background:transparent; border:none; border-bottom:1px solid transparent; color:var(--text-muted); font-size:11px; padding:2px 0; outline:none; transition:border-color .15s; }
+.aj-note-input:focus { border-bottom-color:var(--border-strong); }
+.aj-note-input::placeholder { color:var(--text-faint); }
+
 /* ── Listing toast ────────────────────────────────────────────────────────── */
 .listing-toast { pointer-events:all; background:var(--surface); border:1px solid var(--border-strong); border-radius:var(--radius-lg); padding:11px 14px; min-width:220px; max-width:300px; box-shadow:var(--shadow-md); opacity:0; transform:translateX(20px); transition:opacity 0.3s ease, transform 0.3s ease; }
 .listing-toast.listing-toast-in { opacity:1; transform:translateX(0); }

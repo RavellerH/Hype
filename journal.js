@@ -99,6 +99,9 @@ async function loadJournal() {
   const el = document.getElementById('journal-content');
   el.innerHTML = loading();
   try {
+    // Auto-journal panel (enriched entries with tags + lessons)
+    const ajHtml = typeof renderAutoJournalPanel === 'function' ? await renderAutoJournalPanel() : '';
+
     const rawFills = await getUserFills(currentWallet);
     const trades = buildTrades(rawFills);
     const closed = trades.filter(t => t.closed);
@@ -136,7 +139,8 @@ async function loadJournal() {
     let cum = 0;
     const cumPoints = cumData.map(t => { cum += t.net_pnl; return { x: new Date(t.exit_time), y: parseFloat(cum.toFixed(2)) }; });
 
-    el.innerHTML = `
+    el.innerHTML = ajHtml + `
+      <div class="aj-section-title" style="padding:14px 14px 6px;margin-top:8px">Trade Log (${trades.length} total)</div>
       <div class="stat-strip" style="margin-bottom:14px">
         <div class="stat-cell"><div class="s-label">Total Trades</div><div class="s-value">${closed.length}</div></div>
         <div class="stat-cell"><div class="s-label">Win Rate</div><div class="s-value">${winRate}%</div><div class="s-sub">${wins.length}W / ${losses.length}L</div></div>

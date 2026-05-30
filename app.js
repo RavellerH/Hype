@@ -3045,4 +3045,11 @@ document.addEventListener('DOMContentLoaded',()=>{
   autoRefreshTimer=setInterval(_doSilentRefresh,60000);
   _startAgoCounter();
   if(typeof loggerInit==='function'){ loggerInit(); loggerRefreshStatus(); }
+  // Auto-journal: detect closed trades + schedule daily snapshot
+  setTimeout(()=>{
+    if(typeof journalAutoCheck==='function') journalAutoCheck();
+    if(typeof _ajScheduleDaily==='function') _ajScheduleDaily();
+    // Re-check every 10 minutes for new closed trades
+    setInterval(()=>{ if(typeof journalAutoCheck==='function') journalAutoCheck(); }, 600000);
+  }, 8000); // delay 8s so fills load after initial render
 });

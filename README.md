@@ -156,7 +156,18 @@ Configure in Settings tab. Paste your bot token (from [@BotFather](https://t.me/
 
 ## Changelog
 
-### 2026-05-30 (latest)
+### 2026-05-30 (latest — auto-journal)
+- **Auto-Journal** — detects closed trades automatically from Hyperliquid fills (runs on load + every 10 min). Each entry gets: coin, side, PnL, hold time, open/close dates.
+- **Outcome tagging** — tag each trade: Textbook / Disciplined / FOMO / Tilted. Tags toggle inline.
+- **AI lesson per trade** — Claude AI writes a one-line lesson for each closed trade when API key is configured. Runs in background, non-blocking.
+- **Weekly AI pattern review** — Monday review button summarises last 7 days of trades, tags, and lessons into 2-3 actionable sentences.
+- **Daily snapshot** — auto-captures account value + open positions at midnight each day. Last 120 days retained.
+- **JSON export** — download all journal entries + snapshots as a JSON file anytime.
+- **GitHub Gist backup** — one-click backup to a private GitHub Gist (enter PAT once; updates the same Gist on subsequent runs).
+- **Supabase sync** — journal entries sync to `hype_journal` table when Supabase is configured. SQL: `CREATE TABLE hype_journal (id TEXT PRIMARY KEY, wallet TEXT, coin TEXT, side TEXT, entry_time BIGINT, exit_time BIGINT, pnl NUMERIC, fees NUMERIC, net_pnl NUMERIC, hold_ms BIGINT, tag TEXT, notes TEXT, lesson TEXT, created_at BIGINT, source TEXT);`
+- **Git version tag** — `v2026-05-30-pre-autojournal` marks the stable state before this feature.
+
+### 2026-05-30
 - **DeFi Macro tab** — new Analysis tab powered by DeFiLlama (free, unlimited). Shows total DeFi TVL with 24h change, stablecoin supply breakdown (USDT/USDC/DAI/USDe), top 20 protocols by TVL, chain dominance bar chart. Plain-language regime banner (EXPANSION / GROWING / STABLE / COOLING / CONTRACTION).
 - **OKX added to Funding Arb** — cross-exchange basis table now includes OKX alongside Binance and Bybit (4-exchange comparison).
 - **Long/Short ratio in Signals** — Binance global L/S account ratio column added to signal scanner. Crowded-longs warning (>1.8 ratio) shown inline. No API key required.
