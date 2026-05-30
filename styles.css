@@ -1481,3 +1481,47 @@ tr:hover td { background: var(--surface-hover); }
   .ai-left { width:100%; height:50%; border-right:none; border-bottom:1px solid var(--border); }
   .ai-right { height:50%; }
 }
+
+/* ── Arb Scanner ──────────────────────────────────────────────────────────── */
+#page-arb { display:flex; flex-direction:column; overflow:hidden; }
+#arb-content { display:flex; flex-direction:column; flex:1; overflow:hidden; }
+.arb-table { width:100%; border-collapse:collapse; font-size:12px; }
+.arb-table thead th { position:sticky; top:0; z-index:1; background:var(--surface); padding:7px 10px; font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid var(--border); white-space:nowrap; }
+.arb-table tbody tr { border-bottom:1px solid var(--border); transition:background 0.1s; }
+.arb-table tbody tr:hover { background:var(--surface2); }
+.arb-table td { padding:7px 10px; white-space:nowrap; }
+.arb-table td.num { text-align:right; font-family:var(--mono); font-variant-numeric:tabular-nums; }
+.arb-table tr.arb-hi td { background:rgba(251,191,36,0.06); }
+.arb-table tr.arb-hi:hover td { background:rgba(251,191,36,0.12); }
+.arb-signal { display:inline-flex; align-items:center; padding:2px 7px; border-radius:var(--radius-pill); font-size:10px; font-weight:700; letter-spacing:0.3px; }
+.arb-earn    { background:var(--green-bg); color:var(--green);   border:1px solid rgba(74,222,128,0.2); }
+.arb-crowd   { background:var(--red-bg);   color:var(--red);     border:1px solid rgba(248,113,113,0.2); }
+.arb-neutral { background:var(--surface2); color:var(--text-muted); border:1px solid var(--border); }
+
+/* ── Listing toast ────────────────────────────────────────────────────────── */
+.listing-toast { pointer-events:all; background:var(--surface); border:1px solid var(--border-strong); border-radius:var(--radius-lg); padding:11px 14px; min-width:220px; max-width:300px; box-shadow:var(--shadow-md); opacity:0; transform:translateX(20px); transition:opacity 0.3s ease, transform 0.3s ease; }
+.listing-toast.listing-toast-in { opacity:1; transform:translateX(0); }
+
+/* ── Funding Arb Scanner ──────────────────────────────────────────────────── */
+#page-arb { display:flex; flex-direction:column; overflow:hidden; }
+#arb-content { display:flex; flex-direction:column; flex:1; overflow:hidden; }
+.arb-toolbar { display:flex; align-items:center; gap:10px; padding:8px 14px; border-bottom:1px solid var(--border); flex-shrink:0; flex-wrap:wrap; }
+.arb-section { padding:10px 14px 4px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-faint); flex-shrink:0; }
+.arb-table-wrap { overflow:auto; }
+.arb-table { width:100%; border-collapse:collapse; font-size:12px; }
+.arb-table thead th { position:sticky; top:0; z-index:1; background:var(--surface); padding:7px 10px; font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; border-bottom:1px solid var(--border); white-space:nowrap; }
+.arb-table tbody tr { border-bottom:1px solid var(--border); transition:background 0.1s; }
+.arb-table tbody tr:hover { background:var(--surface2); }
+.arb-table td { padding:6px 10px; white-space:nowrap; }
+.arb-table td.num { text-align:right; font-family:var(--mono); font-variant-numeric:tabular-nums; }
+.arb-hi { background:rgba(251,191,36,0.07) !important; }
+.arb-signal { display:inline-block; padding:1px 7px; border-radius:3px; font-size:10px; font-weight:700; letter-spacing:.04em; }
+.arb-earn  { background:rgba(74,222,128,.18); color:var(--green); }
+.arb-crowd { background:rgba(248,113,113,.18); color:var(--red); }
+.arb-neut  { background:var(--surface2); color:var(--text-muted); }
+.arb-long  { background:rgba(74,222,128,.12); color:var(--green); }
+.arb-short { background:rgba(248,113,113,.12); color:var(--red); }
+
+/* ── Listing Toast ────────────────────────────────────────────────────────── */
+.listing-toast { pointer-events:all; background:var(--surface2); border:1px solid var(--accent); border-radius:var(--radius-lg); padding:10px 14px; min-width:220px; max-width:300px; box-shadow:0 4px 20px rgba(0,0,0,.4); opacity:0; transform:translateX(20px); transition:opacity .3s ease, transform .3s ease; }
+.listing-toast-in { opacity:1; transform:translateX(0); }

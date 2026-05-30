@@ -552,7 +552,7 @@ function navigate(page) {
     pageEl.classList.add('active');
     document.querySelectorAll(`[data-page="${page}"]`).forEach(el=>el.classList.add('active'));
     currentPage = page;
-    const loaders={overview:loadOverview,trades:loadTrades,funding:loadFunding,flows:loadFlows,monitor:loadMonitor,markets:loadMarkets,phases:loadPhases,intel:typeof loadIntel!=='undefined'?loadIntel:null,watchlist:loadWatchlist,journal:typeof loadJournal!=='undefined'?loadJournal:null,indicators:typeof loadIndicators!=='undefined'?loadIndicators:null,smartmoney:typeof loadNansen!=='undefined'?loadNansen:null,analytics:typeof loadAnalytics!=='undefined'?loadAnalytics:null,signals:typeof loadSignals!=='undefined'?loadSignals:null,news:typeof loadNews!=='undefined'?loadNews:null,fundamentals:typeof loadFundamentals!=='undefined'?loadFundamentals:null,ai:typeof loadAI!=='undefined'?loadAI:null};
+    const loaders={overview:loadOverview,trades:loadTrades,funding:loadFunding,flows:loadFlows,monitor:loadMonitor,markets:loadMarkets,phases:loadPhases,intel:typeof loadIntel!=='undefined'?loadIntel:null,watchlist:loadWatchlist,journal:typeof loadJournal!=='undefined'?loadJournal:null,indicators:typeof loadIndicators!=='undefined'?loadIndicators:null,smartmoney:typeof loadNansen!=='undefined'?loadNansen:null,analytics:typeof loadAnalytics!=='undefined'?loadAnalytics:null,signals:typeof loadSignals!=='undefined'?loadSignals:null,news:typeof loadNews!=='undefined'?loadNews:null,fundamentals:typeof loadFundamentals!=='undefined'?loadFundamentals:null,ai:typeof loadAI!=='undefined'?loadAI:null,arb:typeof loadArb!=='undefined'?loadArb:null};
     if(loaders[page]) loaders[page]();
   } catch(e) { console.error('navigate error:', e); }
 }
@@ -2883,6 +2883,78 @@ function spinnerHtml(){return '<div class="spinner" style="display:inline-block;
 function loading(){return `<div class="loading">${spinnerHtml()} Loading…</div>`;}
 function err(e){return `<div class="loading">Error: ${e.message}</div>`;}
 
+// ── New Listing Watcher ───────────────────────────────────────────────────────
+let _knownCoins = null;
+
+function playListingAlert() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [523.25, 659.25, 783.99].forEach((freq, i) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = 'sine';
+      const t = ctx.currentTime + i * 0.18;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.25, t + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+      osc.start(t); osc.stop(t + 0.3);
+    });
+  } catch(_) {}
+}
+
+function showListingToast(coin, price) {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+  const toast = document.createElement('div');
+  toast.className = 'listing-toast';
+  const priceStr = price > 0 ? fmtPrice(price) : '';
+  toast.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:16px">🆕</span>
+      <div>
+        <div style="font-weight:700;font-size:13px">${coin} <span style="color:var(--accent);font-size:11px">New HL Listing</span></div>
+        ${priceStr ? `<div style="font-size:11px;color:var(--text-muted)">Mark ${priceStr}</div>` : ''}
+      </div>
+      <button onclick="this.closest('.listing-toast').remove()" style="margin-left:auto;background:none;border:none;color:var(--text-faint);cursor:pointer;font-size:14px;padding:0 2px">✕</button>
+    </div>`;
+  container.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add('listing-toast-in'));
+  setTimeout(() => { toast.classList.remove('listing-toast-in'); setTimeout(() => toast.remove(), 400); }, 8000);
+}
+
+async function checkNewListings() {
+  try {
+    const raw = await getMetaAndAssetCtxs();
+    const [meta, ctxs = []] = raw;
+    const coins = (meta?.universe || []).map((a, i) => ({ name: a.name, px: parseFloat(ctxs[i]?.markPx || 0) })).filter(c => c.name);
+    const names = coins.map(c => c.name);
+    if (_knownCoins === null) {
+      const stored = localStorage.getItem('hype_known_coins');
+      _knownCoins = stored ? new Set(JSON.parse(stored)) : null;
+    }
+    if (_knownCoins === null) {
+      _knownCoins = new Set(names);
+      localStorage.setItem('hype_known_coins', JSON.stringify(names));
+      return;
+    }
+    const newCoins = coins.filter(c => !_knownCoins.has(c.name));
+    for (const c of newCoins) {
+      _knownCoins.add(c.name);
+      playListingAlert();
+      showListingToast(c.name, c.px);
+      sendTelegram(`🆕 <b>New HL Listing: ${c.name}</b>\nMark price: ${c.px > 0 ? fmtPrice(c.px) : '—'}`);
+    }
+    if (newCoins.length) localStorage.setItem('hype_known_coins', JSON.stringify([..._knownCoins]));
+  } catch(_) {}
+}
+
+function startListingWatcher() {
+  checkNewListings();
+  setInterval(checkNewListings, 60 * 1000);
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 function _doSilentRefresh(){
   if(document.hidden) return;
@@ -2942,6 +3014,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   }
   initMobileTableLabels();
   navigate('overview');
+  startListingWatcher();
   autoRefreshTimer=setInterval(_doSilentRefresh,60000);
   _startAgoCounter();
   if(typeof loggerInit==='function'){ loggerInit(); loggerRefreshStatus(); }
