@@ -1,0 +1,26 @@
+name = "hype-bot"
+main = "bot-worker.js"
+compatibility_date = "2024-09-23"
+
+[placement]
+mode = "smart"
+
+[triggers]
+crons = ["*/15 * * * *", "0 0 * * *"]
+
+# KV namespace for alert deduplication (4h cooldown per coin)
+# Create with: npx wrangler kv:namespace create ALERT_STATE
+# Then replace the id below with the real one
+[[kv_namespaces]]
+binding = "ALERT_STATE"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+
+[vars]
+# Coins to scan for TA signals
+SIGNAL_COINS = "BTC,ETH,SOL,HYPE,SUI"
+# Minimum 8h funding rate spread to fire an arb alert (0.001 = 0.1%)
+ARB_THRESHOLD = "0.001"
+# Maximum HL 8h funding rate before a coin is excluded from signal alerts
+MAX_FUNDING = "0.0020"
+# Minimum BTC 24h% for bullish macro gate (not yet wired — reserved for future use)
+BTC_GATE_PCT = "-5"

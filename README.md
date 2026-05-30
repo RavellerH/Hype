@@ -154,9 +154,66 @@ Configure in Settings tab. Paste your bot token (from [@BotFather](https://t.me/
 
 ---
 
+## Cloudflare Bot Worker
+
+A separate cron Worker (`cloudflare/bot-worker.js`) runs autonomously on Cloudflare's edge — no VPS needed.
+
+| Cron | What it does |
+|---|---|
+| Every 15 min | Signal check: EMA20/50 + MACD cross + RSI + funding gate → Telegram alert per coin (4h cooldown) |
+| Every 15 min | Funding arb check: HL vs Binance/Bybit spread > threshold → Telegram alert |
+| Midnight UTC | Daily snapshot → Supabase `hype_snapshots` + Telegram portfolio summary |
+
+**One-time setup:**
+```bash
+cd cloudflare
+
+# Create KV namespace for dedup state
+npx wrangler kv:namespace create ALERT_STATE
+# Copy the returned ID into wrangler-bot.toml [[kv_namespaces]] id = "..."
+
+# Set secrets
+npx wrangler secret put WALLET         --config wrangler-bot.toml
+npx wrangler secret put TG_TOKEN       --config wrangler-bot.toml
+npx wrangler secret put TG_CHAT        --config wrangler-bot.toml
+npx wrangler secret put SUPABASE_URL   --config wrangler-bot.toml
+npx wrangler secret put SUPABASE_KEY   --config wrangler-bot.toml
+
+# Deploy
+npx wrangler deploy --config wrangler-bot.toml
+```
+
+**Manual trigger endpoints** (after deploy):
+```
+GET https://hype-bot.<your-subdomain>.workers.dev/run-signals
+GET https://hype-bot.<your-subdomain>.workers.dev/run-arb
+GET https://hype-bot.<your-subdomain>.workers.dev/run-snapshot
+GET https://hype-bot.<your-subdomain>.workers.dev/health
+```
+
+**Supabase table for snapshots:**
+```sql
+CREATE TABLE hype_snapshots (
+  id TEXT PRIMARY KEY,
+  wallet TEXT,
+  ts BIGINT,
+  account_value NUMERIC,
+  position_count INTEGER,
+  positions_json TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+Env vars in `wrangler-bot.toml [vars]`: `SIGNAL_COINS`, `ARB_THRESHOLD`, `MAX_FUNDING`.
+
+---
+
 ## Changelog
 
-### 2026-05-30 (latest — auto-journal)
+### 2026-05-30 (latest — bot worker)
+- **Cloudflare Bot Worker** — autonomous cron Worker (`cloudflare/bot-worker.js`) with KV dedup. Signal alerts (EMA/MACD/RSI + funding gate), funding arb alerts (HL vs Binance/Bybit), daily portfolio snapshot to Supabase + Telegram. No VPS required.
+
+### 2026-05-30 (auto-journal)
 - **Auto-Journal** — detects closed trades automatically from Hyperliquid fills (runs on load + every 10 min). Each entry gets: coin, side, PnL, hold time, open/close dates.
 - **Outcome tagging** — tag each trade: Textbook / Disciplined / FOMO / Tilted. Tags toggle inline.
 - **AI lesson per trade** — Claude AI writes a one-line lesson for each closed trade when API key is configured. Runs in background, non-blocking.
