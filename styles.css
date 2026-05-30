@@ -1436,7 +1436,8 @@ tr:hover td { background: var(--surface-hover); }
 @media(max-width:600px){.mkt-modal{max-height:95vh}.mkt-modal-head{padding:14px 14px 10px}.mkt-modal-body{padding:12px 14px 16px}}
 
 /* ── Fundamentals ─────────────────────────────────────────────────────────── */
-#page-fundamentals { display:flex; flex-direction:column; overflow:hidden; }
+#page-fundamentals { flex-direction:column; overflow:hidden; }
+#page-fundamentals.active { display:flex; }
 #fundamentals-content { display:flex; flex-direction:column; flex:1; overflow:hidden; }
 .fund-global-bar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:8px 14px; background:var(--surface); border-bottom:1px solid var(--border); font-size:12px; flex-shrink:0; }
 .fund-stat { display:flex; align-items:center; gap:5px; white-space:nowrap; }
