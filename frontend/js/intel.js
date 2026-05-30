@@ -1,484 +1,643 @@
-// ── Cryptowatch Research Snapshot ────────────────────────────────────────────
-// Update this object whenever you paste fresh research from cryptowatch.id
-const INTEL = {
-  snapshot_date: '2026-05-14',
-  source: 'cryptowatch.id',
+// ── Intel Tab — Live Market Intelligence ─────────────────────────────────────
+// Replaces the static Cryptowatch paste. All data auto-fetched.
+//
+// Sources (all free, no API key):
+//   • Hyperliquid:     prices, funding, OI for tracked coins
+//   • Binance Futures: BTC/ETH OI (market-wide), funding, 24h OI history
+//   • Bybit:           BTC funding rate (cross-exchange average)
+//   • CoinGecko:       BTC dominance, altcoin breadth, global mcap
+//   • alternative.me:  Fear & Greed Index
+//   • _mvrvData global (mvrv-ai.js): MVRV Z-Score
+//
+// Auto-scores: regime verdict, radar axes, evidence trail
+// Claude:       synthesis paragraph + desk setups via Edge Function
 
-  // ── MACRO ─────────────────────────────────────────────────────────────────
-  macro: {
-    posture: 'WAIT',
-    posture_score: -0.5,     // ±10 scale
-    posture_confidence: 71,
-    cycle_phase: 'Accumulation',
-    bottom_proximity_pct: 28,
-    capital_flow_30d: '+$6.01B',
-    capital_flow_lead: 'Stablecoins INFLOW',
-    btc_funding_apr: '+5.0%',
-    btc_funding_note: 'Calm · no crowding',
-    btc_oi: '$2.25B',
-    cycle_today: 'SIDEWAYS',
-    cycle_accuracy: '70%',
-    bottom_radar: 84,
-    bottom_signals: 10,
-    neutral_signals: 2,
-    top_signals: 2,
+// ── Endpoints ─────────────────────────────────────────────────────────────────
 
-    // Regime Radar axes (0–10 scale)
-    regime_radar: {
-      Macro: 4, Cycle: 6, OnChain: 7,
-      Derivs: 5, Funding: 6, ETF: 3, Sentiment: 4,
-    },
-
-    // Evidence trail layers
-    evidence_layers: [
-      { name: 'L1 Macro',     score: 4, max: 10, receipts: 3, verdict: 'NEUTRAL' },
-      { name: 'L2 Cycle',     score: 6, max: 10, receipts: 5, verdict: 'BULLISH' },
-      { name: 'L3 Capital',   score: 7, max: 10, receipts: 4, verdict: 'BULLISH' },
-      { name: 'L4 Execution', score: 5, max: 10, receipts: 3, verdict: 'NEUTRAL' },
-    ],
-
-    cohorts: [
-      { name: 'LTH',          stance: 'accumulating', detail: '+131,133 BTC · 30d', bull: true },
-      { name: 'ETF · TradFi', stance: 'distributing', detail: '−$127M · 7d',        bull: false },
-      { name: 'Smart Money',  stance: 'accumulating', detail: 'stable Δ −3.63% · 24h', bull: true },
-    ],
-
-    notable_moves: [
-      { metric: 'Puell Multiple',  z: '+1.65σ', change: '+17.10%', value: '0.9953',  zNum:  1.65 },
-      { metric: 'AHR999',          z: '+1.30σ', change:  '+3.96%', value: '0.5286',  zNum:  1.30 },
-      { metric: 'BTC Price',       z: '+0.78σ', change:  '+1.32%', value: '$80.90k', zNum:  0.78 },
-      { metric: 'MVRV Z-Score',    z: '+0.73σ', change:  '+3.94%', value: '0.9187',  zNum:  0.73 },
-      { metric: 'NUPL',            z: '+0.63σ', change:  '+2.66%', value: '0.3297',  zNum:  0.63 },
-      { metric: 'Hot Capital Share', z: '−0.43σ', change: '−0.90%', value: '12.16%', zNum: -0.43 },
-    ],
-  },
-
-  // ── HUNTER ────────────────────────────────────────────────────────────────
-  hunter: {
-    regime: 'CAUTION',
-    regime_score: 0,
-    regime_max: 10,
-    heat: 41.8,
-    heat_note: 'cool — opportunity zone',
-    btc_funding: '+5.0%',
-    smart_money: 'IDLE',
-    btc_dominance: '60.4%',
-    altcoin_breadth: '24%',
-    whale_net_flow: '+$202K',
-    whale_buy_pressure: 51,
-    leading_narrative: 'Privacy',
-    narrative_rotation: 'perps_dex → privacy',
-    ai_verdict: 'CAUTION',
-    ai_confidence: 'medium',
-    ai_summary: "ZEC's attention lead is the only clean trade, but a cool tape and idle smart money say keep size small. Privacy is the one narrative where mindshare is leading price — ZEC is the expression, with ROSE already moving and TORN broken.",
-    conviction_stack: [
-      { signal: 'Morning Verdict',   pass: true  },
-      { signal: 'Risk Regime',       pass: true  },
-      { signal: 'Narrative Entries', pass: false },
-      { signal: 'Smart Money',       pass: true  },
-      { signal: 'Concentration',     pass: false },
-    ],
-    plays: [
-      { coin: 'ZEC',  action: 'ENTRY', narrative: 'Privacy', reason: "Highest mindshare (0.24) while 7d price still −2.1% — attention leading price. Starter size." },
-      { coin: 'ROSE', action: 'HOLD',  narrative: 'Privacy', reason: "Already +7.7% 7d — confirms the thesis but entry is later than ZEC. Treat as validation." },
-      { coin: 'PC',   action: 'ENTRY', narrative: 'Infra',   reason: "Only REAL verdict in CT emergence — Push Chain universal execution layer, no shill signal. Small size." },
-    ],
-    avoid: [
-      { coin: 'AEON', reason: '10x from sub-300k MC, HYPE verdict, strong shill signal — too late.' },
-      { coin: 'BXE',  reason: 'HYPE + strong shill on XRPL low-cap riding a Chrome extension headline.' },
-      { coin: 'DAD',  reason: 'Solana meme, thin narrative, possible coordinated shilling.' },
-    ],
-    risk: 'Privacy mindshare fades before price catches up. Watch: ZEC mindshare decaying over 2–3 days + ROSE giving back 7d gains + smart money staying idle.',
-    narratives_top: [
-      { name: 'desci',        score: 3.5 },
-      { name: 'rwa',          score: 3.6 },
-      { name: 'sol ecosystem',score: 3.4 },
-      { name: 'l2s',          score: 3.5 },
-      { name: 'restaking',    score: 3.5 },
-    ],
-  },
-
-  // ── DESK SETUPS ───────────────────────────────────────────────────────────
-  desk: {
-    killzone: 'NONE · NY_AM soon',
-    market_stats: [
-      { label: 'Funding',          value: '0.0046%', sub: 'z 1.58',        coin: 'BTC' },
-      { label: 'Open Interest',    value: '$59.77B',  sub: 'Δ4H −0.69%',   coin: 'BTC' },
-      { label: 'Liquidations',     value: '$73.5M',   sub: '24H',           coin: 'BTC' },
-      { label: 'Options Skew 25Δ', value: '+5.9',     sub: 'mild risk-on',  coin: 'BTC' },
-    ],
-    setups: [
-      {
-        coin: 'BTC', htf_bias: 'BULL',
-        scalp: 'NO-TRADE', intraday: 'NO-TRADE', swing: 'NO-TRADE',
-        quant: null, entries: [],
-        note: 'All profiles — no confluence. Wait.',
-      },
-      {
-        coin: 'ETH', htf_bias: 'BEAR',
-        scalp: 'SHORT', intraday: 'SHORT', swing: 'NO-TRADE',
-        quant: { type: 'stat_arb', detail: 'Short BTC / Long ETH · z=+2.03 (60d) · BTC rich vs ETH' },
-        entries: [
-          { profile: 'scalp moderate',    dir: 'SHORT', entry: 2262.91, stop: 2266.65, tp1: 2257.29, tp2: 2253.54, tp3: 2249.79, rr: '1:2.5', conf: '5/10' },
-          { profile: 'scalp aggressive',  dir: 'SHORT', entry: 2257.36, stop: 2267.07, tp1: 2233.08, tp2: 2218.52, tp3: 2199.09, rr: '1:4.2', conf: '5/10' },
-          { profile: 'intraday aggressive', dir: 'SHORT', entry: 2257.36, stop: 2282.63, tp1: 2181.55, tp2: 2131.01, tp3: 2080.46, rr: '1:5.0', conf: '4/10' },
-        ],
-        note: 'Invalidation: 1H close above EMA50 (2277.15)',
-      },
-      {
-        coin: 'SOL', htf_bias: 'BULL',
-        scalp: 'LONG', intraday: 'LONG', swing: 'NO-TRADE',
-        quant: null,
-        entries: [
-          { profile: 'scalp aggressive',  dir: 'LONG', entry: 90.76, stop: 90.46, tp1: 91.50, tp2: 91.94, tp3: 92.53,  rr: '1:4.2', conf: '4/10' },
-          { profile: 'intraday aggressive', dir: 'LONG', entry: 90.76, stop: 89.39, tp1: 94.87, tp2: 97.60, tp3: 100.34, rr: '1:5.0', conf: '4/10' },
-        ],
-        note: 'Invalidation: 1H close below EMA50 (92.65)',
-      },
-      {
-        coin: 'HYPE', htf_bias: 'BEAR',
-        scalp: 'SHORT', intraday: 'SHORT', swing: 'NO-TRADE',
-        quant: { type: 'funding_harvest', detail: 'Short perp / Long spot · est +10.9% APR · delta-neutral' },
-        entries: [
-          { profile: 'scalp moderate',    dir: 'SHORT', entry: 39.03, stop: 39.12, tp1: 38.89, tp2: 38.80, tp3: 38.71, rr: '1:2.5', conf: '5/10' },
-          { profile: 'scalp aggressive',  dir: 'SHORT', entry: 38.95, stop: 39.19, tp1: 38.34, tp2: 37.97, tp3: 37.48, rr: '1:4.2', conf: '5/10' },
-          { profile: 'intraday aggressive', dir: 'SHORT', entry: 38.95, stop: 39.58, tp1: 37.07, tp2: 35.81, tp3: 34.55, rr: '1:5.0', conf: '4/10' },
-        ],
-        note: 'Invalidation: 1H close above EMA50 (39.67) · Funding harvest: +10.95% APR gross',
-      },
-    ],
-  },
+const _IL = {
+  BN_OI:      'https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT',
+  BN_FUND:    'https://fapi.binance.com/fapi/v1/premiumIndex',
+  BN_OI_HIST: 'https://fapi.binance.com/futures/data/openInterestHist?symbol=BTCUSDT&period=1h&limit=25',
+  BY_FUND:    'https://api.bybit.com/v5/market/funding/history?category=linear&symbol=BTCUSDT&limit=1',
+  FNG:        'https://api.alternative.me/fng/?limit=1',
 };
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+const INTEL_TRACK = ['BTC', 'ETH', 'SOL', 'HYPE'];
 
-function _postureColor(p) {
-  return p === 'BUY' || p === 'BULL'   ? 'var(--green)'      :
-         p === 'SELL' || p === 'BEAR'  ? 'var(--red)'        :
-         p === 'CAUTION'               ? 'var(--yellow)'     : 'var(--text-muted)';
+let _intelData     = null;
+let _intelRegime   = null;
+let _intelSetups   = null;      // Claude-generated desk setups (persisted per session)
+let _intelSynth    = null;      // Claude synthesis text
+let _intelTimer    = null;
+let _intelGenState = { setups: false, synth: false }; // loading flags
+
+// ── Fetchers ──────────────────────────────────────────────────────────────────
+
+async function _ilFetchHL() {
+  const [meta, ctxs] = await getMetaAndAssetCtxs();
+  const map = {};
+  meta.universe.forEach((u, i) => {
+    const c = ctxs[i];
+    map[u.name] = {
+      price:   parseFloat(c.markPx   || 0),
+      funding: parseFloat(c.funding  || 0),   // per 1h (HL is hourly)
+      oiCoins: parseFloat(c.openInterest || 0),
+      get oi()   { return this.oiCoins * this.price; },
+      get aprHL(){ return this.funding * 24 * 365 * 100; },
+    };
+  });
+  return map;
 }
 
+async function _ilFetchBinance() {
+  const [oiR, fundBtcR, fundEthR, oiHistR] = await Promise.allSettled([
+    fetch(_IL.BN_OI).then(r => r.json()),
+    fetch(_IL.BN_FUND + '?symbol=BTCUSDT').then(r => r.json()),
+    fetch(_IL.BN_FUND + '?symbol=ETHUSDT').then(r => r.json()),
+    fetch(_IL.BN_OI_HIST).then(r => r.json()),
+  ]);
+
+  const btcOiCoins   = oiR.status === 'fulfilled'     ? parseFloat(oiR.value.openInterest   || 0) : null;
+  const btcFund8h    = fundBtcR.status === 'fulfilled' ? parseFloat(fundBtcR.value.lastFundingRate || 0) : null;
+  const ethFund8h    = fundEthR.status === 'fulfilled' ? parseFloat(fundEthR.value.lastFundingRate || 0) : null;
+  const btcMarkPx    = fundBtcR.status === 'fulfilled' ? parseFloat(fundBtcR.value.markPrice || 0) : null;
+
+  let oiChange24h = null;
+  if (oiHistR.status === 'fulfilled' && Array.isArray(oiHistR.value) && oiHistR.value.length >= 24) {
+    const h = oiHistR.value;
+    const newest = parseFloat(h[h.length - 1].sumOpenInterestValue || 0);
+    const oldest = parseFloat(h[0].sumOpenInterestValue || 0);
+    oiChange24h = oldest > 0 ? ((newest - oldest) / oldest) * 100 : null;
+    // sumOpenInterestValue is in USD
+    var btcOiUsd = newest;
+  }
+
+  return {
+    btcOiCoins,
+    btcOiUsd:   typeof btcOiUsd !== 'undefined' ? btcOiUsd : (btcOiCoins && btcMarkPx ? btcOiCoins * btcMarkPx : null),
+    btcFund8h,              // decimal (e.g. 0.0001 = 0.01%/8h)
+    btcFundApr: btcFund8h != null ? btcFund8h * 3 * 365 * 100 : null,  // annualised %
+    ethFundApr: ethFund8h != null ? ethFund8h * 3 * 365 * 100 : null,
+    oiChange24h,
+  };
+}
+
+async function _ilFetchBybit() {
+  const r = await fetch(_IL.BY_FUND);
+  const d = await r.json();
+  const rate = parseFloat(d.result?.list?.[0]?.fundingRate || 0);  // 8h rate
+  return rate * 3 * 365 * 100;   // APR %
+}
+
+async function _ilFetchCG() {
+  const [gR, mR] = await Promise.allSettled([
+    getCGGlobal(),
+    getCGMarkets(),
+  ]);
+  let btcDom = null, mcapChange24h = null, totalMcap = null, totalVol = null, altBreadth = null;
+  let cgCoins = [];
+
+  if (gR.status === 'fulfilled') {
+    const g = gR.value;
+    btcDom        = g.market_cap_percentage?.btc ?? null;
+    mcapChange24h = g.market_cap_change_percentage_24h_usd ?? null;
+    totalMcap     = g.total_market_cap?.usd ?? null;
+    totalVol      = g.total_volume?.usd ?? null;
+  }
+  if (mR.status === 'fulfilled' && Array.isArray(mR.value)) {
+    cgCoins = mR.value.filter(c => !['usdt','usdc','dai','busd','tusd','usdd'].includes(c.symbol));
+    const up = cgCoins.filter(c => (c.price_change_percentage_24h || 0) > 0).length;
+    altBreadth = cgCoins.length ? Math.round(up / cgCoins.length * 100) : null;
+  }
+  return { btcDom, mcapChange24h, totalMcap, totalVol, altBreadth, cgCoins };
+}
+
+async function _ilFetchFNG() {
+  const r = await fetch(_IL.FNG);
+  const d = await r.json();
+  const e = d.data?.[0];
+  return e ? { value: parseInt(e.value), label: e.value_classification } : null;
+}
+
+async function _fetchIntelData() {
+  const [hl, bn, bybitApr, cg, fng] = await Promise.all([
+    _ilFetchHL().catch(() => ({})),
+    _ilFetchBinance().catch(() => ({})),
+    _ilFetchBybit().catch(() => null),
+    _ilFetchCG().catch(() => ({})),
+    _ilFetchFNG().catch(() => null),
+  ]);
+
+  const btc  = hl['BTC']  || {};
+  const eth  = hl['ETH']  || {};
+  const sol  = hl['SOL']  || {};
+  const hype = hl['HYPE'] || {};
+
+  // Cross-exchange BTC funding average (HL + Binance + Bybit)
+  const fundSamples = [btc.aprHL, bn.btcFundApr, bybitApr].filter(f => f != null);
+  const btcFundApr  = fundSamples.length ? fundSamples.reduce((a, b) => a + b, 0) / fundSamples.length : null;
+
+  // MVRV Z from mvrv-ai.js global
+  const mvrvZ = (typeof _mvrvData !== 'undefined' && _mvrvData?.summary?.z_score != null)
+    ? _mvrvData.summary.z_score : null;
+
+  return {
+    ts:           Date.now(),
+    prices:       { BTC: btc.price, ETH: eth.price, SOL: sol.price, HYPE: hype.price },
+    hlFundApr:    { BTC: btc.aprHL, ETH: eth.aprHL, SOL: sol.aprHL, HYPE: hype.aprHL },
+    hlOI:         { BTC: btc.oi, ETH: eth.oi, SOL: sol.oi, HYPE: hype.oi },
+    btcFundApr,                        // cross-exchange avg, annualised %
+    ethFundApr:   bn.ethFundApr,
+    bnBtcOiUsd:   bn.btcOiUsd,        // Binance BTC perp OI in USD (market-wide)
+    oiChange24h:  bn.oiChange24h,
+    btcDom:       cg.btcDom,
+    mcapChange24h: cg.mcapChange24h,
+    totalMcap:    cg.totalMcap,
+    totalVol:     cg.totalVol,
+    altBreadth:   cg.altBreadth,
+    cgCoins:      cg.cgCoins,
+    fng:          fng,
+    mvrvZ,
+  };
+}
+
+// ── Scoring Engine ────────────────────────────────────────────────────────────
+
+function _scoreIntel(d) {
+  const signals = [];
+
+  // Helper: add signal with weighted score
+  const sig = (name, score, note, value) => signals.push({ name, score, note, value });
+
+  // MVRV Z-Score (weight 3)
+  if (d.mvrvZ != null) {
+    const z = d.mvrvZ;
+    if      (z <  0) sig('MVRV Z',   3, 'Undervalued — historical buy zone', z.toFixed(2));
+    else if (z <  1) sig('MVRV Z',   2, 'Below fair value',                  z.toFixed(2));
+    else if (z <  2) sig('MVRV Z',   1, 'Fair value range',                  z.toFixed(2));
+    else if (z <  4) sig('MVRV Z',   0, 'Neutral — watch closely',           z.toFixed(2));
+    else if (z <  6) sig('MVRV Z',  -1, 'Elevated — late cycle',             z.toFixed(2));
+    else             sig('MVRV Z',  -3, 'Danger zone — distribution risk',   z.toFixed(2));
+  }
+
+  // Fear & Greed (weight 2)
+  if (d.fng?.value != null) {
+    const fg = d.fng.value;
+    if      (fg < 15) sig('Fear & Greed',  2, 'Extreme fear — historical buy zone', fg);
+    else if (fg < 35) sig('Fear & Greed',  1, 'Fear — opportunistic zone',           fg);
+    else if (fg < 55) sig('Fear & Greed',  0, 'Neutral',                             fg);
+    else if (fg < 75) sig('Fear & Greed', -1, 'Greed — tighten stops',               fg);
+    else              sig('Fear & Greed', -2, 'Extreme greed — reduce exposure',      fg);
+  }
+
+  // BTC Funding APR (weight 2)
+  if (d.btcFundApr != null) {
+    const f = d.btcFundApr;
+    if      (f <  0)  sig('BTC Funding',  2, 'Negative — strong setup for longs', f.toFixed(1) + '%');
+    else if (f <  5)  sig('BTC Funding',  1, 'Low — no crowding',                 f.toFixed(1) + '%');
+    else if (f < 15)  sig('BTC Funding',  0, 'Neutral',                           f.toFixed(1) + '%');
+    else if (f < 30)  sig('BTC Funding', -1, 'Elevated — longs crowding',         f.toFixed(1) + '%');
+    else              sig('BTC Funding', -2, 'Very high — crowded, flush risk',    f.toFixed(1) + '%');
+  }
+
+  // Alt Breadth (weight 1)
+  if (d.altBreadth != null) {
+    const b = d.altBreadth;
+    if      (b > 65) sig('Alt Breadth',  1, 'Broad rally — risk appetite healthy',  b + '%');
+    else if (b > 45) sig('Alt Breadth',  0, 'Mixed — selective strength',           b + '%');
+    else             sig('Alt Breadth', -1, 'Broad weakness — risk-off',            b + '%');
+  }
+
+  // Global MCap 24h (weight 1)
+  if (d.mcapChange24h != null) {
+    const m = d.mcapChange24h;
+    if      (m >  3) sig('MCap 24h',  1, 'Rising — inflows present',  (m > 0 ? '+' : '') + m.toFixed(1) + '%');
+    else if (m > -3) sig('MCap 24h',  0, 'Flat',                       m.toFixed(1) + '%');
+    else             sig('MCap 24h', -1, 'Falling — outflows present', m.toFixed(1) + '%');
+  }
+
+  // OI Change 24h (weight 1)
+  if (d.oiChange24h != null) {
+    const o = d.oiChange24h;
+    if      (o < -8) sig('BTC OI 24h',  1, 'Flushed — reset complete',         o.toFixed(1) + '%');
+    else if (o <  5) sig('BTC OI 24h',  0, 'Stable',                           o.toFixed(1) + '%');
+    else             sig('BTC OI 24h', -1, 'Rising fast — crowding building',   o.toFixed(1) + '%');
+  }
+
+  // BTC Dominance (weight 1)
+  if (d.btcDom != null) {
+    const dom = d.btcDom;
+    if      (dom < 50) sig('BTC Dom',  1, 'Alt season conditions',                 dom.toFixed(1) + '%');
+    else if (dom < 58) sig('BTC Dom',  0, 'Neutral — BTC/Alt balance',             dom.toFixed(1) + '%');
+    else               sig('BTC Dom', -1, 'BTC dominance suppressing alts',        dom.toFixed(1) + '%');
+  }
+
+  // Aggregate
+  const raw       = signals.reduce((sum, s) => sum + s.score, 0);
+  const maxRaw    = 11;   // 3+2+2+1+1+1+1
+  const normScore = Math.max(-10, Math.min(10, Math.round(raw * 10 / maxRaw)));
+
+  const bullish  = signals.filter(s => s.score > 0).length;
+  const bearish  = signals.filter(s => s.score < 0).length;
+  const neutral  = signals.filter(s => s.score === 0).length;
+  const agree    = Math.max(bullish, bearish);
+  const confidence = signals.length
+    ? Math.round(40 + (Math.abs(normScore) / 10) * 50)
+    : 50;
+
+  let verdict;
+  if      (normScore >= 6)  verdict = 'BUY';
+  else if (normScore >= 3)  verdict = 'BULL';
+  else if (normScore >= -2) verdict = 'WAIT';
+  else if (normScore >= -5) verdict = 'CAUTION';
+  else                      verdict = 'SELL';
+
+  // Radar axes (0–10, higher = more bullish)
+  const radar = {
+    Macro:     _r(5 + (d.mcapChange24h ?? 0) / 2),
+    Cycle:     d.mvrvZ != null ? _r(Math.max(0, 10 - d.mvrvZ * 1.4)) : 5,
+    OnChain:   d.mvrvZ != null ? _r(Math.max(0, 10 - d.mvrvZ * 1.2)) : 5,
+    Derivs:    d.oiChange24h != null ? _r(5 - d.oiChange24h / 3) : 5,
+    Funding:   d.btcFundApr  != null ? _r(8 - d.btcFundApr / 5)  : 5,
+    Breadth:   d.altBreadth  != null ? _r(d.altBreadth / 10)      : 5,
+    Sentiment: d.fng         != null ? _r((100 - d.fng.value) / 10) : 5,
+  };
+
+  // Evidence layers (auto-grouped)
+  const layers = [
+    _layer('L1 Macro',    [signals.find(s => s.name === 'MCap 24h'), signals.find(s => s.name === 'BTC Dom')]),
+    _layer('L2 Cycle',    [signals.find(s => s.name === 'MVRV Z')]),
+    _layer('L3 Derivs',   [signals.find(s => s.name === 'BTC Funding'), signals.find(s => s.name === 'BTC OI 24h')]),
+    _layer('L4 Sentiment',[signals.find(s => s.name === 'Fear & Greed'), signals.find(s => s.name === 'Alt Breadth')]),
+  ];
+
+  return { score: normScore, verdict, confidence, signals, bullish, bearish, neutral, radar, layers };
+}
+
+function _r(v) { return Math.round(Math.max(0, Math.min(10, v))); }
+
+function _layer(name, sigs) {
+  const valid = sigs.filter(Boolean);
+  if (!valid.length) return { name, score: 5, max: 10, receipts: 0, verdict: 'NEUTRAL' };
+  const raw  = valid.reduce((sum, s) => sum + s.score, 0);
+  const max  = valid.length * 3;
+  const score = Math.round(((raw + max) / (2 * max)) * 10);
+  const verdict = score >= 7 ? 'BULLISH' : score >= 4 ? 'NEUTRAL' : 'BEARISH';
+  return { name, score, max: 10, receipts: valid.length, verdict };
+}
+
+// ── Formatting helpers ─────────────────────────────────────────────────────────
+
+function _ilFmt$(n) {
+  if (n == null) return '—';
+  if (n >= 1e9) return '$' + (n / 1e9).toFixed(2) + 'B';
+  if (n >= 1e6) return '$' + (n / 1e6).toFixed(1) + 'M';
+  return '$' + n.toLocaleString();
+}
+function _ilFmtP(n, dp = 2) {
+  if (n == null) return '—';
+  return (n > 0 ? '+' : '') + n.toFixed(dp) + '%';
+}
+function _ilFmtPrice(n) {
+  if (!n) return '—';
+  const dp = n < 1 ? 4 : n < 100 ? 2 : 0;
+  return '$' + n.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp });
+}
+function _postureColor(p) {
+  return p === 'BUY' || p === 'BULL'   ? 'var(--green)'
+       : p === 'SELL' || p === 'BEAR'  ? 'var(--red)'
+       : p === 'CAUTION'               ? 'var(--yellow)'
+       : 'var(--text-muted)';
+}
 function _verdictCls(v) {
   return v === 'BULLISH' ? 'pos' : v === 'BEARISH' ? 'neg' : 'muted';
 }
 
-// ── Render Intel Page ─────────────────────────────────────────────────────────
+// ── Load & Render ─────────────────────────────────────────────────────────────
 
-function intelIndicatorStrip() {
-  const ind = window._indData;
-  if (!ind) return `<div class="ind-strip-loading">Loading indicators… <span class="muted">(visit Indicators tab first or wait)</span></div>`;
-  const fg = ind.fear_greed, bmsb = ind.bmsb, pi = ind.pi_cycle;
-  const fgCls = fg ? (fg.value < 30 ? 'neg' : fg.value > 70 ? 'pos' : 'muted') : 'muted';
-  const bmsbCls = bmsb ? (bmsb.signal === 'BULL' ? 'pos' : bmsb.signal === 'BEAR' ? 'neg' : 'yellow') : 'muted';
-  const piCls = pi ? (pi.signal === 'TOP' ? 'neg' : pi.signal === 'WARNING' ? 'yellow' : 'pos') : 'muted';
-  return `<div class="ind-strip">
-    <div class="ind-chip"><span class="ind-label">F&G</span><span class="${fgCls} mono">${fg ? fg.value : '—'}</span><span class="ind-badge ind-${fg?.zone?.toLowerCase()||'neutral'}">${fg ? fg.classification : 'N/A'}</span></div>
-    <div class="ind-chip"><span class="ind-label">BMSB</span><span class="${bmsbCls} mono">${bmsb ? bmsb.signal : '—'}</span></div>
-    <div class="ind-chip"><span class="ind-label">Pi Cycle</span><span class="${piCls} mono">${pi ? pi.proximity+'%' : '—'}</span><span class="ind-badge ind-${pi?.signal?.toLowerCase()||'normal'}">${pi ? pi.signal : 'N/A'}</span></div>
-    <div class="ind-chip"><span class="ind-label">MVRV Z</span><span class="mono">${typeof _mvrvData !== 'undefined' && _mvrvData?.summary?.z_score ? _mvrvData.summary.z_score.toFixed(2) : '—'}</span></div>
-  </div>`;
-}
-
-function loadIntel() {
+async function loadIntel() {
   const el = document.getElementById('intel-content');
   if (!el) return;
-  const m = INTEL.macro;
-  const h = INTEL.hunter;
-  const d = INTEL.desk;
 
-  // Score bar: posture_score on ±10 scale → 0–100%
-  const scorePct    = ((m.posture_score + 10) / 20) * 100;
-  const scoreColor  = m.posture_score > 2 ? 'var(--green)' : m.posture_score < -2 ? 'var(--red)' : 'var(--yellow)';
-  const heatColor   = h.heat > 60 ? 'var(--red)' : h.heat > 40 ? 'var(--yellow)' : 'var(--green)';
-  const altNum      = parseInt(h.altcoin_breadth);
-  const btcDomNum   = parseFloat(h.btc_dominance);
+  // If we have data < 3 min old, just re-render
+  if (_intelData && Date.now() - _intelData.ts < 3 * 60 * 1000) {
+    _renderIntel(el, _intelData, _intelRegime);
+    return;
+  }
 
-  // Evidence trail overall
-  const evTotal = m.evidence_layers.reduce((a, l) => a + l.score, 0);
-  const evMax   = m.evidence_layers.reduce((a, l) => a + l.max,   0);
-  const evPct   = Math.round((evTotal / evMax) * 100);
+  el.innerHTML = `<div class="loading"><div class="spinner"></div> Fetching live market data…</div>`;
+
+  try {
+    _intelData   = await _fetchIntelData();
+    _intelRegime = _scoreIntel(_intelData);
+  } catch (e) {
+    el.innerHTML = `<div class="news-empty">Failed to load intel data: ${e.message}<br><button class="btn btn-ghost btn-sm" onclick="loadIntel()" style="margin-top:8px">Retry</button></div>`;
+    return;
+  }
+
+  _renderIntel(el, _intelData, _intelRegime);
+
+  clearInterval(_intelTimer);
+  _intelTimer = setInterval(async () => {
+    _intelData   = await _fetchIntelData().catch(() => _intelData);
+    _intelRegime = _scoreIntel(_intelData);
+    _renderIntel(document.getElementById('intel-content'), _intelData, _intelRegime);
+  }, 3 * 60 * 1000);
+}
+
+function _renderIntel(el, d, r) {
+  if (!el) return;
+  const scorePct   = ((r.score + 10) / 20) * 100;
+  const scoreColor = r.score > 2 ? 'var(--green)' : r.score < -2 ? 'var(--red)' : 'var(--yellow)';
+  const heatColor  = r.score > 4 ? 'var(--green)' : r.score < -3 ? 'var(--red)' : 'var(--yellow)';
+  const btcDomNum  = d.btcDom ?? 0;
+  const evTotal    = r.layers.reduce((a, l) => a + l.score, 0);
+  const evMax      = r.layers.reduce((a, l) => a + l.max,   0);
+  const evPct      = Math.round(evTotal / evMax * 100);
+  const fgVal      = d.fng?.value ?? null;
+  const updStr     = new Date(d.ts).toLocaleTimeString();
 
   el.innerHTML = `
-    ${intelIndicatorStrip()}
+  <!-- Indicator strip (reuse existing) -->
+  ${typeof intelIndicatorStrip === 'function' ? intelIndicatorStrip() : ''}
 
-    <!-- ─── Portfolio Posture Banner ──────────────────────────────────── -->
-    <div class="intel-posture-banner">
-      <div class="intel-posture-main">
-        <div>
-          <div class="intel-posture-label">PORTFOLIO POSTURE</div>
-          <div class="regime-pill regime-${m.posture} intel-posture-verdict">${m.posture}</div>
-        </div>
-        <div class="intel-posture-score-wrap">
-          <div class="intel-posture-score-label">
-            Score <span style="font-family:var(--mono);color:${scoreColor}">${m.posture_score > 0 ? '+' : ''}${m.posture_score}</span> / ±10
-          </div>
-          <div class="intel-score-track">
-            <div class="intel-score-fill" style="width:${scorePct}%;background:${scoreColor}"></div>
-            <div class="intel-score-mid"></div>
-          </div>
-          <div class="intel-posture-conf">${m.posture_confidence}% confidence</div>
-        </div>
-        <div class="intel-posture-meta">
-          <div><span class="intel-meta-label">Cycle</span><span class="intel-meta-val accent">${m.cycle_phase}</span></div>
-          <div><span class="intel-meta-label">Today</span><span class="intel-meta-val">${m.cycle_today} <span class="muted" style="font-size:10px">${m.cycle_accuracy}</span></span></div>
-          <div><span class="intel-meta-label">Snap</span><span class="intel-meta-val muted">${INTEL.snapshot_date}</span></div>
-        </div>
+  <!-- ── Posture Banner ──────────────────────────────────────────────────────── -->
+  <div class="intel-posture-banner">
+    <div class="intel-posture-main">
+      <div>
+        <div class="intel-posture-label">PORTFOLIO POSTURE <span style="font-size:9px;color:var(--text-faint);margin-left:4px">LIVE · ${updStr}</span></div>
+        <div class="regime-pill regime-${r.verdict} intel-posture-verdict">${r.verdict}</div>
       </div>
-      <div class="intel-posture-badges">
-        <span class="regime-pill regime-${h.regime}">Hunter: ${h.regime}</span>
-        <span class="regime-pill regime-${m.posture}">Macro: ${m.posture}</span>
+      <div class="intel-posture-score-wrap">
+        <div class="intel-posture-score-label">
+          Score <span style="font-family:var(--mono);color:${scoreColor}">${r.score > 0 ? '+' : ''}${r.score}</span> / ±10
+        </div>
+        <div class="intel-score-track">
+          <div class="intel-score-fill" style="width:${scorePct}%;background:${scoreColor}"></div>
+          <div class="intel-score-mid"></div>
+        </div>
+        <div class="intel-posture-conf">${r.confidence}% confidence · ${r.bullish} bull / ${r.neutral} neutral / ${r.bearish} bear signals</div>
+      </div>
+      <div class="intel-posture-meta">
+        <div><span class="intel-meta-label">MVRV Z</span><span class="intel-meta-val ${d.mvrvZ != null && d.mvrvZ < 2 ? 'pos' : d.mvrvZ != null && d.mvrvZ > 5 ? 'neg' : ''}">${d.mvrvZ != null ? d.mvrvZ.toFixed(2) : '—'}</span></div>
+        <div><span class="intel-meta-label">F&G</span><span class="intel-meta-val">${fgVal ?? '—'} <span class="muted" style="font-size:10px">${d.fng?.label ?? ''}</span></span></div>
+        <div><span class="intel-meta-label">Sources</span><span class="intel-meta-val muted">HL · BN · BY · CG</span></div>
       </div>
     </div>
-
-    <!-- ─── Key Metrics Strip ─────────────────────────────────────────── -->
-    <div class="stat-strip">
-      <div class="stat-cell">
-        <div class="stat-label">Market Heat</div>
-        <div class="stat-value" style="color:${heatColor}">${h.heat}</div>
-        <div class="stat-sub">${h.heat_note}</div>
-      </div>
-      <div class="stat-cell">
-        <div class="stat-label">BTC Funding APR</div>
-        <div class="stat-value ${m.btc_funding_apr.startsWith('+') ? 'pos' : 'neg'}">${m.btc_funding_apr}</div>
-        <div class="stat-sub">${m.btc_funding_note}</div>
-      </div>
-      <div class="stat-cell">
-        <div class="stat-label">Alt Breadth</div>
-        <div class="stat-value ${altNum < 30 ? 'neg' : altNum > 60 ? 'pos' : ''}">${h.altcoin_breadth}</div>
-        <div class="stat-sub">% alts up</div>
-      </div>
-      <div class="stat-cell">
-        <div class="stat-label">BTC Dominance</div>
-        <div class="stat-value">${h.btc_dominance}</div>
-        <div class="stat-sub">alt season ${btcDomNum > 55 ? 'far' : 'near'}</div>
-      </div>
-      <div class="stat-cell">
-        <div class="stat-label">Smart Money</div>
-        <div class="stat-value" style="color:${h.smart_money === 'ACTIVE' ? 'var(--green)' : 'var(--text-muted)'}">${h.smart_money}</div>
-        <div class="stat-sub">Whale ${h.whale_net_flow}</div>
-      </div>
-      <div class="stat-cell">
-        <div class="stat-label">30D Capital</div>
-        <div class="stat-value pos">${m.capital_flow_30d}</div>
-        <div class="stat-sub">${m.capital_flow_lead}</div>
-      </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:6px">
+      <button class="btn btn-ghost btn-sm" onclick="intelRefresh()" id="intel-refresh-btn">↺ Refresh</button>
+      <button class="btn btn-ghost btn-sm" onclick="intelGenSynth()" id="intel-synth-btn" ${!_intelEdgeUrl() ? 'title="Configure Claude in AI tab first"' : ''}>✦ AI Synthesis</button>
+      <button class="btn btn-ghost btn-sm" onclick="intelGenSetups()" id="intel-setups-btn" ${!_intelEdgeUrl() ? 'title="Configure Claude in AI tab first"' : ''}>✦ Generate Setups</button>
     </div>
+  </div>
 
-    <!-- ─── Main 2-col grid ───────────────────────────────────────────── -->
-    <div class="intel-main-grid">
+  <!-- ── Key Metrics Strip ────────────────────────────────────────────────── -->
+  <div class="stat-strip">
+    ${_renderMetricCell('BTC Price', _ilFmtPrice(d.prices.BTC), d.cgCoins?.find(c => c.symbol === 'btc')?.price_change_percentage_24h, 'vs 24h ago')}
+    ${_renderMetricCell('BTC Funding APR', d.btcFundApr != null ? (d.btcFundApr > 0 ? '+' : '') + d.btcFundApr.toFixed(1) + '%' : '—', null, d.btcFundApr != null ? (d.btcFundApr < 5 ? 'low · uncrowded' : d.btcFundApr > 20 ? 'very crowded' : 'elevated') : 'HL + BN + BY avg', false)}
+    ${_renderMetricCell('BTC OI (Binance)', _ilFmt$(d.bnBtcOiUsd), d.oiChange24h, 'vs 24h ago')}
+    ${_renderMetricCell('Alt Breadth', d.altBreadth != null ? d.altBreadth + '%' : '—', null, 'top 100 coins up 24h', false, d.altBreadth != null && d.altBreadth > 60, d.altBreadth != null && d.altBreadth < 35)}
+    ${_renderMetricCell('BTC Dominance', d.btcDom != null ? d.btcDom.toFixed(1) + '%' : '—', null, `alt season ${btcDomNum > 55 ? 'far' : 'near'}`, false)}
+    ${_renderMetricCell('Total MCap', _ilFmt$(d.totalMcap), d.mcapChange24h, 'vs 24h ago')}
+  </div>
 
-      <!-- LEFT: Radar + Notable Moves -->
-      <div class="intel-col">
+  <!-- ── Coin Funding Table ────────────────────────────────────────────────── -->
+  <div class="card" style="padding:12px 14px">
+    <div class="card-title" style="margin-bottom:8px">Live Funding & OI</div>
+    <div style="overflow:auto">
+      <table>
+        <thead><tr><th>Coin</th><th class="num">Price</th><th class="num">HL Funding APR</th><th class="num">HL OI</th><th class="num">ETH Funding APR (BN)</th></tr></thead>
+        <tbody>
+          ${INTEL_TRACK.map(coin => {
+            const apr = d.hlFundApr[coin];
+            const aprCls = apr != null ? (apr < 0 ? 'pos' : apr > 20 ? 'neg' : '') : '';
+            return `<tr>
+              <td style="font-weight:700;font-family:var(--mono)">${coin}</td>
+              <td class="num">${_ilFmtPrice(d.prices[coin])}</td>
+              <td class="num ${aprCls}">${apr != null ? (apr > 0 ? '+' : '') + apr.toFixed(1) + '%' : '—'}</td>
+              <td class="num">${_ilFmt$(d.hlOI[coin])}</td>
+              <td class="num">${coin === 'ETH' ? (d.ethFundApr != null ? (d.ethFundApr > 0 ? '+' : '') + d.ethFundApr.toFixed(1) + '%' : '—') : '—'}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-        <div class="card">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-            <div class="card-title" style="margin:0">Regime Radar</div>
-            <span class="muted" style="font-size:10px">0 – 10 per axis</span>
-          </div>
-          <div class="intel-radar-wrap">
-            <canvas id="regime-radar-chart" width="240" height="240"></canvas>
-          </div>
-          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px">
-            ${Object.entries(m.regime_radar).map(([k, v]) => {
-              const color = v >= 7 ? 'var(--green)' : v >= 5 ? 'var(--yellow)' : 'var(--red)';
-              return `<div style="display:flex;align-items:center;gap:4px;font-size:10px;padding:2px 7px;background:var(--surface2);border-radius:var(--radius-pill);border:1px solid var(--border)">
-                <span style="color:var(--text-muted)">${k}</span>
-                <span style="font-family:var(--mono);font-weight:700;color:${color}">${v}</span>
-              </div>`;
-            }).join('')}
-          </div>
+  <!-- ── Main 2-col Grid ───────────────────────────────────────────────────── -->
+  <div class="intel-main-grid">
+
+    <!-- LEFT: Radar + Signal Table -->
+    <div class="intel-col">
+
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div class="card-title" style="margin:0">Regime Radar</div>
+          <span class="muted" style="font-size:10px">0–10 per axis · auto-scored</span>
         </div>
-
-        <div class="card">
-          <div class="card-title">What Changed Today</div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Metric</th><th class="num">Z-Score</th><th style="width:72px">Δ Magnitude</th><th class="num">Δ%</th><th class="num">Value</th></tr></thead>
-              <tbody>
-                ${m.notable_moves.map(mv => {
-                  const pos    = mv.zNum >= 0;
-                  const barPct = Math.min(Math.abs(mv.zNum) / 3 * 100, 100);
-                  return `<tr>
-                    <td>${mv.metric}</td>
-                    <td class="num ${pos ? 'pos' : 'neg'}">${mv.z}</td>
-                    <td>
-                      <div class="intel-zbar">
-                        <div class="intel-zbar-fill ${pos ? 'pos-fill' : 'neg-fill'}" style="width:${barPct}%"></div>
-                      </div>
-                    </td>
-                    <td class="num ${mv.change.startsWith('+') ? 'pos' : 'neg'}">${mv.change}</td>
-                    <td class="num muted">${mv.value}</td>
-                  </tr>`;
-                }).join('')}
-              </tbody>
-            </table>
-          </div>
+        <div class="intel-radar-wrap">
+          <canvas id="regime-radar-chart" width="240" height="240"></canvas>
         </div>
-
-      </div><!-- /intel-col left -->
-
-      <!-- RIGHT: Bottom Radar + Evidence + Cohorts -->
-      <div class="intel-col">
-
-        <div class="card">
-          <div class="card-title">Cycle Bottom Radar</div>
-          <div class="intel-bottom-score">
-            <span class="intel-radar-score" style="color:var(--green)">${m.bottom_radar}</span>
-            <span class="muted" style="font-size:13px;margin-left:2px">/100</span>
-          </div>
-          <div style="font-size:10px;color:var(--text-muted);text-align:center;margin-bottom:10px">Strong bottom cluster</div>
-          <div class="progress-bar" style="margin-bottom:12px">
-            <div class="progress-fill" style="width:${m.bottom_radar}%;background:var(--green)"></div>
-          </div>
-          <div class="intel-vote-row">
-            <div class="intel-vote-cell" style="background:var(--green-bg)">
-              <div style="font-size:20px;font-weight:800;color:var(--green)">${m.bottom_signals}</div>
-              <div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em">Bottom</div>
-            </div>
-            <div class="intel-vote-cell" style="background:var(--surface2)">
-              <div style="font-size:20px;font-weight:800;color:var(--text-muted)">${m.neutral_signals}</div>
-              <div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em">Neutral</div>
-            </div>
-            <div class="intel-vote-cell" style="background:var(--red-bg)">
-              <div style="font-size:20px;font-weight:800;color:var(--red)">${m.top_signals}</div>
-              <div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em">Top</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-            <div class="card-title" style="margin:0">Evidence Trail</div>
-            <span style="font-family:var(--mono);font-size:12px;color:var(--accent)">${evPct}%</span>
-          </div>
-          ${m.evidence_layers.map(l => {
-            const pct   = Math.round((l.score / l.max) * 100);
-            const color = l.score >= 7 ? 'var(--green)' : l.score >= 5 ? 'var(--yellow)' : 'var(--red)';
-            return `<div style="margin-bottom:10px">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-                <span style="font-size:11px;font-weight:600">${l.name}</span>
-                <div style="display:flex;gap:6px;align-items:center">
-                  <span class="${_verdictCls(l.verdict)}" style="font-size:10px;font-weight:600">${l.verdict}</span>
-                  <span style="font-family:var(--mono);font-size:11px;color:${color}">${l.score}/${l.max}</span>
-                  <span class="muted" style="font-size:9px">${l.receipts} sigs</span>
-                </div>
-              </div>
-              <div class="progress-bar">
-                <div class="progress-fill" style="width:${pct}%;background:${color}"></div>
-              </div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px">
+          ${Object.entries(r.radar).map(([k, v]) => {
+            const color = v >= 7 ? 'var(--green)' : v >= 5 ? 'var(--yellow)' : 'var(--red)';
+            return `<div style="display:flex;align-items:center;gap:4px;font-size:10px;padding:2px 7px;background:var(--surface2);border-radius:var(--radius-pill);border:1px solid var(--border)">
+              <span style="color:var(--text-muted)">${k}</span>
+              <span style="font-family:var(--mono);font-weight:700;color:${color}">${v}</span>
             </div>`;
           }).join('')}
         </div>
-
-        <div class="card">
-          <div class="card-title">Cohort Confluence</div>
-          ${m.cohorts.map(c => `
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
-            <div>
-              <div style="font-size:12px;font-weight:600">${c.name}</div>
-              <div class="muted" style="font-size:10px;margin-top:2px">${c.detail}</div>
-            </div>
-            <span class="side-badge ${c.bull ? 'long' : 'short'}">${c.stance.toUpperCase()}</span>
-          </div>`).join('')}
-        </div>
-
-      </div><!-- /intel-col right -->
-    </div><!-- /intel-main-grid -->
-
-    <!-- ─── AI Synthesis ──────────────────────────────────────────────── -->
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px">
-        <div class="card-title" style="margin:0">AI Synthesis · Cryptowatch</div>
-        <div style="display:flex;gap:6px;align-items:center">
-          <span class="regime-pill regime-${h.ai_verdict}">${h.ai_verdict}</span>
-          <span class="muted" style="font-size:10px">${h.ai_confidence} confidence</span>
-        </div>
-      </div>
-      <blockquote class="intel-quote">${h.ai_summary}</blockquote>
-
-      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px">
-        ${h.conviction_stack.map(s => `
-        <div class="intel-conviction ${s.pass ? 'conv-pass' : 'conv-fail'}">
-          ${s.pass ? '✓' : '✗'} ${s.signal}
-        </div>`).join('')}
-        <span class="muted" style="font-size:11px;padding:4px 4px;align-self:center">
-          ${h.conviction_stack.filter(s => s.pass).length}/${h.conviction_stack.length} agree
-        </span>
       </div>
 
-      <div class="intel-narrative-bar">
-        <span class="muted" style="font-size:11px">Rotation:</span>
-        <span style="font-family:var(--mono);font-size:12px;color:var(--yellow)">${h.narrative_rotation}</span>
-        <span class="muted" style="font-size:11px">Leading: <b style="color:var(--accent)">${h.leading_narrative}</b></span>
-      </div>
-
-      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px">
-        ${h.narratives_top.map(n => `
-        <div class="intel-narrative-chip">${n.name} <span class="muted">${n.score}</span></div>`).join('')}
-      </div>
-    </div>
-
-    <!-- ─── Plays & Avoid ─────────────────────────────────────────────── -->
-    <div class="grid-2">
       <div class="card">
-        <div class="card-title" style="color:var(--green)">▲ Plays</div>
-        ${h.plays.map(p => `
-        <div class="play-card play-${p.action}">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-            <span style="font-weight:700;font-size:14px;font-family:var(--mono)">${p.coin}</span>
-            <div style="display:flex;gap:5px">
-              <span class="play-action-badge action-${p.action}">${p.action}</span>
-              <span style="font-size:10px;color:var(--text-muted);padding:2px 6px;background:var(--surface2);border-radius:4px">${p.narrative}</span>
+        <div class="card-title">Signal Breakdown</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Signal</th><th>Reading</th><th style="width:80px">Weight</th><th class="num">Note</th></tr></thead>
+            <tbody>
+              ${r.signals.map(s => {
+                const bar = Math.abs(s.score) / 3 * 100;
+                const cls = s.score > 0 ? 'pos' : s.score < 0 ? 'neg' : 'muted';
+                return `<tr>
+                  <td>${s.name}</td>
+                  <td class="num" style="font-family:var(--mono)">${s.value ?? '—'}</td>
+                  <td>
+                    <div class="intel-zbar">
+                      <div class="intel-zbar-fill ${s.score > 0 ? 'pos-fill' : s.score < 0 ? 'neg-fill' : ''}" style="width:${bar}%"></div>
+                    </div>
+                  </td>
+                  <td class="num ${cls}" style="font-size:11px">${s.note}</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /intel-col left -->
+
+    <!-- RIGHT: Evidence + Bottom Radar + Top Movers -->
+    <div class="intel-col">
+
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div class="card-title" style="margin:0">Evidence Trail</div>
+          <span style="font-family:var(--mono);font-size:12px;color:var(--accent)">${evPct}%</span>
+        </div>
+        ${r.layers.map(l => {
+          const pct   = Math.round(l.score / l.max * 100);
+          const color = l.score >= 7 ? 'var(--green)' : l.score >= 4 ? 'var(--yellow)' : 'var(--red)';
+          return `<div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+              <span style="font-size:11px;font-weight:600">${l.name}</span>
+              <div style="display:flex;gap:6px;align-items:center">
+                <span class="${_verdictCls(l.verdict)}" style="font-size:10px;font-weight:600">${l.verdict}</span>
+                <span style="font-family:var(--mono);font-size:11px;color:${color}">${l.score}/${l.max}</span>
+                <span class="muted" style="font-size:9px">${l.receipts} sig${l.receipts !== 1 ? 's' : ''}</span>
+              </div>
             </div>
+            <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${color}"></div></div>
+          </div>`;
+        }).join('')}
+      </div>
+
+      ${_renderTopMovers(d.cgCoins)}
+
+      <div class="card">
+        <div class="card-title">Cycle Score</div>
+        <div class="intel-bottom-score">
+          <span class="intel-radar-score" style="color:${r.score > 3 ? 'var(--green)' : r.score < -3 ? 'var(--red)' : 'var(--yellow)'}">${Math.round((r.score + 10) / 20 * 100)}</span>
+          <span class="muted" style="font-size:13px;margin-left:2px">/100</span>
+        </div>
+        <div class="progress-bar" style="margin:8px 0 12px">
+          <div class="progress-fill" style="width:${(r.score + 10) / 20 * 100}%;background:${scoreColor}"></div>
+        </div>
+        <div class="intel-vote-row">
+          <div class="intel-vote-cell" style="background:var(--green-bg)">
+            <div style="font-size:20px;font-weight:800;color:var(--green)">${r.bullish}</div>
+            <div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em">Bull</div>
           </div>
-          <div style="font-size:11px;color:var(--text-muted);line-height:1.5">${p.reason}</div>
-        </div>`).join('')}
-      </div>
-
-      <div class="card">
-        <div class="card-title" style="color:var(--red)">▼ Avoid</div>
-        ${h.avoid.map(a => `
-        <div class="intel-avoid-card">
-          <div style="font-weight:700;font-size:13px;font-family:var(--mono);color:var(--red);margin-bottom:4px">${a.coin}</div>
-          <div style="font-size:11px;color:var(--text-muted);line-height:1.5">${a.reason}</div>
-        </div>`).join('')}
-        <div class="intel-risk-box">
-          <div style="font-size:10px;font-weight:700;color:var(--yellow);margin-bottom:4px">⚠ RISK TO THESIS</div>
-          <div style="font-size:11px;color:var(--text-muted);line-height:1.5">${h.risk}</div>
+          <div class="intel-vote-cell" style="background:var(--surface2)">
+            <div style="font-size:20px;font-weight:800;color:var(--text-muted)">${r.neutral}</div>
+            <div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em">Neutral</div>
+          </div>
+          <div class="intel-vote-cell" style="background:var(--red-bg)">
+            <div style="font-size:20px;font-weight:800;color:var(--red)">${r.bearish}</div>
+            <div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em">Bear</div>
+          </div>
         </div>
       </div>
+
+    </div><!-- /intel-col right -->
+  </div><!-- /intel-main-grid -->
+
+  <!-- ── AI Synthesis ──────────────────────────────────────────────────────── -->
+  <div class="card" id="intel-synth-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px">
+      <div class="card-title" style="margin:0">AI Synthesis</div>
+      <button class="btn btn-ghost btn-sm" onclick="intelGenSynth()" id="intel-synth-btn2">${_intelEdgeUrl() ? '✦ Regenerate' : '⚙ Configure Claude in AI tab'}</button>
     </div>
+    ${_intelSynth
+      ? `<blockquote class="intel-quote">${_intelSynth}</blockquote>`
+      : `<div class="muted" style="font-size:12px;font-style:italic;padding:10px 0">${_intelEdgeUrl() ? 'Click "AI Synthesis" above to generate market analysis.' : 'Configure the Claude Edge Function in the AI tab to enable synthesis.'}</div>`
+    }
+  </div>
 
-    <!-- ─── Desk Setups ───────────────────────────────────────────────── -->
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:6px">
-        <div class="card-title" style="margin:0">Desk Setups · Active Entries</div>
-        <span class="muted" style="font-size:11px">${d.killzone}</span>
-      </div>
-
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border)">
-        ${d.market_stats.map(ms => `
-        <div class="intel-desk-stat">
-          <div class="intel-desk-stat-label">${ms.coin} ${ms.label}</div>
-          <div class="intel-desk-stat-value">${ms.value}</div>
-          <div class="muted" style="font-size:10px">${ms.sub}</div>
-        </div>`).join('')}
-      </div>
-
-      ${d.setups.map(s => deskSetupBlock(s)).join('')}
+  <!-- ── Desk Setups ────────────────────────────────────────────────────────── -->
+  <div class="card" id="intel-setups-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:6px">
+      <div class="card-title" style="margin:0">Desk Setups</div>
+      <button class="btn btn-ghost btn-sm" onclick="intelGenSetups()" id="intel-setups-btn2">${_intelEdgeUrl() ? '✦ Generate with Claude' : '⚙ Configure Claude in AI tab'}</button>
     </div>
+    ${_intelSetups ? _renderParsedSetups(_intelSetups) : `<div class="muted" style="font-size:12px;font-style:italic;padding:10px 0">${_intelEdgeUrl() ? 'Click "Generate Setups" above — Claude will analyse live funding, OI, and price data to suggest entries.' : 'Configure the Claude Edge Function in the AI tab to generate setups.'}</div>`}
+  </div>
+
+  <!-- ── Staged Trades (from AI tab) ──────────────────────────────────────── -->
+  ${_renderStagedInIntel()}
   `;
 
-  // Kick off radar chart after DOM is ready
-  setTimeout(renderRegimeRadar, 0);
+  setTimeout(_renderIntelRadar, 0);
+}
+
+// ── Sub-renders ───────────────────────────────────────────────────────────────
+
+function _renderMetricCell(label, value, pctChange, sub, colorPct = true, isPos = false, isNeg = false) {
+  const changePart = pctChange != null
+    ? `<div class="stat-sub ${colorPct ? (pctChange >= 0 ? 'pos' : 'neg') : ''}">${_ilFmtP(pctChange)} ${sub || ''}</div>`
+    : `<div class="stat-sub">${sub || ''}</div>`;
+  const valueColor = isPos ? 'color:var(--green)' : isNeg ? 'color:var(--red)' : '';
+  return `<div class="stat-cell">
+    <div class="stat-label">${label}</div>
+    <div class="stat-value" style="${valueColor}">${value}</div>
+    ${changePart}
+  </div>`;
+}
+
+function _renderTopMovers(cgCoins) {
+  if (!cgCoins?.length) return '';
+  const sorted = [...cgCoins].sort((a, b) => Math.abs(b.price_change_percentage_24h || 0) - Math.abs(a.price_change_percentage_24h || 0));
+  const movers = sorted.slice(0, 8);
+  return `<div class="card">
+    <div class="card-title">Top Movers (24h)</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Coin</th><th class="num">Price</th><th class="num">24h</th><th class="num">7d</th></tr></thead>
+        <tbody>
+          ${movers.map(c => {
+            const p24 = c.price_change_percentage_24h || 0;
+            const p7  = c.price_change_percentage_7d_in_currency;
+            return `<tr>
+              <td class="muted">${c.market_cap_rank}</td>
+              <td><strong>${c.symbol.toUpperCase()}</strong> <span class="muted" style="font-size:10px">${c.name}</span></td>
+              <td class="num">${_ilFmtPrice(c.current_price)}</td>
+              <td class="num ${p24 >= 0 ? 'pos' : 'neg'}">${_ilFmtP(p24)}</td>
+              <td class="num ${p7 != null ? (p7 >= 0 ? 'pos' : 'neg') : ''}">${p7 != null ? _ilFmtP(p7) : '—'}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function _intelEdgeUrl() {
+  return (typeof _edgeUrl === 'function' ? _intelEdgeUrl() : null) || localStorage.getItem('hype_edge_fn_url') || '';
+}
+
+function _renderStagedInIntel() {
+  if (typeof _stageTrades === 'undefined' || !Array.isArray(_stageTrades) || !_stageTrades.length) return '';
+  const active = _stageTrades.filter(t => t.status === 'staged' || t.status === 'watching');
+  if (!active.length) return '';
+  return `<div class="card">
+    <div class="card-title">Staged Trades (from AI tab)</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      ${active.map(t => {
+        const cls = (t.direction === 'Long' || t.direction === 'Spot Buy') ? 'pos' : 'neg';
+        return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--surface2);border-radius:var(--radius-md);border:1px solid var(--border)">
+          <span style="font-weight:700;font-family:var(--mono)">${t.coin}</span>
+          <span class="${cls}" style="font-size:11px;font-weight:600">${t.direction.toUpperCase()}</span>
+          ${t.entry_price ? `<span class="muted" style="font-size:11px">Entry ${(+t.entry_price).toLocaleString()}</span>` : ''}
+          ${t.rationale ? `<span style="font-size:11px;color:var(--text-muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.rationale}</span>` : ''}
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
+function _renderParsedSetups(text) {
+  return `<div style="font-size:12px;color:var(--text-muted);line-height:1.7;white-space:pre-wrap">${text.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/`(.+?)`/g,'<code style="background:var(--surface2);padding:1px 4px;border-radius:3px">$1</code>')}</div>`;
 }
 
 // ── Regime Radar Chart ────────────────────────────────────────────────────────
 
-function renderRegimeRadar() {
+function _renderIntelRadar() {
   const canvas = document.getElementById('regime-radar-chart');
-  if (!canvas || typeof Chart === 'undefined') return;
-  const data   = INTEL.macro.regime_radar;
+  if (!canvas || typeof Chart === 'undefined' || !_intelRegime) return;
+  // Destroy existing chart instance if any
+  const existing = Chart.getChart(canvas);
+  if (existing) existing.destroy();
+
+  const data   = _intelRegime.radar;
   const labels = Object.keys(data);
   const values = Object.values(data);
   new Chart(canvas, {
@@ -487,13 +646,13 @@ function renderRegimeRadar() {
       labels,
       datasets: [{
         data: values,
-        backgroundColor:   'rgba(56,189,248,0.08)',
-        borderColor:       '#38bdf8',
-        borderWidth:       1.5,
+        backgroundColor:      'rgba(56,189,248,0.08)',
+        borderColor:          '#38bdf8',
+        borderWidth:          1.5,
         pointBackgroundColor: '#38bdf8',
         pointBorderColor:     '#0a0a0a',
-        pointRadius:       3,
-        pointHoverRadius:  4,
+        pointRadius:          3,
+        pointHoverRadius:     4,
       }],
     },
     options: {
@@ -507,52 +666,119 @@ function renderRegimeRadar() {
           pointLabels: { color: '#6b7280', font: { size: 10, family: "'Inter', sans-serif" } },
         },
       },
-      plugins: {
-        legend:  { display: false },
-        tooltip: { enabled: false },
-      },
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
     },
   });
 }
 
-// ── Desk Setup Block ──────────────────────────────────────────────────────────
+// ── Claude Actions ────────────────────────────────────────────────────────────
 
-function deskSetupBlock(s) {
-  const biasColor  = s.htf_bias === 'BULL' ? 'var(--green)' : s.htf_bias === 'BEAR' ? 'var(--red)' : 'var(--text-muted)';
-  const hasEntries = s.entries.length > 0;
-  const quant      = s.quant;
-  return `
-  <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
-      <span style="font-weight:700;font-size:15px;font-family:var(--mono)">${s.coin}</span>
-      <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:${biasColor}1a;color:${biasColor}">HTF ${s.htf_bias}</span>
-      ${s.scalp    !== 'NO-TRADE' ? `<span class="side-badge ${s.scalp    === 'LONG' ? 'long' : 'short'}" style="font-size:10px">SCALP ${s.scalp}</span>`    : ''}
-      ${s.intraday !== 'NO-TRADE' ? `<span class="side-badge ${s.intraday === 'LONG' ? 'long' : 'short'}" style="font-size:10px">INTRADAY ${s.intraday}</span>` : ''}
-      ${s.swing    !== 'NO-TRADE' ? `<span class="side-badge ${s.swing    === 'LONG' ? 'long' : 'short'}" style="font-size:10px">SWING ${s.swing}</span>`    : ''}
-      ${!hasEntries ? `<span class="muted" style="font-size:11px">No-trade all profiles</span>` : ''}
+function _intelClaudeCtx() {
+  if (!_intelData || !_intelRegime) return null;
+  const d = _intelData, r = _intelRegime;
+  return `Live market snapshot (${new Date(d.ts).toUTCString()}):
+- Regime verdict: ${r.verdict} (score ${r.score}/±10, ${r.confidence}% confidence)
+- BTC price: ${_ilFmtPrice(d.prices.BTC)}, ETH: ${_ilFmtPrice(d.prices.ETH)}, SOL: ${_ilFmtPrice(d.prices.SOL)}, HYPE: ${_ilFmtPrice(d.prices.HYPE)}
+- BTC funding APR (cross-exchange avg): ${d.btcFundApr != null ? d.btcFundApr.toFixed(2) + '%' : 'N/A'}
+- Binance BTC OI: ${_ilFmt$(d.bnBtcOiUsd)}, 24h change: ${d.oiChange24h != null ? _ilFmtP(d.oiChange24h) : 'N/A'}
+- BTC dominance: ${d.btcDom != null ? d.btcDom.toFixed(1) + '%' : 'N/A'}
+- Altcoin breadth: ${d.altBreadth != null ? d.altBreadth + '%' : 'N/A'} of top 100 coins up 24h
+- Fear & Greed: ${d.fng ? d.fng.value + ' (' + d.fng.label + ')' : 'N/A'}
+- MVRV Z-Score: ${d.mvrvZ != null ? d.mvrvZ.toFixed(2) : 'N/A'}
+- Total market cap: ${_ilFmt$(d.totalMcap)}, 24h change: ${d.mcapChange24h != null ? _ilFmtP(d.mcapChange24h) : 'N/A'}
+- Signal breakdown: ${r.signals.map(s => `${s.name} ${s.value} (${s.score > 0 ? '+' : ''}${s.score})`).join(', ')}
+
+HL per-coin funding APR: ${INTEL_TRACK.map(c => `${c} ${d.hlFundApr[c] != null ? d.hlFundApr[c].toFixed(1) + '%' : 'N/A'}`).join(', ')}`;
+}
+
+async function intelGenSynth() {
+  const url = _intelEdgeUrl();
+  if (!url) { alert('Configure Claude in the AI tab first (⚙ Setup).'); return; }
+  const ctx = _intelClaudeCtx();
+  if (!ctx) { alert('Data not loaded yet — wait for the page to finish loading.'); return; }
+
+  const btn = document.getElementById('intel-synth-btn') || document.getElementById('intel-synth-btn2');
+  if (btn) { btn.disabled = true; btn.textContent = '✦ Generating…'; }
+
+  try {
+    const r = await fetch(url, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        message: `Based on this live market data, write a concise 3-4 sentence trading posture synthesis. Include: current regime assessment, key risk or opportunity, and one actionable note. Be direct and specific.\n\n${ctx}`,
+        history: [],
+      }),
+    });
+    const d = await r.json();
+    _intelSynth = d.reply || d.content || d.text || '(empty response)';
+  } catch (e) {
+    _intelSynth = `Error: ${e.message}`;
+  }
+
+  // Update just the synthesis card
+  const card = document.getElementById('intel-synth-card');
+  if (card) {
+    card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px">
+      <div class="card-title" style="margin:0">AI Synthesis</div>
+      <button class="btn btn-ghost btn-sm" onclick="intelGenSynth()" id="intel-synth-btn2">✦ Regenerate</button>
     </div>
-    ${hasEntries ? `
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Profile</th><th>Dir</th><th class="num">Entry</th><th class="num">Stop</th><th class="num">TP1</th><th class="num">TP2</th><th class="num">TP3</th><th class="num">R:R</th><th class="num">Conf</th></tr></thead>
-        <tbody>
-          ${s.entries.map(e => `<tr>
-            <td class="muted">${e.profile}</td>
-            <td><span class="side-badge ${e.dir === 'LONG' ? 'long' : 'short'}" style="font-size:10px">${e.dir}</span></td>
-            <td class="num" style="color:var(--accent)">${e.entry}</td>
-            <td class="num neg">${e.stop}</td>
-            <td class="num pos">${e.tp1}</td>
-            <td class="num pos">${e.tp2}</td>
-            <td class="num pos">${e.tp3}</td>
-            <td class="num" style="font-weight:600">${e.rr}</td>
-            <td class="num muted">${e.conf}</td>
-          </tr>`).join('')}
-        </tbody>
-      </table>
-    </div>` : ''}
-    ${quant ? `<div style="margin-top:8px;padding:8px 10px;background:var(--accent-subtle);border:1px solid rgba(56,189,248,0.2);border-radius:var(--radius-md);font-size:11px">
-      <span style="color:var(--accent);font-weight:600">QUANT ·</span> ${quant.detail}
-    </div>` : ''}
-    ${s.note ? `<div class="muted" style="font-size:10px;margin-top:6px">ℹ ${s.note}</div>` : ''}
+    <blockquote class="intel-quote">${_intelSynth}</blockquote>`;
+  }
+}
+
+async function intelGenSetups() {
+  const url = _intelEdgeUrl();
+  if (!url) { alert('Configure Claude in the AI tab first (⚙ Setup).'); return; }
+  const ctx = _intelClaudeCtx();
+  if (!ctx) { alert('Data not loaded yet.'); return; }
+
+  const btn = document.getElementById('intel-setups-btn') || document.getElementById('intel-setups-btn2');
+  if (btn) { btn.disabled = true; btn.textContent = '✦ Generating…'; }
+
+  try {
+    const r = await fetch(url, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        message: `Based on this live market data, suggest 2-3 specific trade setups. For each: coin, direction (Long/Short), approximate entry price (% from current), stop loss, take profit, and a 1-sentence rationale grounded in the data. Format clearly with **COIN** headers.\n\n${ctx}`,
+        history: [],
+      }),
+    });
+    const d = await r.json();
+    _intelSetups = d.reply || d.content || d.text || '(empty response)';
+  } catch (e) {
+    _intelSetups = `Error: ${e.message}`;
+  }
+
+  const card = document.getElementById('intel-setups-card');
+  if (card) {
+    card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:6px">
+      <div class="card-title" style="margin:0">Desk Setups</div>
+      <button class="btn btn-ghost btn-sm" onclick="intelGenSetups()" id="intel-setups-btn2">✦ Regenerate</button>
+    </div>
+    ${_renderParsedSetups(_intelSetups)}`;
+  }
+}
+
+async function intelRefresh() {
+  _intelData = null;
+  await loadIntel();
+}
+
+// ── Keep backward-compat strip (uses mvrv-ai.js + indicators.js globals) ──────
+
+function intelIndicatorStrip() {
+  const ind  = window._indData;
+  const fg   = ind?.fear_greed;
+  const bmsb = ind?.bmsb;
+  const pi   = ind?.pi_cycle;
+  const fgCls   = fg   ? (fg.value   < 30  ? 'neg' : fg.value   > 70 ? 'pos' : 'muted') : 'muted';
+  const bmsbCls = bmsb ? (bmsb.signal === 'BULL' ? 'pos' : bmsb.signal === 'BEAR' ? 'neg' : 'yellow') : 'muted';
+  const piCls   = pi   ? (pi.signal === 'TOP' ? 'neg' : pi.signal === 'WARNING' ? 'yellow' : 'pos') : 'muted';
+  return `<div class="ind-strip">
+    <div class="ind-chip"><span class="ind-label">F&G</span><span class="${fgCls} mono">${fg ? fg.value : '—'}</span><span class="ind-badge ind-${fg?.zone?.toLowerCase()||'neutral'}">${fg ? fg.classification : 'N/A'}</span></div>
+    <div class="ind-chip"><span class="ind-label">BMSB</span><span class="${bmsbCls} mono">${bmsb ? bmsb.signal : '—'}</span></div>
+    <div class="ind-chip"><span class="ind-label">Pi Cycle</span><span class="${piCls} mono">${pi ? pi.proximity + '%' : '—'}</span><span class="ind-badge ind-${pi?.signal?.toLowerCase()||'normal'}">${pi ? pi.signal : 'N/A'}</span></div>
+    <div class="ind-chip"><span class="ind-label">MVRV Z</span><span class="mono">${typeof _mvrvData !== 'undefined' && _mvrvData?.summary?.z_score ? _mvrvData.summary.z_score.toFixed(2) : '—'}</span></div>
   </div>`;
 }

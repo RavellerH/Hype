@@ -89,6 +89,25 @@ async function getCandles(coin, interval='1h', days=7) {
 }
 async function getOpenOrders(w) { return hlPost({ type:'openOrders', user:w }); }
 
+// ── Shared CoinGecko cache (3-min TTL, shared by intel.js + fundamentals.js) ─
+const _cgShared = { global: null, globalTs: 0, markets: null, marketsTs: 0 };
+async function getCGGlobal() {
+  if (_cgShared.global && Date.now() - _cgShared.globalTs < 3*60*1000) return _cgShared.global;
+  const r = await fetch('https://api.coingecko.com/api/v3/global');
+  if (!r.ok) throw new Error('CG global ' + r.status);
+  _cgShared.global = (await r.json()).data;
+  _cgShared.globalTs = Date.now();
+  return _cgShared.global;
+}
+async function getCGMarkets() {
+  if (_cgShared.markets && Date.now() - _cgShared.marketsTs < 3*60*1000) return _cgShared.markets;
+  const r = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false&price_change_percentage=24h,7d,30d');
+  if (!r.ok) throw new Error('CG markets ' + r.status);
+  _cgShared.markets = await r.json();
+  _cgShared.marketsTs = Date.now();
+  return _cgShared.markets;
+}
+
 // ── Parsers ───────────────────────────────────────────────────────────────────
 function parsePositions(state) {
   return (state.assetPositions||[]).map(pos=>{

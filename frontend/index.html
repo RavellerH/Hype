@@ -36,6 +36,8 @@
       <button class="topbar-tab"        data-page="intel"     onclick="navigate('intel')">Intel</button>
       <button class="topbar-tab"        data-page="mvrv"      onclick="navigate('mvrv')">MVRV</button>
       <button class="topbar-tab"        data-page="ai"        onclick="navigate('ai')">AI</button>
+      <button class="topbar-tab"        data-page="fundamentals" onclick="navigate('fundamentals')">Fundamentals</button>
+      <button class="topbar-tab"        data-page="news"      onclick="navigate('news')">News</button>
       <button class="topbar-tab"        data-page="watchlist" onclick="navigate('watchlist')">Watchlist</button>
       <button class="topbar-tab"        data-page="journal"     onclick="navigate('journal')">Journal</button>
       <button class="topbar-tab"        data-page="indicators"  onclick="navigate('indicators')">Indicators</button>
@@ -136,6 +138,8 @@
       <button class="drawer-item"        data-page="intel"     onclick="navigate('intel')"><span class="drawer-item-icon">📡</span>Intel</button>
       <button class="drawer-item"        data-page="mvrv"      onclick="navigate('mvrv')"><span class="drawer-item-icon">📈</span>MVRV</button>
       <button class="drawer-item"        data-page="ai"        onclick="navigate('ai')"><span class="drawer-item-icon">🤖</span>AI</button>
+      <button class="drawer-item"        data-page="fundamentals" onclick="navigate('fundamentals')"><span class="drawer-item-icon">🏦</span>Fundamentals</button>
+      <button class="drawer-item"        data-page="news"      onclick="navigate('news')"><span class="drawer-item-icon">📰</span>News</button>
       <div class="nav-drawer-section">Tools</div>
       <button class="drawer-item"        data-page="watchlist"  onclick="navigate('watchlist')"><span class="drawer-item-icon">👛</span>Watchlist</button>
       <button class="drawer-item"        data-page="journal"    onclick="navigate('journal')"><span class="drawer-item-icon">📓</span>Journal</button>
@@ -163,22 +167,27 @@
     <div class="page"         id="page-smartmoney"><div id="smartmoney-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page"         id="page-analytics"><div id="analytics-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page"         id="page-kb"><div id="kb-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
+    <div class="page"         id="page-fundamentals"><div id="fundamentals-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
+    <div class="page"         id="page-news"><div id="news-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page"         id="page-signals"></div>
   </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="intel.js"></script>
-<script src="position-meta.js"></script>
-<script src="journal.js"></script>
-<script src="indicators.js"></script>
-<script src="nansen.js"></script>
-<script src="analytics.js"></script>
-<script src="logger.js"></script>
-<script src="app.js"></script>
-<script src="signals.js"></script>
-<script src="ta-signal.js"></script>
-<script src="mvrv-ai.js"></script>
-<script src="kb.js"></script>
+<script src="js/intel.js"></script>
+<script src="js/position-meta.js"></script>
+<script src="js/journal.js"></script>
+<script src="js/indicators.js"></script>
+<script src="js/nansen.js"></script>
+<script src="js/analytics.js"></script>
+<script src="js/logger.js"></script>
+<script src="js/app.js"></script>
+<script src="js/signals.js"></script>
+<script src="js/ta-signal.js"></script>
+<script src="js/mvrv-ai.js"></script>
+<script src="js/news.js"></script>
+<script src="js/fundamentals.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/kb.js"></script>
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW:', err));
