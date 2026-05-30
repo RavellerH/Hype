@@ -79,7 +79,7 @@ function _fApy(r) {
 function _signal(r) {
   if (r < -ARB_THRESHOLD) return '<span class="arb-signal arb-earn">EARN</span>';
   if (r >  ARB_THRESHOLD) return '<span class="arb-signal arb-crowd">CROWDED</span>';
-  return '<span class="arb-signal arb-neutral">NEUTRAL</span>';
+  return '<span class="arb-signal arb-neut">NEUTRAL</span>';
 }
 
 // ── Render ────────────────────────────────────────────────────────────────────
