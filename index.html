@@ -64,28 +64,39 @@
     </div>
   </header>
 
-  <!-- Sidebar icon rail (desktop) -->
+  <!-- Sidebar nav (desktop) -->
   <nav class="sidebar">
-    <a class="nav-item active" data-page="overview"  onclick="navigate('overview')"  title="Portfolio"><span class="icon">📊</span></a>
-    <a class="nav-item"        data-page="trades"    onclick="navigate('trades')"    title="Trades"><span class="icon">🔄</span></a>
-    <a class="nav-item"        data-page="funding"   onclick="navigate('funding')"   title="Funding"><span class="icon">💹</span></a>
-    <a class="nav-item"        data-page="flows"     onclick="navigate('flows')"     title="Flows"><span class="icon">💰</span></a>
-    <a class="nav-item"        data-page="monitor"   onclick="navigate('monitor')"   title="Live"><span class="icon">⚡</span></a>
-    <a class="nav-item"        data-page="markets"   onclick="navigate('markets')"   title="Markets"><span class="icon">🌊</span></a>
-    <a class="nav-item"        data-page="phases"    onclick="navigate('phases')"    title="Phases"><span class="icon">🔵</span></a>
-    <a class="nav-item"        data-page="intel"     onclick="navigate('intel')"     title="Intel"><span class="icon">📡</span></a>
-    <a class="nav-item"        data-page="mvrv"      onclick="navigate('mvrv')"      title="MVRV"><span class="icon">📈</span></a>
-    <a class="nav-item"        data-page="ai"        onclick="navigate('ai')"        title="AI"><span class="icon">🤖</span></a>
-    <a class="nav-item"        data-page="watchlist" onclick="navigate('watchlist')" title="Watchlist"><span class="icon">👛</span></a>
-    <a class="nav-item"        data-page="journal"     onclick="navigate('journal')"     title="Journal"><span class="icon">📓</span></a>
-    <a class="nav-item"        data-page="indicators"  onclick="navigate('indicators')"  title="Indicators"><span class="icon">📊</span></a>
-    <a class="nav-item"        data-page="smartmoney"  onclick="navigate('smartmoney')"  title="Smart Money"><span class="icon">🧠</span></a>
-    <a class="nav-item"        data-page="analytics"   onclick="navigate('analytics')"   title="Analytics"><span class="icon">🤖</span></a>
-    <a class="nav-item"        data-page="kb"          onclick="navigate('kb')"          title="Knowledge Base"><span class="icon">📚</span></a>
-    <a class="nav-item"        data-page="signals"        onclick="navigate('signals')"        title="Signals"><span class="icon">🎯</span></a>
-    <a class="nav-item"        data-page="news"           onclick="navigate('news')"           title="News"><span class="icon">📰</span></a>
-    <a class="nav-item"        data-page="fundamentals"   onclick="navigate('fundamentals')"   title="Fundamentals"><span class="icon">🏦</span></a>
-    <a class="nav-item"        data-page="arb"            onclick="navigate('arb')"            title="Funding Arb"><span class="icon">⚖️</span></a>
+    <div class="nav-section">Portfolio</div>
+    <a class="nav-item active" data-page="overview"      onclick="navigate('overview')"><span class="icon">📊</span>Overview</a>
+    <a class="nav-item"        data-page="trades"         onclick="navigate('trades')"><span class="icon">🔄</span>Trades</a>
+    <a class="nav-item"        data-page="funding"        onclick="navigate('funding')"><span class="icon">💹</span>Funding</a>
+    <a class="nav-item"        data-page="flows"          onclick="navigate('flows')"><span class="icon">💰</span>Flows</a>
+
+    <div class="nav-section">Live</div>
+    <a class="nav-item"        data-page="monitor"        onclick="navigate('monitor')"><span class="icon">⚡</span>Monitor</a>
+    <a class="nav-item"        data-page="markets"        onclick="navigate('markets')"><span class="icon">🌊</span>Markets</a>
+    <a class="nav-item"        data-page="arb"            onclick="navigate('arb')"><span class="icon">⚖️</span>Funding Arb</a>
+
+    <div class="nav-section">Analysis</div>
+    <a class="nav-item"        data-page="phases"         onclick="navigate('phases')"><span class="icon">🔵</span>Phases</a>
+    <a class="nav-item"        data-page="intel"          onclick="navigate('intel')"><span class="icon">📡</span>Intel</a>
+    <a class="nav-item"        data-page="mvrv"           onclick="navigate('mvrv')"><span class="icon">📈</span>MVRV</a>
+    <a class="nav-item"        data-page="indicators"     onclick="navigate('indicators')"><span class="icon">📊</span>Indicators</a>
+    <a class="nav-item"        data-page="smartmoney"     onclick="navigate('smartmoney')"><span class="icon">🧠</span>Smart Money</a>
+
+    <div class="nav-section">AI</div>
+    <a class="nav-item"        data-page="ai"             onclick="navigate('ai')"><span class="icon">🤖</span>AI</a>
+    <a class="nav-item"        data-page="signals"        onclick="navigate('signals')"><span class="icon">🎯</span>Signals</a>
+
+    <div class="nav-section">Content</div>
+    <a class="nav-item"        data-page="news"           onclick="navigate('news')"><span class="icon">📰</span>News</a>
+    <a class="nav-item"        data-page="fundamentals"   onclick="navigate('fundamentals')"><span class="icon">🏦</span>Fundamentals</a>
+    <a class="nav-item"        data-page="kb"             onclick="navigate('kb')"><span class="icon">📚</span>KB</a>
+
+    <div class="nav-section">Tools</div>
+    <a class="nav-item"        data-page="watchlist"      onclick="navigate('watchlist')"><span class="icon">👛</span>Watchlist</a>
+    <a class="nav-item"        data-page="journal"        onclick="navigate('journal')"><span class="icon">📓</span>Journal</a>
+    <a class="nav-item"        data-page="analytics"      onclick="navigate('analytics')"><span class="icon">📊</span>Analytics</a>
   </nav>
 
   <!-- Mobile bottom nav -->
