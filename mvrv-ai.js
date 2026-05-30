@@ -8,6 +8,114 @@ const MVRV_ZONE_META = {
   NEUTRAL:     { label: 'Neutral',     cls: 'mvrv-zone-neutral', color: 'var(--text-muted)', desc: 'Near 90d avg — fair value range' },
   UNDERVALUED: { label: 'Undervalued', cls: 'mvrv-zone-under',   color: 'var(--green)',      desc: 'Below 90d avg — potential accumulation zone' },
 };
+
+let _mvrvLearnOpen = false;
+
+function mvrvToggleLearn() {
+  _mvrvLearnOpen = !_mvrvLearnOpen;
+  const body = document.getElementById('mvrv-learn-body');
+  const icon = document.getElementById('mvrv-learn-icon');
+  if (body) body.style.display = _mvrvLearnOpen ? 'block' : 'none';
+  if (icon) icon.style.transform = _mvrvLearnOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+}
+
+function _mvrvLearnHtml(coins) {
+  const belowOne = Object.values(coins).filter(c => c.mvrv < 1.0);
+
+  const zones = [
+    { range: '> 2.0',       label: 'Danger Zone',  cls: 'mvrv-zone-hot',     meaning: 'Price far above realized value — historically near major market tops.', action: 'Consider reducing exposure significantly. Strong distribution territory.' },
+    { range: '1.40 – 2.0',  label: 'Overheated',   cls: 'mvrv-zone-hot',     meaning: 'Price well above average holder cost basis. Risk is elevated.', action: 'Stay cautious. Tighten trailing stops. Consider partial profit-taking.' },
+    { range: '1.15 – 1.40', label: 'Bullish',       cls: 'mvrv-zone-bull',    meaning: 'Momentum phase — holders on average are in profit.', action: 'Trend is your friend. Trail stops up. Watch for reversal signals at resistance.' },
+    { range: '0.85 – 1.15', label: 'Fair Value',    cls: 'mvrv-zone-neutral', meaning: 'Price near the average holder\'s cost basis. Neutral, wait-and-see zone.', action: 'Look for confluence with other signals (phase, volume, TA) before entering.' },
+    { range: '0.50 – 0.85', label: 'Undervalued',   cls: 'mvrv-zone-under',   meaning: 'Below average cost basis. Buyers have a statistical edge here.', action: 'Dollar-cost averaging makes sense. Scale in slowly with defined risk.' },
+    { range: '< 0.50',      label: 'Capitulation',  cls: 'mvrv-zone-under',   meaning: 'Extreme undervaluation. Very rare — everyone on average is deeply in loss.', action: 'Maximum historical accumulation zone. Requires patience but odds are strongly in your favor.' },
+  ];
+
+  const belowOneAlert = belowOne.length > 0 ? `
+    <div class="mvrv-alert-below1">
+      <div class="mvrv-alert-icon">📉</div>
+      <div>
+        <strong>${belowOne.map(c => c.symbol).join(', ')} ${belowOne.length > 1 ? 'are' : 'is'} below MVRV 1.0 — Accumulation Signal</strong>
+        <div style="margin-top:5px;font-size:12px;color:var(--text-muted);line-height:1.55">
+          The current price is <em style="color:var(--green);font-style:normal">below the average cost basis</em> of all market participants —
+          the average holder is sitting at a loss. In Bitcoin's history MVRV has only dropped below 1 three times:
+          the Dec 2018 bottom (~$3,200 → +1,800% over 2 years), the March 2020 COVID crash (~$4,000 → +1,400% over 12 months),
+          and the Nov 2022 post-FTX collapse (~$16,000 → +400% over 18 months).
+          Not a guaranteed signal, but historically one of the strongest long-term buy zones.
+        </div>
+      </div>
+    </div>` : '';
+
+  return `
+  <div class="mvrv-learn">
+    <button class="mvrv-learn-toggle" onclick="mvrvToggleLearn()">
+      <span>📚 What is MVRV? — Beginner Guide</span>
+      <span id="mvrv-learn-icon" style="transition:transform 0.2s;display:inline-block;font-size:12px">▼</span>
+    </button>
+    <div id="mvrv-learn-body" style="display:${_mvrvLearnOpen ? 'block' : 'none'}">
+      <div class="mvrv-learn-content">
+        ${belowOneAlert}
+
+        <div class="mvrv-learn-section">
+          <h4>What is MVRV?</h4>
+          <p>MVRV stands for <strong>Market Value to Realized Value</strong>. It compares the current market price of a coin to the average price at which all existing coins were last moved on-chain — essentially everyone's average <strong>cost basis</strong>.</p>
+          <ul>
+            <li><strong>Market Value</strong> — current price × circulating supply (what the network is worth right now)</li>
+            <li><strong>Realized Value</strong> — each coin valued at the price it last moved (what everyone paid on average)</li>
+            <li><strong>MVRV Ratio</strong> = Market Value ÷ Realized Value</li>
+          </ul>
+          <p style="font-size:12px;color:var(--text-muted)">⚠ Hype uses an approximation: Current Price ÷ 90-day average price, since true on-chain realized value requires blockchain data. Treat this as a directional signal, not precise MVRV.</p>
+        </div>
+
+        <div class="mvrv-learn-section">
+          <h4>What does MVRV below 1.0 mean?</h4>
+          <p>When MVRV drops below <strong>1.0</strong>, the current price is below the average cost basis of all holders. In plain English: <em>the average person holding this coin is at a loss</em>.</p>
+          <p>This matters because:</p>
+          <ul>
+            <li><strong>Weak hands have already sold</strong> — only committed long-term holders remain</li>
+            <li><strong>Statistical edge for new buyers</strong> — you're entering below the "average break-even" level</li>
+            <li><strong>Capitulation is priced in</strong> — the worst of the selling pressure has typically already passed</li>
+            <li><strong>Risk/reward skews favorably</strong> — downside is limited (everyone's already at a loss), upside can be large</li>
+          </ul>
+          <div class="mvrv-historical">
+            <div class="mvrv-hist-item"><span class="mvrv-zone-badge mvrv-zone-under">Dec 2018</span>&nbsp; BTC ~$3,200 → +1,800% over the next 2 years</div>
+            <div class="mvrv-hist-item"><span class="mvrv-zone-badge mvrv-zone-under">Mar 2020</span>&nbsp; BTC ~$4,000 (COVID crash) → +1,400% over 12 months</div>
+            <div class="mvrv-hist-item"><span class="mvrv-zone-badge mvrv-zone-under">Nov 2022</span>&nbsp; BTC ~$16,000 (post-FTX) → +400% over 18 months</div>
+          </div>
+        </div>
+
+        <div class="mvrv-learn-section">
+          <h4>Zone Reference Guide</h4>
+          <div class="mvrv-zone-table">
+            ${zones.map(z => `
+            <div class="mvrv-zone-row">
+              <div class="mvrv-zone-row-left">
+                <span class="mvrv-zone-badge ${z.cls}">${z.label}</span>
+                <span class="mvrv-zone-range">${z.range}</span>
+              </div>
+              <div class="mvrv-zone-row-right">
+                <div class="mvrv-zone-meaning">${z.meaning}</div>
+                <div class="mvrv-zone-action">→ ${z.action}</div>
+              </div>
+            </div>`).join('')}
+          </div>
+        </div>
+
+        <div class="mvrv-learn-section">
+          <h4>How to use MVRV in this dashboard</h4>
+          <ul>
+            <li>Use MVRV as a <strong>macro backdrop</strong>, not a direct trade trigger</li>
+            <li>In the <strong>Signals tab</strong>, MVRV zone is one factor in the confluence score (undervalued = positive, overheated = negative for longs)</li>
+            <li>Best combined with: phase detector, TA signals (EMA/MACD/RSI), and funding rate</li>
+            <li><strong>Overheated MVRV + overbought RSI + high funding</strong> = avoid new longs</li>
+            <li><strong>Undervalued MVRV + bull phase + low funding</strong> = strong confluence for entry</li>
+            <li>Data refreshes from CoinGecko (free tier, rate-limited) — use the refresh button manually</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
 const MVRV_COIN_NAMES = { BTC: 'Bitcoin', ETH: 'Ethereum', SOL: 'Solana', HYPE: 'Hyperliquid' };
 const MVRV_CG_IDS     = { BTC: 'bitcoin', ETH: 'ethereum', SOL: 'solana', HYPE: 'hyperliquid' };
 const MVRV_ORDER      = ['BTC', 'ETH', 'SOL', 'HYPE'];
@@ -125,6 +233,7 @@ function renderMVRV(data) {
   const updatedStr = data.updated ? new Date(data.updated*1000).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
   el.innerHTML = `
     ${stripHtml}
+    ${_mvrvLearnHtml(coins)}
     <div class="filter-bar" style="justify-content:space-between">
       <span style="font-size:12px;color:var(--text-muted)">${data.source}</span>
       <div style="display:flex;align-items:center;gap:8px">

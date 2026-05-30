@@ -44,6 +44,7 @@
       <button class="topbar-tab"        data-page="analytics"   onclick="navigate('analytics')">Analytics</button>
       <button class="topbar-tab"        data-page="kb"          onclick="navigate('kb')">KB</button>
       <button class="topbar-tab"        data-page="signals"     onclick="navigate('signals')">Signals</button>
+      <button class="topbar-tab"        data-page="news"        onclick="navigate('news')">News</button>
     </nav>
 
     <div class="topbar-right">
@@ -80,6 +81,7 @@
     <a class="nav-item"        data-page="analytics"   onclick="navigate('analytics')"   title="Analytics"><span class="icon">🤖</span></a>
     <a class="nav-item"        data-page="kb"          onclick="navigate('kb')"          title="Knowledge Base"><span class="icon">📚</span></a>
     <a class="nav-item"        data-page="signals"     onclick="navigate('signals')"     title="Signals"><span class="icon">🎯</span></a>
+    <a class="nav-item"        data-page="news"        onclick="navigate('news')"         title="News"><span class="icon">📰</span></a>
   </nav>
 
   <!-- Mobile bottom nav -->
@@ -146,6 +148,7 @@
       <button class="drawer-item"        data-page="analytics"  onclick="navigate('analytics')"><span class="drawer-item-icon">📊</span>Analytics</button>
       <button class="drawer-item"        data-page="kb"         onclick="navigate('kb')"><span class="drawer-item-icon">📚</span>KB</button>
       <button class="drawer-item"        data-page="signals"    onclick="navigate('signals')"><span class="drawer-item-icon">🎯</span>Signals</button>
+      <button class="drawer-item"        data-page="news"       onclick="navigate('news')"><span class="drawer-item-icon">📰</span>News</button>
     </div>
   </nav>
 
@@ -167,6 +170,7 @@
     <div class="page"         id="page-analytics"><div id="analytics-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page"         id="page-kb"><div id="kb-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page"         id="page-signals"></div>
+    <div class="page"         id="page-news"><div id="news-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
   </main>
 
 <!-- Market Detail Modal -->
@@ -189,6 +193,7 @@
 <script src="mvrv-ai.js"></script>
 <script src="kb.js"></script>
 <script src="signals.js"></script>
+<script src="news.js"></script>
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW:', err));
