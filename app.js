@@ -2059,6 +2059,7 @@ async function loadMonitor() {
 // ── Portfolio Chart ───────────────────────────────────────────────────────────
 let chartMode = 'all'; // 'all' | 'perp' | 'spot'
 let _chartData = {};   // cached per-mode data
+let _chartDataTs = 0;
 
 function savePortfolioSnap(key, v) {
   try {
@@ -2214,11 +2215,19 @@ async function renderPortfolioChart(totalPortfolio) {
   savePortfolioSnap('spot', spotValue);
   fetchIDRRate();
 
-  let taggedFills = [], funding = [];
+  if (_chartData.all && !_silentRefresh && Date.now() - _chartDataTs < 60000) {
+    const d = _chartData[chartMode];
+    if (d?.pts?.length) { _drawPortfolioChart(d.pts, d.current); updateChartLabels(); }
+    return;
+  }
+
+  let taggedFills = _ovData?.recentFills || [], funding = [];
   try {
-    const rawFills = await getUserFills(currentWallet);
-    const spotIndexMap = buildSpotIndexMap(_ovData?.spotMetaRaw);
-    taggedFills = tagFills(parseFills(rawFills), spotIndexMap);
+    if (!taggedFills.length) {
+      const rawFills = await getUserFills(currentWallet);
+      const spotIndexMap = buildSpotIndexMap(_ovData?.spotMetaRaw);
+      taggedFills = tagFills(parseFills(rawFills), spotIndexMap);
+    }
     funding = await getUserFunding(currentWallet, 7).then(parseFunding).catch(() => []);
   } catch(_) {}
 
@@ -2230,6 +2239,7 @@ async function renderPortfolioChart(totalPortfolio) {
     perp: { pts: buildPortfolioHistory(perpValue,      perpFills,   funding,  getPortfolioSnaps('perp')), current: perpValue },
     spot: { pts: buildPortfolioHistory(spotValue,      spotFills,   [],       getPortfolioSnaps('spot')), current: spotValue },
   };
+  _chartDataTs = Date.now();
 
   const d = _chartData[chartMode];
   if (!d?.pts?.length) return;
