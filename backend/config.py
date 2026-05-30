@@ -16,7 +16,7 @@ PHASE_RECORD_INTERVAL = 3600   # record every hour (seconds)
 PHASE_RETENTION_DAYS  = 14     # keep 2 weeks of history
 PHASE_LOG_CSV         = os.path.join(os.path.dirname(__file__), "phase_log.csv")
 
-NANSEN_API_KEY = os.getenv("NANSEN_API_KEY", "nsn_26ca358673bb886639703ba43524fead")
+NANSEN_API_KEY = os.getenv("NANSEN_API_KEY", "")
 
 # Supabase
 SUPABASE_URL              = os.getenv("SUPABASE_URL", "https://eiqlvbylkcmgvksrxqld.supabase.co")
