@@ -29,6 +29,7 @@ A personal trading dashboard for [Hyperliquid](https://hyperliquid.xyz) — live
 | **Signals** | Multi-factor confluence scanner (funding + CVD + OI + momentum) |
 | **News** | Crypto news from 9 sources (CryptoCompare, Messari, Reddit, 6 RSS feeds) with Fear & Greed |
 | **Fundamentals** | Top 100 coins — price, 24h/7d/30d%, market cap, volume, ATH drawdown |
+| **DeFi** | DeFiLlama macro dashboard — total TVL, chain dominance, protocol rankings, stablecoin supply |
 
 ---
 
@@ -65,17 +66,23 @@ Hype/
 ├── kb.js               Knowledge base
 ├── position-meta.js    Per-position intent / thesis modal
 ├── logger.js           Data logger & portfolio snapshots
-├── signals.js          Confluence scanner UI
+├── signals.js          Confluence scanner UI (+ Binance L/S ratio)
+├── defillama.js        DeFiLlama macro dashboard (TVL, stablecoins, chains)
+├── arb.js              Funding arb scanner (HL + Binance + Bybit + OKX)
+├── cloudflare/         Cloudflare Worker RSS proxy (deploy with wrangler)
 ├── styles.css          All styles (single file, CSS variables)
 ├── sw.js               Service worker (PWA caching)
 └── docs.html           Documentation
 ```
 
-**Data sources (all free, no API keys required):**
+**Data sources (all free, no API keys required by default):**
 - Hyperliquid REST + WebSocket API
-- Binance Futures public API (OI, funding)
+- Binance Futures public API (OI, funding, L/S ratio)
 - Bybit public API (funding)
-- CoinGecko public API (markets, global stats, trending)
+- OKX public API (funding rates — arb scanner)
+- Kraken public API (BTC/ETH spot — CoinGecko fallback)
+- CoinGecko public API (markets, global stats, trending) — optional demo key for higher limits
+- DeFiLlama API (TVL, stablecoins, chain breakdown) — unlimited, no key
 - alternative.me (Fear & Greed)
 - CryptoCompare, Messari, Reddit (news)
 - RSS feeds: CoinDesk, Cointelegraph, Decrypt, CryptoNews, The Block, Bitcoin Magazine
@@ -148,6 +155,17 @@ Configure in Settings tab. Paste your bot token (from [@BotFather](https://t.me/
 ---
 
 ## Changelog
+
+### 2026-05-30 (latest)
+- **DeFi Macro tab** — new Analysis tab powered by DeFiLlama (free, unlimited). Shows total DeFi TVL with 24h change, stablecoin supply breakdown (USDT/USDC/DAI/USDe), top 20 protocols by TVL, chain dominance bar chart. Plain-language regime banner (EXPANSION / GROWING / STABLE / COOLING / CONTRACTION).
+- **OKX added to Funding Arb** — cross-exchange basis table now includes OKX alongside Binance and Bybit (4-exchange comparison).
+- **Long/Short ratio in Signals** — Binance global L/S account ratio column added to signal scanner. Crowded-longs warning (>1.8 ratio) shown inline. No API key required.
+- **Signal → AI wiring** — Daily Regime Briefing in Analytics now includes current signal scanner results (entry coins, scores) when a scan has been run.
+- **Indicators: Regime Summary** — plain-language assessment card at the top of the Indicators tab synthesizes F&G + BMSB + Pi Cycle + MVRV Z into a single RISK-ON / RISK-OFF / RISK-CAUTIOUS / TRANSITIONAL verdict with bullet explanations.
+- **News: 3rd CORS proxy** — corsproxy.io added as third option in RSS fetch race alongside allorigins.win and rss2json.com. Reduces silent failures.
+- **Shared price cache** — `getCGSimplePrices()` centralises CoinGecko simple-price calls with Kraken fallback (BTC/ETH/SOL) when CoinGecko rate-limits. Reduces CoinGecko calls by ~60%.
+- **Cloudflare Worker** — `cloudflare/` directory with ready-to-deploy RSS proxy Worker. `npx wrangler deploy` from that directory, then paste URL into Settings → RSS Proxy.
+- **Sidebar nav bug fix** — `#page-fundamentals { display:flex }` was overriding `.page { display:none }` due to CSS specificity. Fixed: display moved to `#page-fundamentals.active`.
 
 ### 2026-05-30
 - **Intel tab rebuilt** — replaced static Cryptowatch paste with fully automated live data. Auto-scoring engine from 7 signals (MVRV Z, F&G, BTC funding, alt breadth, OI change, mcap, BTC dom). Regime radar, evidence trail, and cycle score all computed live. Claude "AI Synthesis" and "Generate Setups" buttons added. Auto-refreshes every 3 minutes. Sources: HL + Binance Futures + Bybit + CoinGecko.

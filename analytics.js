@@ -472,9 +472,20 @@ function _buildRegimePrompt() {
     ? pos.slice(0, 5).map(p => `${p.coin} ${(p.szi || 0) > 0 ? 'LONG' : 'SHORT'}`).join(', ')
     : 'none';
 
+  let sigText = '';
+  const sigResults = window._sigLastResults;
+  if (sigResults?.length) {
+    const entries = sigResults.filter(r => r.verdict === 'ENTRY');
+    if (entries.length) {
+      sigText = `- Signal scanner ENTRY: ${entries.map(r => `${r.coin} score ${r.score}/10 phase ${r.phase}`).join(', ')}\n`;
+    } else {
+      sigText = `- Signal scanner: no entries — ${sigResults.map(r => `${r.coin} ${r.score}/10`).join(', ')}\n`;
+    }
+  }
+
   return `You are a brief market analyst for a crypto perps trader on Hyperliquid. Today: ${new Date().toDateString()}.
 
-INDICATORS:\n${indText}OPEN POSITIONS: ${posText}
+INDICATORS:\n${indText}${sigText}OPEN POSITIONS: ${posText}
 
 Write a 3–4 sentence daily regime briefing covering:
 1. Current regime classification (risk-on / risk-off / transitional)

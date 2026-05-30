@@ -36,6 +36,7 @@ const SIG_DSL_TIERS = [
 
 let _sigRunning = false;
 let _sigLastResults = null;
+window._sigLastResults = null; // shared with analytics.js
 
 // ── API helpers ───────────────────────────────────────────────────────────────
 
@@ -171,14 +172,35 @@ function _sigSkipReasons(r) {
   return reasons;
 }
 
+// ── Long/Short ratio (Binance, free, no key) ──────────────────────────────────
+
+async function _sigLongShortRatios(coins) {
+  const result = {};
+  const supported = coins.filter(c => ['BTC','ETH','SOL','BNB','XRP','DOGE','AVAX','MATIC'].includes(c));
+  await Promise.allSettled(supported.map(async coin => {
+    try {
+      const r = await fetch(`https://fapi.binance.com/futures/data/globalLongShortAccountRatio?symbol=${coin}USDT&period=1h&limit=1`);
+      if (!r.ok) return;
+      const d = await r.json();
+      if (d?.[0]) result[coin] = {
+        longPct:  parseFloat(d[0].longAccount) * 100,
+        shortPct: parseFloat(d[0].shortAccount) * 100,
+        ratio:    parseFloat(d[0].longShortRatio),
+      };
+    } catch {}
+  }));
+  return result;
+}
+
 // ── Main scan ─────────────────────────────────────────────────────────────────
 
 async function runSignalScan(coins) {
-  // Parallel: market contexts + wallet positions + BTC 4h
-  const [marketCtxs, walletPositions, btcCandles] = await Promise.all([
+  // Parallel: market contexts + wallet positions + BTC 4h + L/S ratios
+  const [marketCtxs, walletPositions, btcCandles, lsRatios] = await Promise.all([
     _sigMarketContexts(),
     _sigWalletPositions(),
     _sigCandles('BTC', '4h', 2),
+    _sigLongShortRatios(coins),
   ]);
 
   // BTC macro gate
@@ -226,6 +248,8 @@ async function runSignalScan(coins) {
         score >= SIG_CONFIG.MIN_CONFLUENCE_SCORE
       ) ? 'ENTRY' : 'SKIP';
 
+      const ls = lsRatios[coin] || null;
+
       const r = {
         coin, verdict, score,
         phase:        phaseData.phase,
@@ -235,7 +259,7 @@ async function runSignalScan(coins) {
         oi:      ctx.openInterest || 0,
         markPx:  ctx.markPx || 0,
         walletLongs, walletPositions,
-        ta1h, ta15m, btcGateOk,
+        ta1h, ta15m, btcGateOk, ls,
       };
       r.skipReasons = verdict === 'SKIP' ? _sigSkipReasons(r) : [];
       return r;
@@ -280,6 +304,14 @@ function renderSignalRow(r) {
     ? `<span style="color:var(--pos);font-weight:700">${r.walletLongs.length}</span>`
     : '<span style="color:var(--text-faint)">0</span>';
 
+  const lsHtml = r.ls
+    ? (() => {
+        const crowded = r.ls.ratio > 1.8;
+        const cl = crowded ? 'neg' : r.ls.ratio < 0.8 ? 'pos' : 'muted';
+        return `<span class="${cl}" title="Long ${r.ls.longPct.toFixed(1)}% / Short ${r.ls.shortPct.toFixed(1)}%">${r.ls.ratio.toFixed(2)}</span>`;
+      })()
+    : '<span style="color:var(--text-faint)">—</span>';
+
   return `
     <tr class="sig-row"
         onclick="sigToggleDetail('${r.coin}')"
@@ -297,6 +329,7 @@ function renderSignalRow(r) {
       <td style="padding:10px 4px;text-align:center;color:${fundColor};font-size:12px">
         ${r.fundingBlock ? '⚠ ' : ''}${(r.fundingRate*100).toFixed(3)}%
       </td>
+      <td style="padding:10px 4px;text-align:center">${lsHtml}</td>
       <td style="padding:10px 4px;text-align:center">${walletHtml}</td>
       <td style="padding:10px 6px;text-align:right">${verdictHtml}</td>
     </tr>
@@ -445,6 +478,7 @@ function renderSignalsTable(results, btcMove, btcGateOk) {
             <th style="text-align:center;padding:8px 4px;font-weight:600">Score</th>
             <th style="text-align:center;padding:8px 4px;font-weight:600">Phase</th>
             <th style="text-align:center;padding:8px 4px;font-weight:600">Funding/8h</th>
+            <th style="text-align:center;padding:8px 4px;font-weight:600" title="Binance L/S account ratio — >1.8 crowded longs">L/S</th>
             <th style="text-align:center;padding:8px 4px;font-weight:600">Wallets</th>
             <th style="text-align:right;padding:8px 6px;font-weight:600">Verdict</th>
           </tr>
@@ -539,6 +573,7 @@ async function _doSigScan(coins) {
   try {
     const { results, btcMove, btcGateOk } = await runSignalScan(coins);
     _sigLastResults = results;
+    window._sigLastResults = results;
     renderSignalsTable(results, btcMove, btcGateOk);
 
     const ts = document.getElementById('sig-last-scan');

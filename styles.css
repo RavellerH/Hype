@@ -1503,6 +1503,53 @@ tr:hover td { background: var(--surface-hover); }
 .arb-crowd   { background:var(--red-bg);   color:var(--red);     border:1px solid rgba(248,113,113,0.2); }
 .arb-neutral { background:var(--surface2); color:var(--text-muted); border:1px solid var(--border); }
 
+/* ── DeFiLlama ────────────────────────────────────────────────────────────── */
+#page-defi { display:flex; flex-direction:column; overflow:hidden; }
+#page-defi.active { display:flex; }
+#defi-content { display:flex; flex-direction:column; flex:1; overflow-y:auto; overflow-x:hidden; }
+.defi-wrap { max-width:1200px; margin:0 auto; padding:0 0 24px; width:100%; }
+.defi-toolbar { display:flex; align-items:center; gap:10px; padding:10px 14px; border-bottom:1px solid var(--border); flex-shrink:0; flex-wrap:wrap; }
+.defi-regime { margin:12px 14px 4px; padding:12px 14px; background:var(--surface2); border-radius:var(--radius-lg); border-left:3px solid var(--border-strong); }
+.defi-regime-header { display:flex; align-items:center; gap:0; flex-wrap:wrap; margin-bottom:8px; }
+.defi-regime-badge { font-size:13px; font-weight:800; margin-right:10px; }
+.defi-regime-meta { font-size:12px; color:var(--text-muted); }
+.defi-regime-bullets { display:flex; flex-direction:column; gap:4px; }
+.defi-regime-bullet { display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--text-muted); line-height:1.5; }
+.defi-kpi-strip { display:flex; gap:0; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+.defi-kpi { flex:1; min-width:120px; padding:12px 16px; border-right:1px solid var(--border); }
+.defi-kpi:last-child { border-right:none; }
+.defi-kpi-label { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-faint); margin-bottom:4px; }
+.defi-kpi-value { font-size:20px; font-weight:800; font-family:var(--mono); }
+.defi-kpi-sub { font-size:11px; color:var(--text-muted); margin-top:2px; }
+.defi-grid { display:grid; grid-template-columns:1fr 340px; gap:0; }
+@media(max-width:900px) { .defi-grid { grid-template-columns:1fr; } }
+.defi-section { padding:14px 14px 0; }
+.defi-right-col { border-left:1px solid var(--border); padding:14px 14px 0; }
+.defi-section-title { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-faint); margin-bottom:8px; padding-bottom:6px; border-bottom:1px solid var(--border); }
+.defi-table-wrap { overflow-x:auto; }
+.defi-table { width:100%; border-collapse:collapse; font-size:12px; }
+.defi-table thead th { position:sticky; top:0; z-index:1; background:var(--surface); padding:6px 8px; font-size:10px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid var(--border); white-space:nowrap; text-align:left; }
+.defi-table th.num,.defi-table td.num { text-align:right; font-family:var(--mono); }
+.defi-table tbody tr { border-bottom:1px solid var(--border); transition:background 0.1s; }
+.defi-table tbody tr:hover { background:var(--surface2); }
+.defi-table td { padding:6px 8px; white-space:nowrap; }
+.defi-chains { display:flex; flex-direction:column; gap:6px; }
+.defi-chain-row { display:grid; grid-template-columns:16px 90px 1fr 60px 36px; gap:6px; align-items:center; font-size:12px; }
+.defi-chain-rank { color:var(--text-faint); font-size:10px; }
+.defi-chain-name { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.defi-chain-bar-wrap { height:4px; background:var(--border); border-radius:2px; overflow:hidden; }
+.defi-chain-bar { height:100%; background:var(--accent); border-radius:2px; transition:width 0.5s ease; }
+.defi-chain-tvl { font-family:var(--mono); font-size:11px; text-align:right; }
+.defi-chain-pct { font-size:10px; text-align:right; }
+
+/* ── Indicators — Regime Summary ─────────────────────────────────────────── */
+.ind-regime-summary { margin:12px 14px 4px; padding:12px 14px; background:var(--surface2); border-radius:var(--radius-lg); border:1px solid var(--border); }
+.ind-regime-header { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.ind-regime-verdict { font-size:14px; font-weight:800; }
+.ind-regime-sub { font-size:11px; color:var(--text-faint); }
+.ind-regime-bullets { display:flex; flex-direction:column; gap:4px; }
+.ind-regime-bullet { display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--text-muted); line-height:1.5; }
+
 /* ── Listing toast ────────────────────────────────────────────────────────── */
 .listing-toast { pointer-events:all; background:var(--surface); border:1px solid var(--border-strong); border-radius:var(--radius-lg); padding:11px 14px; min-width:220px; max-width:300px; box-shadow:var(--shadow-md); opacity:0; transform:translateX(20px); transition:opacity 0.3s ease, transform 0.3s ease; }
 .listing-toast.listing-toast-in { opacity:1; transform:translateX(0); }

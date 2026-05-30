@@ -113,6 +113,33 @@ async function getCGMarkets() {
   return _cgShared.markets;
 }
 
+// Shared simple-price cache (replaces scattered per-module CG calls)
+const _cgPriceCache = { data: null, ts: 0 };
+async function getCGSimplePrices(ids = 'bitcoin,ethereum,solana') {
+  if (_cgPriceCache.data && Date.now() - _cgPriceCache.ts < 3*60*1000) return _cgPriceCache.data;
+  try {
+    const r = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true`, { headers: _cgHeaders() });
+    if (!r.ok) throw new Error('CG price ' + r.status);
+    _cgPriceCache.data = await r.json();
+    _cgPriceCache.ts   = Date.now();
+    return _cgPriceCache.data;
+  } catch (e) {
+    // Kraken fallback for BTC and ETH prices
+    try {
+      const kr = await fetch('https://api.kraken.com/0/public/Ticker?pair=XBTUSD,ETHUSD,SOLUSD');
+      if (!kr.ok) throw new Error('Kraken ' + kr.status);
+      const kd = await kr.json();
+      const result = {};
+      if (kd.result?.XXBTZUSD) result.bitcoin = { usd: parseFloat(kd.result.XXBTZUSD.c[0]) };
+      if (kd.result?.XETHZUSD) result.ethereum = { usd: parseFloat(kd.result.XETHZUSD.c[0]) };
+      if (kd.result?.SOLUSD)   result.solana   = { usd: parseFloat(kd.result.SOLUSD.c[0]) };
+      _cgPriceCache.data = result;
+      _cgPriceCache.ts   = Date.now();
+      return result;
+    } catch { return _cgPriceCache.data || {}; }
+  }
+}
+
 // ── Parsers ───────────────────────────────────────────────────────────────────
 function parsePositions(state) {
   return (state.assetPositions||[]).map(pos=>{
@@ -552,7 +579,7 @@ function navigate(page) {
     pageEl.classList.add('active');
     document.querySelectorAll(`[data-page="${page}"]`).forEach(el=>el.classList.add('active'));
     currentPage = page;
-    const loaders={overview:loadOverview,trades:loadTrades,funding:loadFunding,flows:loadFlows,monitor:loadMonitor,markets:loadMarkets,phases:loadPhases,intel:typeof loadIntel!=='undefined'?loadIntel:null,watchlist:loadWatchlist,journal:typeof loadJournal!=='undefined'?loadJournal:null,indicators:typeof loadIndicators!=='undefined'?loadIndicators:null,smartmoney:typeof loadNansen!=='undefined'?loadNansen:null,analytics:typeof loadAnalytics!=='undefined'?loadAnalytics:null,signals:typeof loadSignals!=='undefined'?loadSignals:null,news:typeof loadNews!=='undefined'?loadNews:null,fundamentals:typeof loadFundamentals!=='undefined'?loadFundamentals:null,ai:typeof loadAI!=='undefined'?loadAI:null,arb:typeof loadArb!=='undefined'?loadArb:null};
+    const loaders={overview:loadOverview,trades:loadTrades,funding:loadFunding,flows:loadFlows,monitor:loadMonitor,markets:loadMarkets,phases:loadPhases,intel:typeof loadIntel!=='undefined'?loadIntel:null,watchlist:loadWatchlist,journal:typeof loadJournal!=='undefined'?loadJournal:null,indicators:typeof loadIndicators!=='undefined'?loadIndicators:null,smartmoney:typeof loadNansen!=='undefined'?loadNansen:null,analytics:typeof loadAnalytics!=='undefined'?loadAnalytics:null,signals:typeof loadSignals!=='undefined'?loadSignals:null,news:typeof loadNews!=='undefined'?loadNews:null,fundamentals:typeof loadFundamentals!=='undefined'?loadFundamentals:null,ai:typeof loadAI!=='undefined'?loadAI:null,arb:typeof loadArb!=='undefined'?loadArb:null,defi:typeof loadDefi!=='undefined'?loadDefi:null,kb:typeof loadKB!=='undefined'?loadKB:null};
     if(loaders[page]) loaders[page]();
   } catch(e) { console.error('navigate error:', e); }
 }

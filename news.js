@@ -31,8 +31,9 @@ const RSS_FEEDS = [
   { id: 'bitcoinmag',    url: 'https://bitcoinmagazine.com/.rss/full/' },
 ];
 
-const ALLORIGINS  = 'https://api.allorigins.win/get?url=';
-const RSS2JSON    = 'https://api.rss2json.com/v1/api.json?count=20&rss_url=';
+const ALLORIGINS   = 'https://api.allorigins.win/get?url=';
+const RSS2JSON     = 'https://api.rss2json.com/v1/api.json?count=20&rss_url=';
+const CORSPROXY_IO = 'https://corsproxy.io/?url=';
 const FNG_URL     = 'https://api.alternative.me/fng/?limit=7';
 const CC_BASE     = 'https://min-api.cryptocompare.com/data/v2/news/?lang=EN&sortOrder=latest&limit=50';
 const MESSARI_URL = 'https://data.messari.io/api/v1/news?limit=50&fields=id,title,content,published_at,url,references/name';
@@ -174,6 +175,12 @@ async function _fetchViaAllOrigins(url) {
   return _parseXml(j.contents);
 }
 
+async function _fetchViaCorsproxyIo(url) {
+  const r = await fetch(CORSPROXY_IO + encodeURIComponent(url));
+  if (!r.ok) throw new Error(`cp:${r.status}`);
+  return _parseXml(await r.text());
+}
+
 async function _fetchViaRss2json(url) {
   const r = await fetch(RSS2JSON + encodeURIComponent(url));
   if (!r.ok) throw new Error(`r2j:${r.status}`);
@@ -186,10 +193,11 @@ async function _fetchViaRss2json(url) {
 
 async function _fetchRSS(feed) {
   try {
-    // Race both proxies — whichever responds first wins
+    // Race three proxies — whichever responds first wins
     const parsed = await Promise.any([
       _fetchViaAllOrigins(feed.url),
       _fetchViaRss2json(feed.url),
+      _fetchViaCorsproxyIo(feed.url),
     ]);
     const result = parsed.map(p => ({
       id: feed.id + ':' + encodeURIComponent(p.link || p.title).slice(0, 80),

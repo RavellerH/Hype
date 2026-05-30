@@ -101,6 +101,59 @@ function indCard(opts) {
   </div>`;
 }
 
+function _indRegimeSummary(fg, bmsb, pi, mvrvZ) {
+  const bullets = [];
+
+  if (fg) {
+    if      (fg.value <= 25) bullets.push({ pos: true,  text: `Extreme Fear (${fg.value}) — historically a strong accumulation zone` });
+    else if (fg.value <= 45) bullets.push({ pos: true,  text: `Fear (${fg.value}) — cautious market, potential opportunity for patient buyers` });
+    else if (fg.value >= 75) bullets.push({ pos: false, text: `Extreme Greed (${fg.value}) — euphoria, historically near cycle highs` });
+    else if (fg.value >= 60) bullets.push({ pos: false, text: `Greed (${fg.value}) — tighten stops, market overextended` });
+    else                     bullets.push({ pos: null,  text: `Neutral sentiment (${fg.value}) — no directional edge from sentiment` });
+  }
+
+  if (bmsb) {
+    if      (bmsb.signal === 'BULL') bullets.push({ pos: true,  text: `BMSB BULL — BTC ${bmsb.pctAboveSMA}% above 20W SMA, macro uptrend intact` });
+    else if (bmsb.signal === 'BEAR') bullets.push({ pos: false, text: `BMSB BEAR — BTC below key weekly support band, macro bear structure` });
+    else                             bullets.push({ pos: null,  text: `BMSB NEUTRAL — BTC at weekly support band, transitional` });
+  }
+
+  if (pi) {
+    if      (pi.signal === 'TOP')     bullets.push({ pos: false, text: `Pi Cycle TOP — 111d SMA crossed 350d×2, extreme caution` });
+    else if (pi.signal === 'WARNING') bullets.push({ pos: false, text: `Pi Cycle WARNING — ${pi.proximity}% to top signal, start reducing risk` });
+    else                              bullets.push({ pos: true,  text: `Pi Cycle NORMAL — ${pi.proximity}% to top, cycle still has room` });
+  }
+
+  if (mvrvZ) {
+    const z = parseFloat(mvrvZ);
+    if      (z >  7) bullets.push({ pos: false, text: `MVRV Z=${mvrvZ} — overheated, historically within 10% of cycle tops` });
+    else if (z >  3) bullets.push({ pos: false, text: `MVRV Z=${mvrvZ} — elevated, reduce position sizes gradually` });
+    else if (z <  0) bullets.push({ pos: true,  text: `MVRV Z=${mvrvZ} — below zero, strong long-term accumulation signal` });
+    else             bullets.push({ pos: null,  text: `MVRV Z=${mvrvZ} — mid-range, normal bull market territory` });
+  }
+
+  const pos = bullets.filter(b => b.pos === true).length;
+  const neg = bullets.filter(b => b.pos === false).length;
+  let verdict, color;
+  if      (pos >= neg + 2) { verdict = 'RISK-ON';      color = 'var(--pos)'; }
+  else if (neg >= pos + 2) { verdict = 'RISK-OFF';     color = 'var(--neg)'; }
+  else if (neg > pos)      { verdict = 'RISK-CAUTIOUS'; color = '#fbbf24'; }
+  else                     { verdict = 'TRANSITIONAL';  color = 'var(--text-muted)'; }
+
+  return `<div class="ind-regime-summary">
+    <div class="ind-regime-header">
+      <span class="ind-regime-verdict" style="color:${color}">${verdict}</span>
+      <span class="ind-regime-sub">Market regime — ${bullets.length} indicator${bullets.length !== 1 ? 's' : ''} assessed</span>
+    </div>
+    <div class="ind-regime-bullets">
+      ${bullets.map(b => `<div class="ind-regime-bullet">
+        <span class="${b.pos === true ? 'pos' : b.pos === false ? 'neg' : 'muted'}">${b.pos === true ? '▲' : b.pos === false ? '▼' : '–'}</span>
+        <span>${b.text}</span>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
 async function loadIndicators() {
   const el = document.getElementById('indicators-content');
   if (!el) return;
@@ -237,6 +290,7 @@ async function loadIndicators() {
     </div>`;
 
   el.innerHTML = `
+    ${_indRegimeSummary(fg, bmsb, pi, mvrvZ)}
     ${stripHtml}
     <div class="ind-section-title">MARKET REGIME</div>
     <div class="ind-grid">

@@ -2,6 +2,7 @@
 
 const BINANCE_PREMIUM = 'https://fapi.binance.com/fapi/v1/premiumIndex';
 const BYBIT_TICKERS   = 'https://api.bybit.com/v5/market/tickers?category=linear';
+const OKX_TICKERS     = 'https://www.okx.com/api/v5/market/tickers?instType=SWAP';
 
 let _arbData      = null;
 let _arbTs        = 0;
@@ -20,10 +21,11 @@ async function loadArb() {
 }
 
 async function _fetchArb() {
-  const [hlR, bnR, bbR] = await Promise.allSettled([
+  const [hlR, bnR, bbR, okxR] = await Promise.allSettled([
     getMetaAndAssetCtxs(),
     fetch(BINANCE_PREMIUM).then(r => r.ok ? r.json() : Promise.reject(new Error('Binance ' + r.status))),
     fetch(BYBIT_TICKERS).then(r => r.ok ? r.json() : Promise.reject(new Error('Bybit ' + r.status))),
+    fetch(OKX_TICKERS).then(r => r.ok ? r.json() : Promise.reject(new Error('OKX ' + r.status))),
   ]);
 
   let hlCoins = [];
@@ -55,7 +57,19 @@ async function _fetchArb() {
     }
   }
 
-  _arbData = { hlCoins, bnMap, bbMap };
+  const okxMap = {};
+  if (okxR.status === 'fulfilled') {
+    for (const item of (okxR.value?.data || [])) {
+      const inst = item.instId || '';
+      // OKX format: BTC-USDT-SWAP
+      if (inst.endsWith('-USDT-SWAP')) {
+        const coin = inst.slice(0, inst.indexOf('-'));
+        okxMap[coin] = parseFloat(item.fundingRate || 0);
+      }
+    }
+  }
+
+  _arbData = { hlCoins, bnMap, bbMap, okxMap };
   _arbTs   = Date.now();
 }
 
@@ -130,14 +144,18 @@ function _renderCarryTable() {
 }
 
 function _renderBasisTable() {
-  const { hlCoins, bnMap, bbMap } = _arbData;
-  const cross = hlCoins.filter(c => bnMap[c.coin] != null || bbMap[c.coin] != null).map(c => ({
-    coin:   c.coin,
-    hl:     c.rate,
-    bn:     bnMap[c.coin] ?? null,
-    bb:     bbMap[c.coin] ?? null,
-    spread: bnMap[c.coin] != null ? c.rate - bnMap[c.coin] : null,
-  })).sort((a, b) => Math.abs(b.spread ?? 0) - Math.abs(a.spread ?? 0));
+  const { hlCoins, bnMap, bbMap, okxMap } = _arbData;
+  const cross = hlCoins
+    .filter(c => bnMap[c.coin] != null || bbMap[c.coin] != null || okxMap[c.coin] != null)
+    .map(c => ({
+      coin:   c.coin,
+      hl:     c.rate,
+      bn:     bnMap[c.coin]  ?? null,
+      bb:     bbMap[c.coin]  ?? null,
+      okx:    okxMap[c.coin] ?? null,
+      spread: bnMap[c.coin] != null ? c.rate - bnMap[c.coin] : null,
+    }))
+    .sort((a, b) => Math.abs(b.spread ?? 0) - Math.abs(a.spread ?? 0));
 
   const rows = cross.map(c => {
     const hi = c.spread != null && Math.abs(c.spread) > ARB_THRESHOLD;
@@ -154,13 +172,14 @@ function _renderBasisTable() {
       <td class="num">${_fRate(c.hl)}</td>
       <td class="num">${_fRate(c.bn)}</td>
       <td class="num">${_fRate(c.bb)}</td>
+      <td class="num">${_fRate(c.okx)}</td>
       <td class="num">${spreadHtml}</td>
     </tr>`;
   }).join('');
 
   return `
   <div style="padding:10px 12px 4px;margin-top:16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);border-bottom:1px solid var(--border)">
-    Cross-Exchange Basis <span style="font-weight:400;font-size:10px;color:var(--text-faint)">(${cross.length} coins · HL vs Binance/Bybit)</span>
+    Cross-Exchange Basis <span style="font-weight:400;font-size:10px;color:var(--text-faint)">(${cross.length} coins · HL vs Binance / Bybit / OKX)</span>
   </div>
   <table class="arb-table">
     <thead><tr>
@@ -168,9 +187,10 @@ function _renderBasisTable() {
       <th class="num">HL 8h</th>
       <th class="num">Binance 8h</th>
       <th class="num">Bybit 8h</th>
+      <th class="num">OKX 8h</th>
       <th class="num">Spread (HL−BN)</th>
     </tr></thead>
-    <tbody>${rows || '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-faint)">No cross-exchange data</td></tr>'}</tbody>
+    <tbody>${rows || '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-faint)">No cross-exchange data</td></tr>'}</tbody>
   </table>`;
 }
 
