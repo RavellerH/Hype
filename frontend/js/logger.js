@@ -10,8 +10,11 @@ let _logTimer    = null;
 let _logRunning  = false;
 
 // ── Supabase client ────────────────────────────────────────────────────────────
+// Delegates to the centralized client in supabase.js; falls back to building
+// its own if supabase.js is not loaded (e.g. standalone logger testing).
 
 function sbClient() {
+  if (typeof getSupabaseClient === 'function') return getSupabaseClient();
   if (_sbClient) return _sbClient;
   const url = localStorage.getItem(LOG_URL_KEY);
   const key = localStorage.getItem(LOG_KEY_KEY);
@@ -26,6 +29,8 @@ function sbClient() {
 }
 
 function loggerConfigured() {
+  // With supabase.js, the client is always configured via hardcoded defaults.
+  if (typeof getSupabaseClient === 'function') return true;
   return !!(localStorage.getItem(LOG_URL_KEY) && localStorage.getItem(LOG_KEY_KEY));
 }
 
