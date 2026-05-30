@@ -139,8 +139,7 @@ async function fetchMVRVData() {
     pricesNow = await r.json();
   } catch(e) {}
 
-  const coins = {};
-  for (const [sym, cgId] of Object.entries(MVRV_CG_IDS)) {
+  const coinEntries = await Promise.all(Object.entries(MVRV_CG_IDS).map(async ([sym, cgId]) => {
     const now = pricesNow[cgId] || {};
     const currentPrice = now.usd || 0;
     const marketCap    = now.usd_market_cap || 0;
@@ -162,10 +161,11 @@ async function fetchMVRVData() {
         }
       }
     } catch(e) {}
-    coins[sym] = { symbol: sym, price: currentPrice, market_cap: marketCap,
+    return [sym, { symbol: sym, price: currentPrice, market_cap: marketCap,
       change_24h: +change24h.toFixed(2), mvrv: +mvrv.toFixed(4),
-      avg_90d: +avg90d.toFixed(4), zone: _mvrvZone(mvrv), chart };
-  }
+      avg_90d: +avg90d.toFixed(4), zone: _mvrvZone(mvrv), chart }];
+  }));
+  const coins = Object.fromEntries(coinEntries);
   _mvrvCache   = { coins, source: 'CoinGecko · approx MVRV = price ÷ 90-day avg', updated: Math.floor(Date.now()/1000) };
   _mvrvCacheTs = Date.now();
   return _mvrvCache;

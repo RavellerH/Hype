@@ -1,9 +1,6 @@
 // ── Fundamentals — CoinGecko public API (no key) ─────────────────────────────
 
-const CG_BASE     = 'https://api.coingecko.com/api/v3';
-const CG_MARKETS  = (p) => `${CG_BASE}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=${p}&sparkline=false&price_change_percentage=24h,7d,30d`;
-const CG_GLOBAL   = `${CG_BASE}/global`;
-const CG_TRENDING = `${CG_BASE}/search/trending`;
+const CG_TRENDING = 'https://api.coingecko.com/api/v3/search/trending';
 
 let _fundCoins    = [];
 let _fundGlobal   = null;
@@ -28,13 +25,13 @@ async function loadFundamentals() {
 
 async function _fetchFund() {
   const [coinsR, globalR, trendR] = await Promise.allSettled([
-    fetch(CG_MARKETS(1)),
-    fetch(CG_GLOBAL),
-    fetch(CG_TRENDING),
+    getCGMarkets(),
+    getCGGlobal(),
+    fetch(CG_TRENDING).then(r => r.ok ? r.json() : Promise.reject()),
   ]);
-  if (coinsR.status === 'fulfilled' && coinsR.value.ok)  _fundCoins    = await coinsR.value.json();
-  if (globalR.status === 'fulfilled' && globalR.value.ok) _fundGlobal  = (await globalR.value.json()).data;
-  if (trendR.status === 'fulfilled'  && trendR.value.ok)  _fundTrending = ((await trendR.value.json()).coins || []).slice(0, 7).map(c => c.item);
+  if (coinsR.status === 'fulfilled')  _fundCoins    = coinsR.value;
+  if (globalR.status === 'fulfilled') _fundGlobal   = globalR.value;
+  if (trendR.status === 'fulfilled')  _fundTrending = (trendR.value.coins || []).slice(0, 7).map(c => c.item);
   _fundLoaded = true;
 }
 

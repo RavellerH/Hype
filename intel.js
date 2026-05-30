@@ -15,13 +15,10 @@
 // ── Endpoints ─────────────────────────────────────────────────────────────────
 
 const _IL = {
-  HL_INFO:    'https://api.hyperliquid.xyz/info',
   BN_OI:      'https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT',
   BN_FUND:    'https://fapi.binance.com/fapi/v1/premiumIndex',
   BN_OI_HIST: 'https://fapi.binance.com/futures/data/openInterestHist?symbol=BTCUSDT&period=1h&limit=25',
   BY_FUND:    'https://api.bybit.com/v5/market/funding/history?category=linear&symbol=BTCUSDT&limit=1',
-  CG_GLOBAL:  'https://api.coingecko.com/api/v3/global',
-  CG_MARKETS: 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false&price_change_percentage=24h,7d',
   FNG:        'https://api.alternative.me/fng/?limit=1',
 };
 
@@ -37,12 +34,7 @@ let _intelGenState = { setups: false, synth: false }; // loading flags
 // ── Fetchers ──────────────────────────────────────────────────────────────────
 
 async function _ilFetchHL() {
-  const r = await fetch(_IL.HL_INFO, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ type: 'metaAndAssetCtxs' }),
-  });
-  const [meta, ctxs] = await r.json();
+  const [meta, ctxs] = await getMetaAndAssetCtxs();
   const map = {};
   meta.universe.forEach((u, i) => {
     const c = ctxs[i];
@@ -99,18 +91,18 @@ async function _ilFetchBybit() {
 
 async function _ilFetchCG() {
   const [gR, mR] = await Promise.allSettled([
-    fetch(_IL.CG_GLOBAL).then(r => r.json()),
-    fetch(_IL.CG_MARKETS).then(r => r.json()),
+    getCGGlobal(),
+    getCGMarkets(),
   ]);
   let btcDom = null, mcapChange24h = null, totalMcap = null, totalVol = null, altBreadth = null;
   let cgCoins = [];
 
   if (gR.status === 'fulfilled') {
-    const g = gR.value.data;
-    btcDom       = g.market_cap_percentage?.btc ?? null;
+    const g = gR.value;
+    btcDom        = g.market_cap_percentage?.btc ?? null;
     mcapChange24h = g.market_cap_change_percentage_24h_usd ?? null;
-    totalMcap    = g.total_market_cap?.usd ?? null;
-    totalVol     = g.total_volume?.usd ?? null;
+    totalMcap     = g.total_market_cap?.usd ?? null;
+    totalVol      = g.total_volume?.usd ?? null;
   }
   if (mR.status === 'fulfilled' && Array.isArray(mR.value)) {
     cgCoins = mR.value.filter(c => !['usdt','usdc','dai','busd','tusd','usdd'].includes(c.symbol));
