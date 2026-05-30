@@ -1430,3 +1430,54 @@ tr:hover td { background: var(--surface-hover); }
 .news-load-more { width: 100%; padding: 10px; background: none; border: none; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 12px; cursor: pointer; }
 .news-load-more:hover { background: var(--surface2); color: var(--text); }
 @media(max-width:600px){.mkt-modal{max-height:95vh}.mkt-modal-head{padding:14px 14px 10px}.mkt-modal-body{padding:12px 14px 16px}}
+
+/* ── Fundamentals ─────────────────────────────────────────────────────────── */
+#page-fundamentals { display:flex; flex-direction:column; overflow:hidden; }
+#fundamentals-content { display:flex; flex-direction:column; flex:1; overflow:hidden; }
+.fund-global-bar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:8px 14px; background:var(--surface); border-bottom:1px solid var(--border); font-size:12px; flex-shrink:0; }
+.fund-stat { display:flex; align-items:center; gap:5px; white-space:nowrap; }
+.fund-stat-label { color:var(--text-faint); font-size:11px; }
+.fund-sep { color:var(--border-strong); }
+.fund-chip { display:inline-block; padding:1px 6px; border-radius:3px; background:var(--surface2); border:1px solid var(--border); font-size:10px; font-weight:600; color:var(--text-muted); }
+.fund-toolbar { display:flex; align-items:center; gap:10px; padding:8px 12px; border-bottom:1px solid var(--border); flex-shrink:0; flex-wrap:wrap; }
+.fund-table { width:100%; border-collapse:collapse; font-size:12px; }
+.fund-table thead th { position:sticky; top:0; z-index:1; background:var(--surface); padding:7px 10px; font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid var(--border); white-space:nowrap; }
+.fund-table thead th:first-child { width:36px; }
+.fund-table tbody tr { border-bottom:1px solid var(--border); transition:background 0.1s; }
+.fund-table tbody tr:hover { background:var(--surface2); }
+.fund-table td { padding:7px 10px; white-space:nowrap; }
+.fund-table td.num { text-align:right; font-family:var(--mono); font-variant-numeric:tabular-nums; }
+
+/* ── AI Page ──────────────────────────────────────────────────────────────── */
+.ai-layout { display:flex; height:100%; overflow:hidden; gap:0; }
+.ai-left  { width:380px; min-width:280px; flex-shrink:0; display:flex; flex-direction:column; border-right:1px solid var(--border); overflow:hidden; }
+.ai-right { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+.stage-panel { display:flex; flex-direction:column; gap:0; overflow-y:auto; padding:12px; height:100%; }
+.stage-panel-header { font-weight:700; font-size:14px; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+.stage-form { display:flex; flex-direction:column; gap:8px; padding:10px; background:var(--surface2); border-radius:var(--radius-lg); border:1px solid var(--border); margin-bottom:12px; }
+.stage-row { display:flex; gap:8px; }
+.stage-field { flex:1; display:flex; flex-direction:column; gap:4px; min-width:0; }
+.stage-section-lbl { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-faint); padding:8px 0 4px; }
+.stage-list { display:flex; flex-direction:column; gap:8px; }
+.trade-card { background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-lg); padding:10px 12px; }
+.trade-card-dim { opacity:0.55; }
+.trade-card-head { display:flex; align-items:center; gap:6px; }
+.form-label { font-size:11px; color:var(--text-faint); }
+.chat-panel { display:flex; flex-direction:column; height:100%; overflow:hidden; }
+.chat-header { display:flex; align-items:center; gap:6px; padding:10px 14px; border-bottom:1px solid var(--border); background:var(--surface); flex-shrink:0; }
+.chat-messages { flex:1; overflow-y:auto; display:flex; flex-direction:column; padding:8px; gap:8px; }
+.chat-msg { display:flex; flex-direction:column; gap:3px; max-width:85%; }
+.chat-msg-user { align-self:flex-end; }
+.chat-msg-ai   { align-self:flex-start; }
+.chat-msg-lbl  { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-faint); }
+.chat-msg-user .chat-msg-lbl { text-align:right; }
+.chat-msg-body { padding:8px 11px; border-radius:var(--radius-lg); font-size:13px; line-height:1.55; }
+.chat-msg-user .chat-msg-body { background:var(--accent-subtle); border:1px solid rgba(56,189,248,0.15); color:var(--text); border-bottom-right-radius:3px; }
+.chat-msg-ai   .chat-msg-body { background:var(--surface2); border:1px solid var(--border); color:var(--text); border-bottom-left-radius:3px; }
+.chat-input-row { display:flex; gap:8px; padding:10px 12px; border-top:1px solid var(--border); flex-shrink:0; background:var(--surface); }
+.chat-code-block { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:10px 12px; font-size:11px; font-family:var(--mono); overflow-x:auto; white-space:pre; margin-top:6px; color:var(--text-muted); max-height:260px; overflow-y:auto; }
+@media(max-width:768px) {
+  .ai-layout { flex-direction:column; }
+  .ai-left { width:100%; height:50%; border-right:none; border-bottom:1px solid var(--border); }
+  .ai-right { height:50%; }
+}
