@@ -51,6 +51,7 @@
       <button class="btn btn-ghost btn-sm" onclick="refreshAll()">↺</button>
       <span id="logger-dot" class="logger-dot off" id="logger-dot" title="Data Logger"></span>
       <span id="logger-tip" class="logger-tip" style="display:none"></span>
+      <button class="btn btn-ghost btn-sm" id="sb-auth-badge" title="Sign in to sync data">Login</button>
       <span class="wallet-badge" id="wallet-display">0x6e4c…2015</span>
       <div id="ws-status" class="status-dot off" title="WebSocket"></div>
       <button class="btn btn-ghost btn-sm" id="install-btn" onclick="installPWA()" title="Install app">
@@ -172,7 +173,23 @@
   </div>
 </div>
 
+<!-- Supabase Auth Modal -->
+<div class="sb-auth-overlay hidden" id="sb-auth-modal" onclick="event.target===this&&this.classList.add('hidden')">
+  <div class="sb-auth-box">
+    <h3 class="sb-auth-heading">Sign in to Hype</h3>
+    <p class="sb-auth-sub">Sync your KB, trade log &amp; snapshots across devices.</p>
+    <input  class="kb-input" id="sb-auth-email"    type="email"    placeholder="Email" autocomplete="email">
+    <input  class="kb-input" id="sb-auth-password" type="password" placeholder="Password" autocomplete="current-password">
+    <p class="sb-auth-error" id="sb-auth-error"></p>
+    <div class="sb-auth-btns">
+      <button class="btn btn-primary" onclick="_sbAuthSubmit(false)">Sign in</button>
+      <button class="btn"             onclick="_sbAuthSubmit(true)">Sign up</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="supabase.js"></script>
 <script src="intel.js"></script>
 <script src="position-meta.js"></script>
 <script src="journal.js"></script>
