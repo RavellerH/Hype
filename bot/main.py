@@ -59,7 +59,7 @@ from phase_detector  import detect_phase, estimate_phase_duration
 from wallet_monitor  import scan_all_wallets, has_wallet_signal, wallet_summary, get_wallet_longs
 from risk_manager    import risk_summary, sl_price, tp_price, breakeven_sl
 from dsl_engine      import compute_ratchet_sl
-from telegram_notifier import send, notify_entry, notify_exit, notify_wallet_entry, notify_error
+from telegram_notifier import send, notify_entry, notify_exit, notify_wallet_entry, notify_error, poll_commands
 from phase_recorder  import record_snapshot
 
 try:
@@ -266,6 +266,10 @@ def compute_confluence_score(
 # ── Risk guardrail checks
 def is_trading_halted(state: dict, account_value: float) -> bool:
     """Returns True if risk guardrails prevent new entries."""
+    if state.get("manual_halt"):
+        logger.info("Trading halted — manual halt active (/resume to clear)")
+        return True
+
     stats = state["risk_stats"]
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
@@ -743,6 +747,91 @@ def run_wallet_scan() -> None:
         notify_wallet_entry(ev["label"], ev["coin"], ev["side"], ev["entry"])
 
 
+# ── Telegram command handler
+def handle_command(chat_id: str, text: str, state: dict, info) -> None:
+    """Process an incoming Telegram command and reply to the sender."""
+    parts = text.strip().split(None, 1)
+    cmd   = parts[0].lower().split("@")[0]   # strip @botname suffix if present
+
+    if cmd in ("/help", "/start"):
+        reply = (
+            "<b>HYPE-BOT commands</b>\n"
+            "/status      — account value, risk stats, halt status\n"
+            "/positions   — open bot-managed positions\n"
+            "/halt        — pause new trade entries\n"
+            "/resume      — re-enable entries after manual halt\n"
+            "/help        — this menu"
+        )
+
+    elif cmd == "/status":
+        try:
+            account_value = get_account_value(info)
+            stats = state.get("risk_stats", {})
+            halted_until  = stats.get("halted_until")
+            manual_halt   = state.get("manual_halt", False)
+            daily_pnl     = stats.get("realized_pnl", 0.0)
+            consec_losses = stats.get("consecutive_losses", 0)
+            open_count    = len(state.get("bot_positions", {}))
+
+            halt_line = ""
+            if manual_halt:
+                halt_line = "\nStatus: <b>HALTED (manual)</b> — use /resume to re-enable"
+            elif halted_until:
+                dt = datetime.fromisoformat(halted_until)
+                if datetime.now(timezone.utc) < dt:
+                    remaining = int((dt - datetime.now(timezone.utc)).total_seconds() / 3600)
+                    halt_line = f"\nStatus: <b>HALTED</b> — auto-resumes in ~{remaining}h"
+
+            reply = (
+                f"<b>Bot Status</b>\n"
+                f"Account:      <code>${account_value:,.2f}</code>\n"
+                f"Open positions: {open_count}/{MAX_OPEN_BOT_POSITIONS}\n"
+                f"Daily PnL:    <code>{'+'if daily_pnl>=0 else ''}{daily_pnl:.2f} USDC</code>\n"
+                f"Consec losses: {consec_losses}"
+                + halt_line
+            )
+        except Exception as e:
+            reply = f"Status error: {e}"
+
+    elif cmd == "/positions":
+        positions = state.get("bot_positions", {})
+        if not positions:
+            reply = "No open bot positions."
+        else:
+            lines = []
+            for coin, pos in positions.items():
+                try:
+                    price    = get_price(info, coin)
+                    pnl_pct  = ((price / pos["entry"]) - 1) * 100 if pos["side"] == "long" \
+                               else ((pos["entry"] / price) - 1) * 100
+                    pnl_sign = "+" if pnl_pct >= 0 else ""
+                    lines.append(
+                        f"▲ <b>{coin}</b> {pos['lev']}× LONG\n"
+                        f"  entry <code>{pos['entry']:.4f}</code>  "
+                        f"now <code>{price:.4f}</code>  "
+                        f"PnL <code>{pnl_sign}{pnl_pct:.1f}%</code>\n"
+                        f"  SL <code>{pos['sl']:.4f}</code>  score {pos.get('score','?')}/10"
+                    )
+                except Exception:
+                    lines.append(f"▲ <b>{coin}</b> — price unavailable")
+            reply = f"<b>Open positions ({len(positions)})</b>\n" + "\n".join(lines)
+
+    elif cmd == "/halt":
+        state["manual_halt"] = True
+        save_state(state)
+        reply = "⛔ New entries halted. Use /resume to re-enable."
+
+    elif cmd == "/resume":
+        state.pop("manual_halt", None)
+        save_state(state)
+        reply = "✅ Entries re-enabled."
+
+    else:
+        return   # ignore unknown commands silently
+
+    send(reply, chat_id=chat_id)
+
+
 # ── Entry point
 def main():
     logger.info("=== Hyperliquid Trading Bot starting ===")
@@ -762,6 +851,15 @@ def main():
 
     while True:
         now = time.time()
+
+        # ── Telegram command polling (non-blocking, runs every loop tick)
+        try:
+            for chat_id, text in poll_commands():
+                if text.startswith("/"):
+                    logger.info("Telegram command from %s: %s", chat_id, text.split()[0])
+                    handle_command(chat_id, text, state, info)
+        except Exception as e:
+            logger.warning("Command poll error: %s", e)
 
         if now - last_record >= RECORD_INTERVAL:
             try:

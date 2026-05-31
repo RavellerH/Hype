@@ -8,6 +8,9 @@ logger = logging.getLogger(__name__)
 
 _BASE = "https://api.telegram.org/bot{token}/{method}"
 
+# Long-poll update offset — tracks last processed update_id
+_update_offset: int = 0
+
 
 def _call(method: str, payload: dict) -> dict | None:
     if not TG_TOKEN:
@@ -28,6 +31,30 @@ def send(text: str, chat_id: str = TG_CHAT_ID) -> bool:
         return False
     result = _call("sendMessage", {"chat_id": chat_id, "text": text, "parse_mode": "HTML"})
     return bool(result and result.get("ok"))
+
+
+def poll_commands() -> list[tuple[str, str]]:
+    """
+    Non-blocking poll for new Telegram messages.
+    Returns list of (chat_id, text) tuples for each new message.
+    Advances the internal offset so each update is only returned once.
+    """
+    global _update_offset
+    result = _call("getUpdates", {"offset": _update_offset, "limit": 20, "timeout": 0})
+    if not result or not result.get("ok"):
+        return []
+    commands = []
+    for upd in result.get("result", []):
+        _update_offset = upd["update_id"] + 1
+        msg = upd.get("message") or upd.get("channel_post")
+        if not msg:
+            continue
+        text = (msg.get("text") or "").strip()
+        if not text:
+            continue
+        chat_id = str(msg["chat"]["id"])
+        commands.append((chat_id, text))
+    return commands
 
 
 def get_chat_id() -> str | None:
