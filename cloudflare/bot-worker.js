@@ -850,8 +850,8 @@ export default {
       ctx.waitUntil(checkTrendAlignment(env));
     } else if (cron === '0 0 * * *') {
       ctx.waitUntil(dailySnapshot(env));
-    } else if (cron === '0 0 * * 0') {
-      ctx.waitUntil(weeklyReview(env));
+      // Sunday (getDay() === 0) → also run weekly review
+      if (new Date().getDay() === 0) ctx.waitUntil(weeklyReview(env));
     }
   },
 

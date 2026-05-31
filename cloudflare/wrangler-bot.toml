@@ -6,7 +6,7 @@ compatibility_date = "2024-09-23"
 mode = "smart"
 
 [triggers]
-crons = ["*/15 * * * *", "0 */4 * * *", "0 0 * * *", "0 0 * * 0"]
+crons = ["*/15 * * * *", "0 */4 * * *", "0 0 * * *"]
 
 # KV namespace for alert deduplication (4h cooldown per coin)
 # Create with: npx wrangler kv:namespace create ALERT_STATE
