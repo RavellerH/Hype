@@ -693,6 +693,122 @@ async function weeklyReview(env) {
   );
 }
 
+// ── Check OI Spikes ───────────────────────────────────────────────────────────
+
+async function checkOISpikes(env) {
+  const coins = (env.SIGNAL_COINS || 'BTC,ETH,SOL,HYPE,SUI').split(',').map(c => c.trim());
+  const threshold = parseFloat(env.OI_SPIKE_PCT || '0.08');
+  const rates = await getFundingRates();
+  const alerts = [];
+
+  for (const coin of coins) {
+    try {
+      const info = rates[coin];
+      if (!info) continue;
+      const { openInterest: oi, markPx, fundingRate: rate } = info;
+      const prevStr = await env.ALERT_STATE.get(`oi:${coin}`);
+      await env.ALERT_STATE.put(`oi:${coin}`, String(oi), { expirationTtl: 86400 });
+      const prevOI = prevStr ? parseFloat(prevStr) : 0;
+      if (prevOI <= 0) continue;
+      const change = (oi - prevOI) / prevOI;
+      if (Math.abs(change) < threshold) continue;
+
+      const kvKey = `oi:alert:${coin}`;
+      if (await isOnCooldown(env.ALERT_STATE, kvKey, 'reversal')) continue;
+
+      const dir = change > 0 ? '▲' : '▼';
+      const type = change > 0 ? 'SPIKE' : 'FLUSH';
+      const pctStr = `${change >= 0 ? '+' : ''}${(change * 100).toFixed(1)}%`;
+      alerts.push({
+        kvKey,
+        text: `OI ${type} ${dir} ${coin}  ${pctStr}\n` +
+          `${_fmtM(oi * markPx)}  ·  prev ${_fmtM(prevOI * markPx)}\n` +
+          `fund ${_f8(rate)}`,
+      });
+    } catch (_) { /* skip */ }
+  }
+
+  for (const alert of alerts) {
+    await tgSend(env.TG_TOKEN, env.TG_CHAT, alert.text);
+    await setCooldown(env.ALERT_STATE, alert.kvKey);
+  }
+  return alerts.length;
+}
+
+// ── Check Funding Flips ───────────────────────────────────────────────────────
+
+async function checkFundingFlips(env) {
+  const coins = (env.SIGNAL_COINS || 'BTC,ETH,SOL,HYPE,SUI').split(',').map(c => c.trim());
+  const rates = await getFundingRates();
+  const alerts = [];
+
+  for (const coin of coins) {
+    try {
+      const info = rates[coin];
+      if (!info) continue;
+      const { fundingRate: rate, markPx } = info;
+      const sign = rate > 0.00005 ? 'pos' : rate < -0.00005 ? 'neg' : 'flat';
+      const prevSign = await env.ALERT_STATE.get(`fund:${coin}:sign`);
+      await env.ALERT_STATE.put(`fund:${coin}:sign`, sign, { expirationTtl: 86400 });
+
+      if (!prevSign || prevSign === sign || prevSign === 'flat') continue;
+
+      const kvKey = `fund:${coin}:flip`;
+      if (await isOnCooldown(env.ALERT_STATE, kvKey, 'signal')) continue;
+
+      const dir = sign === 'neg' ? '▼' : '▲';
+      const fromLabel = prevSign.toUpperCase();
+      const toLabel   = sign.toUpperCase();
+      alerts.push({
+        kvKey,
+        text: `FUND FLIP ${dir} ${coin}\n` +
+          `${fromLabel} → ${toLabel}  ${_f8(rate)}\n` +
+          `$${_px(coin, markPx)}`,
+      });
+    } catch (_) { /* skip */ }
+  }
+
+  for (const alert of alerts) {
+    await tgSend(env.TG_TOKEN, env.TG_CHAT, alert.text);
+    await setCooldown(env.ALERT_STATE, alert.kvKey);
+  }
+  return alerts.length;
+}
+
+// ── Check Liq Cascade ─────────────────────────────────────────────────────────
+
+async function checkLiqCascade(env) {
+  if (!env.COINGLASS_KEY) return 0;
+  const threshold = parseFloat(env.LIQ_CASCADE_USD || '150000000');
+  const pairs = [{ pair: 'BTCUSDT', name: 'BTC' }, { pair: 'ETHUSDT', name: 'ETH' }];
+  const alerts = [];
+
+  for (const { pair, name } of pairs) {
+    try {
+      const liq = await getCoinGlassLiq(env.COINGLASS_KEY, pair);
+      if (!liq) continue;
+      if (liq.longs + liq.shorts < threshold) continue;
+
+      const kvKey = `liq:cascade:${name}`;
+      if (await isOnCooldown(env.ALERT_STATE, kvKey, 'reversal')) continue;
+
+      const dir = liq.longs > liq.shorts ? '▼' : '▲';
+      alerts.push({
+        kvKey,
+        text: `LIQ CASCADE ${dir} ${name}  ${_fmtM(liq.longs + liq.shorts)}\n` +
+          `longs ${_fmtM(liq.longs)}  ·  shorts ${_fmtM(liq.shorts)}\n` +
+          `${liq.bias}`,
+      });
+    } catch (_) { /* skip */ }
+  }
+
+  for (const alert of alerts) {
+    await tgSend(env.TG_TOKEN, env.TG_CHAT, alert.text);
+    await setCooldown(env.ALERT_STATE, alert.kvKey);
+  }
+  return alerts.length;
+}
+
 // ── Telegram Commands ─────────────────────────────────────────────────────────
 
 async function handleTgCommand(cmd, arg, env) {
@@ -712,7 +828,10 @@ async function handleTgCommand(cmd, arg, env) {
       `${_hr(28)}\n` +
       `<b>auto-alerts</b>\n` +
       `signal    15m scan  ·  4h cooldown\n` +
+      `fund flip 15m scan  ·  4h cooldown\n` +
       `reversal  4h close  ·  12h cooldown\n` +
+      `OI spike  4h scan   ·  12h cooldown\n` +
+      `liq       4h scan   ·  12h cooldown\n` +
       `flip      all-TF alignment change\n` +
       `arb       15m scan  ·  4h cooldown\n` +
       `snap      00:00 UTC daily\n` +
@@ -820,10 +939,12 @@ async function handleTgCommand(cmd, arg, env) {
   }
 
   if (cmd === '/status') {
-    const [hlFunding, fg, cgLiq] = await Promise.all([
+    const [hlFunding, fg, cgLiq, storedBtcOIStr, storedEthOIStr] = await Promise.all([
       getFundingRates(),
       getFearGreed(),
       getCoinGlassLiq(env.COINGLASS_KEY, 'BTCUSDT'),
+      env.ALERT_STATE.get('oi:BTC'),
+      env.ALERT_STATE.get('oi:ETH'),
     ]);
     const btcFunding = (((hlFunding['BTC']?.fundingRate) ?? 0) * 100).toFixed(4);
     const liqLine = cgLiq
@@ -831,12 +952,18 @@ async function handleTgCommand(cmd, arg, env) {
       : '';
     const btcOI   = hlFunding['BTC']?.openInterest ?? 0;
     const fundLabel = parseFloat(btcFunding) > 0.03 ? 'high' : parseFloat(btcFunding) < 0 ? 'neg' : 'ok';
+    const btcMarkPx = hlFunding['BTC']?.markPx ?? 0;
+    const ethMarkPx = hlFunding['ETH']?.markPx ?? 0;
+    const oiKvLine = (storedBtcOIStr || storedEthOIStr)
+      ? `OI KV     BTC ${storedBtcOIStr ? _fmtM(parseFloat(storedBtcOIStr) * btcMarkPx) : '—'}  ·  ETH ${storedEthOIStr ? _fmtM(parseFloat(storedEthOIStr) * ethMarkPx) : '—'}\n`
+      : '';
     return `STATUS · ${new Date().toUTCString().slice(0,16)}\n` +
       `${_hr(32)}\n` +
       `F&G       ${fg.value}  ${fg.label}\n` +
       `BTC fund  ${btcFunding}%  ${fundLabel}\n` +
       `BTC OI    ${_fmtM(btcOI)}\n` +
       liqLine +
+      oiKvLine +
       `${_hr(32)}\n` +
       `scan   ${coins.join(' ')}\n` +
       `gate   F&G>${env.FG_GREED_GATE||80}=caution  ·  fund>${env.MAX_FUNDING||'0.0020'}=skip\n` +
@@ -856,12 +983,15 @@ export default {
       const minute = new Date().getMinutes();
       if (minute % 30 < 15) {
         ctx.waitUntil(checkSignals(env));
+        ctx.waitUntil(checkFundingFlips(env));
       } else {
         ctx.waitUntil(checkFundingArb(env));
       }
     } else if (cron === '0 */4 * * *') {
       ctx.waitUntil(checkReversals(env));
       ctx.waitUntil(checkTrendAlignment(env));
+      ctx.waitUntil(checkOISpikes(env));
+      ctx.waitUntil(checkLiqCascade(env));
     } else if (cron === '0 0 * * *') {
       ctx.waitUntil(dailySnapshot(env));
       // Sunday (getDay() === 0) → also run weekly review
