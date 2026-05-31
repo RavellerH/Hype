@@ -13,7 +13,7 @@ crons = ["*/15 * * * *", "0 0 * * *"]
 # Then replace the id below with the real one
 [[kv_namespaces]]
 binding = "ALERT_STATE"
-id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+id = "8879424b27d14af3bb213c84bc5f2598"
 
 [vars]
 # Coins to scan for TA signals
