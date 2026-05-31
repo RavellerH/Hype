@@ -145,70 +145,29 @@ function detectCandlePatterns(candles) {
   const cUpperWick = cH - Math.max(cO, cC);
   const cLowerWick = Math.min(cO, cC) - cL;
   const avgVol = avgVolume(candles);
-  const volSpike = cV > avgVol * 1.4; // 40% above average
+  const volSpike = cV > avgVol * 1.4;
+  const vm = avgVol > 0 ? cV / avgVol : 1; // volume multiplier
 
-  // ── Bearish Engulfing
-  if (pBull && cBear && cO >= pC && cC <= pO && cBody > pBody && volSpike) {
-    patterns.push({ name: 'Bearish Engulfing', direction: 'bearish', emoji: '🔴', strength: 'STRONG' });
-  }
+  const push = (name, direction, strength) => patterns.push({ name, direction, strength, volMult: vm });
 
-  // ── Bullish Engulfing
-  if (pBear && cBull && cO <= pC && cC >= pO && cBody > pBody && volSpike) {
-    patterns.push({ name: 'Bullish Engulfing', direction: 'bullish', emoji: '🟢', strength: 'STRONG' });
-  }
-
-  // ── Dark Cloud Cover (bearish 2-candle)
-  if (pBull && cBear && cO > pH && cC < (pO + pC) / 2 && cC > pO && volSpike) {
-    patterns.push({ name: 'Dark Cloud Cover', direction: 'bearish', emoji: '🌑', strength: 'MEDIUM' });
-  }
-
-  // ── Piercing Line (bullish 2-candle)
-  if (pBear && cBull && cO < pL && cC > (pO + pC) / 2 && cC < pO && volSpike) {
-    patterns.push({ name: 'Piercing Line', direction: 'bullish', emoji: '🌤️', strength: 'MEDIUM' });
-  }
-
-  // ── Shooting Star (bearish — upper wick 2× body, small body at bottom)
-  if (cBear && cUpperWick >= cBody * 2 && cLowerWick <= cBody * 0.3 && volSpike) {
-    patterns.push({ name: 'Shooting Star', direction: 'bearish', emoji: '💫', strength: 'MEDIUM' });
-  }
-
-  // ── Hammer (bullish — lower wick 2× body, small body at top)
-  if (cBull && cLowerWick >= cBody * 2 && cUpperWick <= cBody * 0.3 && volSpike) {
-    patterns.push({ name: 'Hammer', direction: 'bullish', emoji: '🔨', strength: 'MEDIUM' });
-  }
-
-  // ── Inverted Hammer (bullish reversal at bottom)
-  if (cBull && cUpperWick >= cBody * 2 && cLowerWick <= cBody * 0.3 && pBear && volSpike) {
-    patterns.push({ name: 'Inverted Hammer', direction: 'bullish', emoji: '🔁', strength: 'MEDIUM' });
-  }
-
-  // ── Doji (open ≈ close, indecision)
+  if (pBull && cBear && cO >= pC && cC <= pO && cBody > pBody && volSpike)                          push('Bearish Engulfing',  'bearish', 'STRONG');
+  if (pBear && cBull && cO <= pC && cC >= pO && cBody > pBody && volSpike)                          push('Bullish Engulfing',  'bullish', 'STRONG');
+  if (pBull && cBear && cO > pH && cC < (pO + pC) / 2 && cC > pO && volSpike)                      push('Dark Cloud Cover',   'bearish', 'MEDIUM');
+  if (pBear && cBull && cO < pL && cC > (pO + pC) / 2 && cC < pO && volSpike)                      push('Piercing Line',      'bullish', 'MEDIUM');
+  if (cBear && cUpperWick >= cBody * 2 && cLowerWick <= cBody * 0.3 && volSpike)                    push('Shooting Star',      'bearish', 'MEDIUM');
+  if (cBull && cLowerWick >= cBody * 2 && cUpperWick <= cBody * 0.3 && volSpike)                    push('Hammer',             'bullish', 'MEDIUM');
+  if (cBull && cUpperWick >= cBody * 2 && cLowerWick <= cBody * 0.3 && pBear && volSpike)           push('Inverted Hammer',    'bullish', 'MEDIUM');
   if (cBody <= cRange * 0.1 && cRange > 0 && volSpike) {
-    const dojiType = cUpperWick > cLowerWick * 2 ? 'Gravestone Doji ↘' : cLowerWick > cUpperWick * 2 ? 'Dragonfly Doji ↗' : 'Doji';
-    patterns.push({ name: dojiType, direction: 'neutral', emoji: '⚖️', strength: 'WATCH' });
+    const dojiType = cUpperWick > cLowerWick * 2 ? 'Gravestone Doji' : cLowerWick > cUpperWick * 2 ? 'Dragonfly Doji' : 'Doji';
+    push(dojiType, 'neutral', 'WATCH');
   }
 
-  // ── Evening Star (3-candle bearish reversal)
   const p2Bull = p2C > p2O, p1Small = Math.abs(pC - pO) < Math.abs(p2C - p2O) * 0.5;
-  if (p2Bull && p1Small && cBear && cC < (p2O + p2C) / 2 && volSpike) {
-    patterns.push({ name: 'Evening Star', direction: 'bearish', emoji: '🌆', strength: 'STRONG' });
-  }
-
-  // ── Morning Star (3-candle bullish reversal)
   const p2Bear = p2C < p2O;
-  if (p2Bear && p1Small && cBull && cC > (p2O + p2C) / 2 && volSpike) {
-    patterns.push({ name: 'Morning Star', direction: 'bullish', emoji: '🌅', strength: 'STRONG' });
-  }
-
-  // ── Tweezer Top (2-candle — equal highs after uptrend)
-  if (pBull && cBear && Math.abs(cH - pH) <= cRange * 0.02) {
-    patterns.push({ name: 'Tweezer Top', direction: 'bearish', emoji: '📍', strength: 'MEDIUM' });
-  }
-
-  // ── Tweezer Bottom (2-candle — equal lows after downtrend)
-  if (pBear && cBull && Math.abs(cL - pL) <= cRange * 0.02) {
-    patterns.push({ name: 'Tweezer Bottom', direction: 'bullish', emoji: '📌', strength: 'MEDIUM' });
-  }
+  if (p2Bull && p1Small && cBear && cC < (p2O + p2C) / 2 && volSpike)  push('Evening Star',    'bearish', 'STRONG');
+  if (p2Bear && p1Small && cBull && cC > (p2O + p2C) / 2 && volSpike)  push('Morning Star',    'bullish', 'STRONG');
+  if (pBull && cBear && Math.abs(cH - pH) <= cRange * 0.02)             push('Tweezer Top',     'bearish', 'MEDIUM');
+  if (pBear && cBull && Math.abs(cL - pL) <= cRange * 0.02)             push('Tweezer Bottom',  'bullish', 'MEDIUM');
 
   // ── EMA Death Cross (EMA20 crosses below EMA50)
   const closes = candles.map(c => parseFloat(c.c));
@@ -217,8 +176,8 @@ function detectCandlePatterns(candles) {
     const ema50 = iEMA(closes, 50);
     const crossedUnder = ema20.at(-1) < ema50.at(-1) && ema20.at(-2) >= ema50.at(-2);
     const crossedOver  = ema20.at(-1) > ema50.at(-1) && ema20.at(-2) <= ema50.at(-2);
-    if (crossedUnder) patterns.push({ name: 'Death Cross (EMA20/50)', direction: 'bearish', emoji: '💀', strength: 'STRONG' });
-    if (crossedOver)  patterns.push({ name: 'Golden Cross (EMA20/50)', direction: 'bullish', emoji: '✨', strength: 'STRONG' });
+    if (crossedUnder) push('Death Cross (EMA20/50)',  'bearish', 'STRONG');
+    if (crossedOver)  push('Golden Cross (EMA20/50)', 'bullish', 'STRONG');
   }
 
   return patterns;
@@ -368,6 +327,14 @@ async function sbUpsert(url, key, table, rows) {
   return r.ok;
 }
 
+// ── Formatting Helpers ────────────────────────────────────────────────────────
+
+const _px  = (coin, p) => coin === 'BTC' ? (+p).toFixed(0) : +p >= 100 ? (+p).toFixed(2) : (+p).toFixed(4);
+const _f8  = r => `${r >= 0 ? '+' : ''}${(r * 100).toFixed(4)}%`;
+const _fmtM = n => n >= 1e9 ? `$${(n/1e9).toFixed(2)}B` : n >= 1e6 ? `$${(n/1e6).toFixed(1)}M` : n >= 1e3 ? `$${(n/1e3).toFixed(0)}K` : `$${(+n).toFixed(0)}`;
+const _adxStr = v => v > 40 ? 'STRONG' : v > 25 ? 'TREND' : 'RANGE';
+const _hr = (n = 30) => '─'.repeat(n);
+
 // ── KV Dedup ──────────────────────────────────────────────────────────────────
 
 const COOLDOWNS = { signal: 4 * 3600000, reversal: 12 * 3600000, arb: 4 * 3600000 };
@@ -400,15 +367,15 @@ function scoreSignals(closes, funding8h) {
   const aboveEma50 = ema50 ? price > ema50.at(-1) : null;
   const macdCross = macd > 0 && macdPrev <= 0;
 
-  if (aboveEma20) { score += 2; signals.push('EMA20 ✓'); }
-  if (aboveEma50) { score += 2; signals.push('EMA50 ✓'); }
-  if (macdCross)  { score += 3; signals.push('MACD cross ✓'); }
-  else if (macd > 0) { score += 1; signals.push('MACD pos'); }
+  if (aboveEma20) { score += 2; signals.push('EMA20✓'); }
+  if (aboveEma50) { score += 2; signals.push('EMA50✓'); }
+  if (macdCross)  { score += 3; signals.push('MACD-X'); }
+  else if (macd > 0) { score += 1; signals.push('MACD+'); }
   if (rsi > 45 && rsi < 75) { score += 2; signals.push(`RSI ${rsi.toFixed(0)}`); }
-  if (rsi < 35)  { score += 2; signals.push(`RSI oversold ${rsi.toFixed(0)}`); }
-  if (funding8h < 0) { score += 2; signals.push('Neg funding'); }
-  else if (funding8h < 0.0005) { score += 1; signals.push('Low funding'); }
-  else if (funding8h > 0.002)  { score -= 2; signals.push('High funding ✗'); }
+  if (rsi < 35)  { score += 2; signals.push(`RSI-OS ${rsi.toFixed(0)}`); }
+  if (funding8h < 0) { score += 2; signals.push('FUND-'); }
+  else if (funding8h < 0.0005) { score += 1; signals.push('FUND~'); }
+  else if (funding8h > 0.002)  { score -= 2; signals.push('FUND+!'); }
 
   const verdict = score >= 7 ? 'STRONG' : score >= 5 ? 'ENTRY' : score >= 3 ? 'WATCH' : 'SKIP';
   return { score, verdict, signals, rsi, price };
@@ -441,28 +408,24 @@ async function checkSignals(env) {
       const { score, verdict, signals, rsi, price } = scoreSignals(closes, funding);
 
       if (verdict === 'SKIP' || verdict === 'WATCH') continue;
+      const oi = hlFunding[coin]?.openInterest ?? 0;
+      const dir = funding < 0 || score >= 6 ? '▲' : '▼';
+
       if (greedBlocked) {
-        // Still alert but flag sentiment warning
-        const fundingPct = (funding * 100).toFixed(4);
         alerts.push({
           kvKey,
-          text: `⚠️ <b>${coin} ${verdict} [${score}/10] — SENTIMENT CAUTION</b>\n` +
-            `F&G: ${fg.value} (${fg.label}) — extreme greed, bulls at risk\n` +
-            `Price: $${price.toFixed(coin === 'BTC' ? 0 : 4)} | RSI: ${rsi.toFixed(1)} | Funding: ${fundingPct}%\n` +
-            `Signals: ${signals.join(', ')}`,
+          text: `⚠ SIGNAL ${dir} ${coin}  ${score}/10  ${verdict}  F&G ${fg.value}\n` +
+            `$${_px(coin,price)} · RSI ${rsi.toFixed(1)} · ${_f8(funding)} · OI ${_fmtM(oi)}\n` +
+            `${signals.join('  ')} · reduce size`,
         });
         continue;
       }
 
-      const fundingPct = (funding * 100).toFixed(4);
-      const emoji = verdict === 'STRONG' ? '🚀' : '📡';
       alerts.push({
         kvKey,
-        text: `${emoji} <b>${coin} ${verdict} [${score}/10]</b>\n` +
-          `Price: $${price.toFixed(coin === 'BTC' ? 0 : 4)}\n` +
-          `RSI: ${rsi.toFixed(1)} | Funding 8h: ${fundingPct}%\n` +
-          `F&G: ${fg.value} (${fg.label})\n` +
-          `Signals: ${signals.join(', ')}`,
+        text: `SIGNAL ${dir} ${coin}  ${score}/10  ${verdict}\n` +
+          `$${_px(coin,price)} · RSI ${rsi.toFixed(1)} · ${_f8(funding)} · OI ${_fmtM(oi)}\n` +
+          `${signals.join('  ')}`,
       });
     } catch (_) { /* skip */ }
   }
@@ -497,19 +460,20 @@ async function checkReversals(env) {
       const rsi = rsiArr.at(-1) ?? 50;
       const price = closes.at(-1);
 
-      const patternLines = patterns.map(p =>
-        `${p.emoji} <b>${p.name}</b> [${p.strength}] — ${p.direction === 'bullish' ? '↗ Bullish reversal' : p.direction === 'bearish' ? '↘ Bearish reversal' : '⚖️ Indecision'}`
-      ).join('\n');
+      const patternLines = patterns.map(p => {
+        const dir = p.direction === 'bullish' ? '▲' : p.direction === 'bearish' ? '▼' : '◈';
+        const vol = p.volRatio ? `  vol×${p.volRatio.toFixed(1)}` : '';
+        return `${dir} ${p.name}${vol}  ${p.strength}`;
+      }).join('\n');
 
-      const overallDir = patterns.filter(p => p.direction === 'bearish').length > patterns.filter(p => p.direction === 'bullish').length ? 'bearish' : 'bullish';
-      const headerEmoji = overallDir === 'bearish' ? '🔻' : '🔺';
+      const bearCount = patterns.filter(p => p.direction === 'bearish').length;
+      const overallDir = bearCount > patterns.filter(p => p.direction === 'bullish').length ? '▼' : '▲';
 
       alerts.push({
         kvKey,
-        text: `${headerEmoji} <b>Reversal Signal: ${coin} (4h)</b>\n\n` +
-          `${patternLines}\n\n` +
-          `Price: $${price.toFixed(coin === 'BTC' ? 0 : 4)} | RSI: ${rsi.toFixed(1)}\n` +
-          `<i>Always confirm with higher timeframe before acting.</i>`,
+        text: `REVERSAL ${overallDir} ${coin} · 4h · $${_px(coin,price)}  RSI ${rsi.toFixed(1)}\n` +
+          `${_hr(32)}\n` +
+          patternLines,
       });
     } catch (_) { /* skip */ }
   }
@@ -584,23 +548,23 @@ async function checkTrendAlignment(env) {
 
       if (hasDivAlert) {
         const d = divs4h[0];
+        const dir = d.type === 'BEARISH' ? '▼' : '▲';
         alerts.push({
           key: `${kvKey}:div`,
-          text: `${d.type==='BEARISH'?'🔻':'🔺'} <b>RSI Divergence: ${coin} (4h)</b>\n` +
-            `${d.label} [${d.strength}]\n` +
-            `Price: $${price.toFixed(coin==='BTC'?0:4)} | RSI: ${r4h?.rsi?.toFixed(1)}\n` +
-            `Trend: ${aligned}`,
+          text: `RSI DIV ${dir} ${coin} · 4h\n` +
+            `${d.label}  ${d.strength}\n` +
+            `$${_px(coin,price)} · RSI ${r4h?.rsi?.toFixed(1)} · ${aligned}`,
         });
       }
 
       if (hasAlignAlert) {
-        const emoji = aligned === 'FULL BULL' ? '🟢🟢🟢' : '🔴🔴🔴';
+        const dir = aligned === 'FULL BULL' ? '▲' : '▼';
+        const adxLine = r4h ? `ADX ${r4h.adxVal.toFixed(0)} (${_adxStr(r4h.adxVal)})` : '';
         alerts.push({
           key: kvKey,
-          text: `${emoji} <b>Multi-TF Flip: ${coin}</b>\n` +
-            `1h + 4h + 1d → <b>${aligned}</b>\n` +
-            `Price: $${price.toFixed(coin==='BTC'?0:4)}\n` +
-            `<i>All timeframes aligned — high confidence setup</i>`,
+          text: `TREND FLIP ${dir} ${coin}\n` +
+            `1h + 4h + 1d → ${aligned}\n` +
+            `$${_px(coin,price)} · ${adxLine}`,
         });
       }
     } catch (_) { /* skip */ }
@@ -639,10 +603,8 @@ async function checkFundingArb(env) {
 
       alerts.push({
         kvKey,
-        text: `💰 <b>Funding Arb: ${coin}</b>\n` +
-          `HL: ${(hl * 100).toFixed(4)}% | ${best.ex}: ${(best.other * 100).toFixed(4)}%\n` +
-          `Spread: ${(best.spread * 100).toFixed(4)}% (8h)\n` +
-          `Annualised: ~${(best.spread * 3 * 365 * 100).toFixed(1)}% APR`,
+        text: `ARB ${coin}  ${(best.spread*100).toFixed(4)}%  ~${(best.spread*3*365*100).toFixed(1)}% APR\n` +
+          `HL ${_f8(hl)}  ·  ${best.ex} ${_f8(best.other)}`,
       });
     } catch (_) { /* skip */ }
   }
@@ -670,15 +632,20 @@ async function dailySnapshot(env) {
   }
 
   const totalPnl = positions.reduce((a, p) => a + p.unrealizedPnl, 0);
-  const posLines = positions.map(p =>
-    `  ${p.size > 0 ? '🟢' : '🔴'} ${p.coin} ${p.size > 0 ? 'LONG' : 'SHORT'} | Entry $${p.entryPx.toFixed(2)} | PnL $${p.unrealizedPnl.toFixed(2)}`
-  ).join('\n') || '  (no open positions)';
+  const posLines = positions.map(p => {
+    const dir = p.size > 0 ? '▲' : '▼';
+    const side = p.size > 0 ? 'LONG' : 'SHORT';
+    const pnlSign = p.unrealizedPnl >= 0 ? '+' : '';
+    const liqStr = p.liquidationPx ? `  liq $${p.liquidationPx.toFixed(2)}` : '';
+    return `${dir} ${p.coin}  ${p.leverage}x  ${side}  entry $${p.entryPx.toFixed(2)}  PnL ${pnlSign}$${p.unrealizedPnl.toFixed(2)}${liqStr}`;
+  }).join('\n') || '  —';
 
+  const pnlSign = totalPnl >= 0 ? '+' : '';
   await tgSend(env.TG_TOKEN, env.TG_CHAT,
-    `📊 <b>Daily Snapshot — ${new Date(now).toISOString().slice(0, 10)}</b>\n\n` +
-    `Account: <b>$${accountValue.toFixed(2)}</b>\n` +
-    `Unrealized PnL: <b>${totalPnl >= 0 ? '📈' : '📉'} $${totalPnl.toFixed(2)}</b>\n` +
-    `Open positions (${positions.length}):\n${posLines}`
+    `SNAP ${new Date(now).toISOString().slice(0,10)}\n` +
+    `NAV $${accountValue.toFixed(2)}  ·  uPnL ${pnlSign}$${totalPnl.toFixed(2)}\n` +
+    `${_hr(30)}\n` +
+    posLines
   );
 }
 
@@ -689,7 +656,7 @@ async function weeklyReview(env) {
 
   const fills = await getRecentFills(env.WALLET, 7);
   if (!fills.length) {
-    await tgSend(env.TG_TOKEN, env.TG_CHAT, '📅 <b>Weekly Review</b>\n\nNo fills in the last 7 days.');
+    await tgSend(env.TG_TOKEN, env.TG_CHAT, `REVIEW ${new Date().toISOString().slice(0,10)}\nNo fills in the last 7 days.`);
     return;
   }
 
@@ -708,19 +675,21 @@ async function weeklyReview(env) {
 
   const topCoins = Object.entries(byCoin)
     .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
-    .slice(0, 5)
-    .map(([coin, pnl]) => `  ${pnl >= 0 ? '✅' : '❌'} ${coin}: $${pnl.toFixed(2)}`)
-    .join('\n');
+    .slice(0, 6)
+    .map(([coin, pnl]) => `${pnl >= 0 ? '▲' : '▼'} ${coin}  ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`)
+    .join('  ');
 
   const wr = wins + losses > 0 ? ((wins / (wins + losses)) * 100).toFixed(0) : '—';
   const net = totalPnl - fees;
+  const netSign = net >= 0 ? '+' : '';
+  const wk = `W${Math.ceil((new Date().getDate()) / 7)}`;
 
   await tgSend(env.TG_TOKEN, env.TG_CHAT,
-    `📅 <b>Weekly Review — ${new Date().toISOString().slice(0, 10)}</b>\n\n` +
-    `Fills: ${fills.length} | W/L: ${wins}/${losses} | WR: ${wr}%\n` +
-    `Gross PnL: $${totalPnl.toFixed(2)} | Fees: $${fees.toFixed(2)}\n` +
-    `Net PnL: <b>${net >= 0 ? '📈' : '📉'} $${net.toFixed(2)}</b>\n\n` +
-    `Top coins:\n${topCoins}`
+    `REVIEW ${wk} · ${new Date().toISOString().slice(0,10)}\n` +
+    `Fills ${fills.length}  ·  W/L ${wins}/${losses}  ·  WR ${wr}%\n` +
+    `Gross ${totalPnl >= 0 ? '+' : ''}$${totalPnl.toFixed(2)}  ·  Fees $${fees.toFixed(2)}  ·  Net ${netSign}$${net.toFixed(2)}\n` +
+    `${_hr(30)}\n` +
+    topCoins
   );
 }
 
@@ -730,34 +699,34 @@ async function handleTgCommand(cmd, arg, env) {
   const coins = (env.SIGNAL_COINS || 'BTC,ETH,SOL,HYPE,SUI').split(',').map(c => c.trim());
 
   if (cmd === '/start' || cmd === '/help') {
-    return `🤖 <b>Hype Bot</b>\n\n` +
-      `<b>Commands:</b>\n` +
-      `/signals — Run signal scan now\n` +
-      `/snapshot — Portfolio snapshot\n` +
-      `/positions — Open positions detail\n` +
-      `/trend &lt;coin&gt; — Multi-TF trend: 1h/4h/1d alignment, ADX, Supertrend, structure, RSI div\n` +
-      `/price &lt;coin&gt; — Price + RSI + funding + patterns\n` +
-      `/arb — Funding arb check\n` +
-      `/status — Bot status\n` +
-      `/help — Show this menu\n\n` +
-      `<b>Auto alerts:</b>\n` +
-      `• Signals every 15 min (4h cooldown)\n` +
-      `• Reversal patterns every 4h (12h cooldown)\n` +
-      `• Multi-TF flip alert every 4h (fires when all 3 TF align)\n` +
-      `• RSI divergence on 4h (12h cooldown)\n` +
-      `• Arb every 15 min (4h cooldown)\n` +
-      `• Daily snapshot at midnight UTC\n` +
-      `• Weekly review every Sunday`;
+    return `<b>HYPE-BOT</b>\n` +
+      `${_hr(28)}\n` +
+      `/signals          TA scan now\n` +
+      `/snapshot         portfolio state\n` +
+      `/positions        open positions\n` +
+      `/trend [coin]     1h/4h/1d · ADX · ST · struct\n` +
+      `/price [coin]     price · RSI · funding · patterns\n` +
+      `/arb              funding spread scan\n` +
+      `/status           market pulse\n` +
+      `/help             this menu\n` +
+      `${_hr(28)}\n` +
+      `<b>auto-alerts</b>\n` +
+      `signal    15m scan  ·  4h cooldown\n` +
+      `reversal  4h close  ·  12h cooldown\n` +
+      `flip      all-TF alignment change\n` +
+      `arb       15m scan  ·  4h cooldown\n` +
+      `snap      00:00 UTC daily\n` +
+      `review    Sunday 00:00 UTC`;
   }
 
   if (cmd === '/signals') {
     const count = await checkSignals(env);
-    return count > 0 ? `✅ Scan done — ${count} alert(s) sent above` : `📡 Scan done — no entries right now (WATCH/SKIP or on cooldown)`;
+    return count > 0 ? `scan done · ${count} alert(s) above` : `scan done · no ENTRY/STRONG signals (cooldown or filtered)`;
   }
 
   if (cmd === '/arb') {
     const count = await checkFundingArb(env);
-    return count > 0 ? `✅ Arb scan — ${count} opportunity(s) sent above` : `💤 Arb scan — no spreads above threshold`;
+    return count > 0 ? `arb scan · ${count} spread(s) above` : `arb scan · no spreads above threshold`;
   }
 
   if (cmd === '/snapshot') {
@@ -766,40 +735,46 @@ async function handleTgCommand(cmd, arg, env) {
   }
 
   if (cmd === '/positions') {
-    if (!env.WALLET) return '❌ WALLET secret not set';
+    if (!env.WALLET) return 'WALLET secret not set';
     const { positions, accountValue } = await getPortfolioState(env.WALLET);
-    if (!positions.length) return `📭 No open positions\nAccount: $${accountValue.toFixed(2)}`;
+    const totalPnl = positions.reduce((a, p) => a + p.unrealizedPnl, 0);
+    if (!positions.length) return `POSITIONS · NAV $${accountValue.toFixed(2)}\n—`;
     const lines = positions.map(p => {
-      const side = p.size > 0 ? '🟢 LONG' : '🔴 SHORT';
+      const dir = p.size > 0 ? '▲' : '▼';
+      const side = p.size > 0 ? 'LONG' : 'SHORT';
       const pnlSign = p.unrealizedPnl >= 0 ? '+' : '';
-      return `${side} <b>${p.coin}</b> ${p.leverage}x\nEntry: $${p.entryPx.toFixed(2)} | PnL: ${pnlSign}$${p.unrealizedPnl.toFixed(2)}` +
-        (p.liquidationPx ? ` | Liq: $${p.liquidationPx.toFixed(2)}` : '');
-    }).join('\n\n');
-    return `📂 <b>Open Positions</b>\nAccount: $${accountValue.toFixed(2)}\n\n${lines}`;
+      const liqStr = p.liquidationPx ? `  liq $${p.liquidationPx.toFixed(2)}` : '';
+      return `${dir} ${p.coin}  ${p.leverage}x  ${side}\n  entry $${p.entryPx.toFixed(2)}  ·  PnL ${pnlSign}$${p.unrealizedPnl.toFixed(2)}${liqStr}`;
+    }).join('\n');
+    const uPnlSign = totalPnl >= 0 ? '+' : '';
+    return `POSITIONS · NAV $${accountValue.toFixed(2)}  uPnL ${uPnlSign}$${totalPnl.toFixed(2)}\n${_hr(32)}\n${lines}`;
   }
 
   if (cmd === '/trend') {
     const coin = (arg || 'BTC').toUpperCase();
     try {
       const { r1h, r4h, r1d, aligned, price, divs4h } = await analyzeTrend(coin);
-      const tfLine = (r, label) => {
-        if (!r) return `${label}: —`;
-        const bias = r.bias === 'BULL' ? '🟢' : r.bias === 'BEAR' ? '🔴' : '⚪';
-        const adx = r.adxVal > 40 ? 'STRONG' : r.adxVal > 25 ? 'TREND' : 'RANGE';
-        const st = r.stBull ? '↑ST' : '↓ST';
-        const str = r.structure === 'UPTREND' ? 'HH/HL' : r.structure === 'DOWNTREND' ? 'LH/LL' : r.structure.slice(0,4);
-        return `${bias} <b>${label}</b>: ${r.bias} | ADX ${r.adxVal.toFixed(0)} (${adx}) | ${st} | ${str} | RSI ${r.rsi.toFixed(0)}`;
+      const tfRow = (r, label) => {
+        if (!r) return `${label}  —`;
+        const bias = r.bias === 'BULL' ? '▲' : r.bias === 'BEAR' ? '▼' : '◈';
+        const st   = r.stBull ? '↑ST' : '↓ST';
+        const str  = r.structure === 'UPTREND' ? 'HH/HL' : r.structure === 'DOWNTREND' ? 'LH/LL' : r.structure.slice(0,4);
+        return `${label}  ${bias} ${r.bias.padEnd(4)}  ADX ${r.adxVal.toFixed(0)} ${_adxStr(r.adxVal).padEnd(6)}  ${st}  ${str}  RSI ${r.rsi.toFixed(0)}`;
       };
-      const divLine = divs4h.length ? divs4h.map(d=>`${d.type==='BEARISH'?'🔻':'🔺'} ${d.label} [${d.strength}]`).join('\n') : '  No divergence';
-      const alignEmoji = aligned==='FULL BULL'?'🟢🟢🟢':aligned==='FULL BEAR'?'🔴🔴🔴':aligned.includes('BULL')?'🟢⚪':'🔴⚪';
-      return `📐 <b>Trend: ${coin}</b>\n` +
-        `Price: $${price.toFixed(coin==='BTC'?0:4)}\n` +
-        `Alignment: ${alignEmoji} <b>${aligned}</b>\n\n` +
-        `${tfLine(r1h,'1h')}\n${tfLine(r4h,'4h')}\n${tfLine(r1d,'1d')}\n\n` +
-        `<b>4h RSI Divergence:</b>\n${divLine}` +
-        (r4h?.breakout ? `\n\n⚠️ Structure break: ${r4h.breakout.type} at $${r4h.breakout.level.toFixed(2)}` : '');
+      const alignDir = aligned.includes('BULL') ? '▲' : aligned.includes('BEAR') ? '▼' : '◈';
+      const divLine  = divs4h.length
+        ? divs4h.map(d => `${d.type==='BEARISH'?'▼':'▲'} ${d.label}  ${d.strength}`).join('\n')
+        : 'none';
+      const breakLine = r4h?.breakout ? `\nBREAK  ${r4h.breakout.type}  $${r4h.breakout.level.toFixed(2)}` : '';
+      return `TREND · ${coin} · $${_px(coin,price)}\n` +
+        `${_hr(36)}\n` +
+        `<code>${tfRow(r1h,'1h')}\n${tfRow(r4h,'4h')}\n${tfRow(r1d,'1d')}</code>\n` +
+        `${_hr(36)}\n` +
+        `ALIGN  ${alignDir} ${aligned}\n` +
+        `4h DIV  ${divLine}` +
+        breakLine;
     } catch(e) {
-      return `❌ Could not analyse ${coin}: ${e.message}`;
+      return `trend error ${coin}: ${e.message}`;
     }
   }
 
@@ -823,17 +798,24 @@ async function handleTgCommand(cmd, arg, env) {
 
       const patterns = detectCandlePatterns(candles4h);
       const patternLines = patterns.length
-        ? patterns.map(p => `${p.emoji} ${p.name} [${p.strength}]`).join('\n')
-        : '  No patterns detected on 4h';
+        ? patterns.map(p => {
+            const dir = p.direction === 'bullish' ? '▲' : p.direction === 'bearish' ? '▼' : '◈';
+            const vol = p.volMult ? `  vol×${p.volMult.toFixed(1)}` : '';
+            return `${dir} ${p.name}${vol}  ${p.strength}`;
+          }).join('\n')
+        : '  —';
 
-      return `💹 <b>${coin}</b>\n` +
-        `Price: $${price.toFixed(coin === 'BTC' ? 0 : 4)}\n` +
-        `RSI (1h): ${rsi.toFixed(1)}\n` +
-        `Funding 8h: ${fundingPct}%\n` +
-        `OI: $${(oi / 1e6).toFixed(0)}M\n\n` +
-        `<b>4h Patterns:</b>\n${patternLines}`;
+      const fundLabel = parseFloat(fundingPct) > 0.03 ? 'high' : parseFloat(fundingPct) < 0 ? 'neg' : 'ok';
+      const rsiLabel  = rsi > 70 ? 'OB' : rsi < 30 ? 'OS' : 'ok';
+      return `${coin} · $${_px(coin,price)}\n` +
+        `${_hr(28)}\n` +
+        `RSI 1h    ${rsi.toFixed(1)}  ${rsiLabel}\n` +
+        `Fund 8h   ${fundingPct}%  ${fundLabel}\n` +
+        `OI        ${_fmtM(oi)}\n` +
+        `${_hr(28)}\n` +
+        `4h Patterns\n${patternLines}`;
     } catch (e) {
-      return `❌ Could not fetch ${coin}: ${e.message}`;
+      return `price error ${coin}: ${e.message}`;
     }
   }
 
@@ -844,21 +826,24 @@ async function handleTgCommand(cmd, arg, env) {
       getCoinGlassLiq(env.COINGLASS_KEY, 'BTCUSDT'),
     ]);
     const btcFunding = (((hlFunding['BTC']?.fundingRate) ?? 0) * 100).toFixed(4);
-    const fmtUSD = n => n >= 1e9 ? `$${(n/1e9).toFixed(2)}B` : n >= 1e6 ? `$${(n/1e6).toFixed(1)}M` : `$${n.toFixed(0)}`;
     const liqLine = cgLiq
-      ? `BTC liq 24h: longs ${fmtUSD(cgLiq.longs)} / shorts ${fmtUSD(cgLiq.shorts)} — ${cgLiq.bias}\n`
+      ? `liq 24h   L ${_fmtM(cgLiq.longs)} / S ${_fmtM(cgLiq.shorts)}  ${cgLiq.bias}\n`
       : '';
-    return `⚙️ <b>Bot Status</b>\n\n` +
-      `Time: ${new Date().toUTCString()}\n` +
-      `F&G: ${fg.value} (${fg.label})\n` +
-      `BTC funding 8h: ${btcFunding}%\n` +
+    const btcOI   = hlFunding['BTC']?.openInterest ?? 0;
+    const fundLabel = parseFloat(btcFunding) > 0.03 ? 'high' : parseFloat(btcFunding) < 0 ? 'neg' : 'ok';
+    return `STATUS · ${new Date().toUTCString().slice(0,16)}\n` +
+      `${_hr(32)}\n` +
+      `F&G       ${fg.value}  ${fg.label}\n` +
+      `BTC fund  ${btcFunding}%  ${fundLabel}\n` +
+      `BTC OI    ${_fmtM(btcOI)}\n` +
       liqLine +
-      `Watching: ${coins.join(', ')}\n` +
-      `Sentiment gate: F&G > ${env.FG_GREED_GATE || 80} = caution mode\n` +
-      `Signal threshold: 5/10 | Reversal cooldown: 12h`;
+      `${_hr(32)}\n` +
+      `scan   ${coins.join(' ')}\n` +
+      `gate   F&G>${env.FG_GREED_GATE||80}=caution  ·  fund>${env.MAX_FUNDING||'0.0020'}=skip\n` +
+      `crons  15m signal/arb  ·  4h rev/trend  ·  00:00 snap`;
   }
 
-  return `❓ Unknown command. Send /help for the menu.`;
+  return `unknown command · /help for menu`;
 }
 
 // ── Request Handler ───────────────────────────────────────────────────────────
