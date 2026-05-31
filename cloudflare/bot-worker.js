@@ -1044,8 +1044,45 @@ export default {
       });
     }
 
+    // ── News Analysis (Cloudflare Workers AI — free) ──────────────────────────
+    if (url.pathname === '/analyze-news') {
+      const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type' };
+      if (request.method === 'OPTIONS') return new Response(null, { headers: { ...cors, 'Access-Control-Allow-Methods': 'POST' } });
+      if (request.method !== 'POST') return new Response('POST only', { status: 405, headers: cors });
+      if (!env.AI) return new Response(JSON.stringify({ error: 'AI binding not enabled — add [ai] to wrangler-bot.toml and redeploy' }), { status: 503, headers: { ...cors, 'Content-Type': 'application/json' } });
+
+      const body = await request.json().catch(() => ({}));
+      const articles = (body.articles || []).slice(0, 10);
+      if (!articles.length) return new Response(JSON.stringify({ analyses: [] }), { headers: { ...cors, 'Content-Type': 'application/json' } });
+
+      const numbered = articles.map((a, i) => `${i + 1}. [${a.id}] ${a.title}. ${(a.excerpt || '').slice(0, 120)}`).join('\n');
+
+      const system = `You are a crypto market analyst. For each headline return a JSON array:
+[{"id":"same as input","sentiment":"BULL"|"BEAR"|"NEUTRAL","coins":["BTC"],"reasoning":"<90 chars, plain english mechanism","timeframe":"immediate"|"short-term"|"long-term"}]
+BULL=likely price positive, BEAR=likely price negative, NEUTRAL=minimal impact.
+immediate=hours, short-term=days-weeks, long-term=months+.
+coins=up to 4 most impacted tickers. Return ONLY the JSON array, no other text.`;
+
+      try {
+        const result = await env.AI.run('@cf/meta/llama-3.1-8b-instruct-fast', {
+          messages: [
+            { role: 'system', content: system },
+            { role: 'user', content: `Analyse ${articles.length} articles:\n${numbered}` },
+          ],
+          max_tokens: 1024,
+        });
+        const text = (result.response || '').trim();
+        const match = text.match(/\[[\s\S]*\]/);
+        if (!match) throw new Error(`No JSON array in model response: ${text.slice(0, 80)}`);
+        const analyses = JSON.parse(match[0]);
+        return new Response(JSON.stringify({ analyses }), { headers: { ...cors, 'Content-Type': 'application/json' } });
+      } catch (e) {
+        return new Response(JSON.stringify({ error: e.message, analyses: [] }), { status: 500, headers: { ...cors, 'Content-Type': 'application/json' } });
+      }
+    }
+
     return new Response(
-      'Hype Bot Worker\n\nEndpoints:\n  /run-signals\n  /run-arb\n  /run-snapshot\n  /run-reversals\n  /run-trend\n  /run-weekly\n  /register-webhook\n  /health',
+      'Hype Bot Worker\n\nEndpoints:\n  /run-signals\n  /run-arb\n  /run-snapshot\n  /run-reversals\n  /run-trend\n  /run-weekly\n  /register-webhook\n  /analyze-news\n  /health',
       { status: 200 }
     );
   },

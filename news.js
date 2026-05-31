@@ -39,14 +39,67 @@ const CC_BASE     = 'https://min-api.cryptocompare.com/data/v2/news/?lang=EN&sor
 const MESSARI_URL = 'https://data.messari.io/api/v1/news?limit=50&fields=id,title,content,published_at,url,references/name';
 const REDDIT_URL  = 'https://www.reddit.com/r/CryptoCurrency/new.json?limit=50&raw_json=1';
 
-let _newsItems   = [];
-let _newsFng     = [];
-let _newsStatus  = {};
-let _newsFilter  = 'all';
-let _newsPage    = 1;
-let _newsLoaded  = false;
-let _newsSeenSet = new Set();
-let _newsTimer   = null;
+let _newsItems    = [];
+let _newsFng      = [];
+let _newsStatus   = {};
+let _newsFilter   = 'all';
+let _newsPage     = 1;
+let _newsLoaded   = false;
+let _newsSeenSet  = new Set();
+let _newsTimer    = null;
+let _newsAnalyses = {};   // id → { sentiment, coins, reasoning, timeframe }
+let _newsAiState  = 'idle'; // 'idle' | 'loading' | 'done' | 'error'
+const NEWS_AI_CACHE = 'hype_news_ai_v1';
+
+// ── AI Analysis ───────────────────────────────────────────────────────────────
+
+function _aiCacheLoad() {
+  try {
+    const raw = sessionStorage.getItem(NEWS_AI_CACHE);
+    if (!raw) return {};
+    const { ts, data } = JSON.parse(raw);
+    if (Date.now() - ts > NEWS_CACHE_TTL * 2) return {};
+    return data || {};
+  } catch { return {}; }
+}
+
+function _aiCacheSave() {
+  try {
+    sessionStorage.setItem(NEWS_AI_CACHE, JSON.stringify({ ts: Date.now(), data: _newsAnalyses }));
+  } catch {}
+}
+
+async function _analyzeTopArticles() {
+  const botUrl = (localStorage.getItem('hype_bot_url') || '').replace(/\/$/, '');
+  if (!botUrl) return;
+
+  // Load from cache first
+  _newsAnalyses = { ..._aiCacheLoad() };
+
+  // Find articles not yet analysed (top 10 most recent)
+  const unseen = _newsItems.filter(a => !_newsAnalyses[a.id]).slice(0, 10);
+  if (!unseen.length) return;
+
+  _newsAiState = 'loading';
+  _updateFeedEl();
+
+  try {
+    const res = await fetch(`${botUrl}/analyze-news`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ articles: unseen.map(a => ({ id: a.id, title: a.title, excerpt: a.excerpt })) }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const { analyses = [], error } = await res.json();
+    if (error) throw new Error(error);
+    analyses.forEach(a => { if (a.id) _newsAnalyses[a.id] = a; });
+    _aiCacheSave();
+    _newsAiState = 'done';
+  } catch (e) {
+    _newsAiState = 'error:' + e.message;
+  }
+  _buildPage();
+}
 
 // ── Cache ─────────────────────────────────────────────────────────────────────
 
@@ -295,10 +348,29 @@ function _renderFilters() {
   </div>`;
 }
 
+function _renderAnalysisBadge(a) {
+  if (!a) return '';
+  const sentColor = a.sentiment === 'BULL' ? 'var(--green)' : a.sentiment === 'BEAR' ? 'var(--red)' : 'var(--text-muted)';
+  const sentBg    = a.sentiment === 'BULL' ? 'var(--green-bg)' : a.sentiment === 'BEAR' ? 'var(--red-bg)' : 'var(--surface2)';
+  const tfColor   = a.timeframe === 'immediate' ? 'var(--red)' : a.timeframe === 'long-term' ? 'var(--text-muted)' : 'var(--yellow)';
+  const coins = (a.coins || []).map(c =>
+    `<span style="font-size:10px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:1px 5px;color:var(--text-muted);font-family:var(--mono)">${c}</span>`
+  ).join(' ');
+  return `<div style="margin-top:8px;display:flex;flex-direction:column;gap:5px;border-top:1px solid var(--border);padding-top:8px">
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+      <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:var(--radius-pill);background:${sentBg};color:${sentColor};letter-spacing:.06em">${a.sentiment}</span>
+      <span style="font-size:10px;color:${tfColor};text-transform:uppercase;letter-spacing:.05em">${a.timeframe || ''}</span>
+      ${coins}
+    </div>
+    ${a.reasoning ? `<div style="font-size:11px;color:var(--text-muted);line-height:1.4">${a.reasoning}</div>` : ''}
+  </div>`;
+}
+
 function _renderCard(item) {
-  const meta   = NEWS_SOURCES[item.source] || { label: item.source, cls: '' };
-  const tags   = item.tags?.length ? `<div class="news-tags">${item.tags.map(t=>`<span class="news-tag">${t}</span>`).join('')}</div>` : '';
-  const reddit = item.redditMeta ? `<div class="news-reddit-meta">${item.redditMeta}</div>` : '';
+  const meta     = NEWS_SOURCES[item.source] || { label: item.source, cls: '' };
+  const tags     = item.tags?.length ? `<div class="news-tags">${item.tags.map(t=>`<span class="news-tag">${t}</span>`).join('')}</div>` : '';
+  const reddit   = item.redditMeta ? `<div class="news-reddit-meta">${item.redditMeta}</div>` : '';
+  const analysis = _renderAnalysisBadge(_newsAnalyses[item.id]);
   return `<div class="news-card">
     <div class="news-card-header">
       <span class="news-source-badge ${meta.cls}">${meta.label}</span>
@@ -306,7 +378,7 @@ function _renderCard(item) {
     </div>
     <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="news-title">${item.title}</a>
     ${item.excerpt ? `<div class="news-excerpt">${item.excerpt}</div>` : ''}
-    ${tags}${reddit}
+    ${tags}${reddit}${analysis}
   </div>`;
 }
 
@@ -342,10 +414,38 @@ function _updateFeedEl() {
   if (parent && _newsItems.length) _buildPage();
 }
 
+function _renderAIBar() {
+  const botUrl = localStorage.getItem('hype_bot_url') || '';
+  const analyseCount = Object.keys(_newsAnalyses).length;
+  let statusLine = '';
+  if (!botUrl) {
+    statusLine = `<span style="color:var(--yellow)">⚠ Set bot URL to enable AI analysis</span>`;
+  } else if (_newsAiState === 'loading') {
+    statusLine = `<span style="color:var(--text-muted)">AI analysing headlines…</span>`;
+  } else if (_newsAiState.startsWith('error')) {
+    statusLine = `<span style="color:var(--red)" title="${_newsAiState}">AI error · check bot URL</span>`;
+  } else if (analyseCount) {
+    statusLine = `<span style="color:var(--green)">AI</span> <span style="color:var(--text-faint)">${analyseCount} articles analysed · Llama 3.1 8B · free</span>`;
+  } else {
+    statusLine = `<span style="color:var(--text-faint)">AI ready · analysing on load</span>`;
+  }
+  return `<div style="padding:6px 16px;font-size:11px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+    <div>${statusLine}</div>
+    <details style="font-size:11px">
+      <summary style="cursor:pointer;color:var(--text-faint);list-style:none">⚙ Bot URL</summary>
+      <div style="display:flex;gap:6px;margin-top:6px;align-items:center">
+        <input id="news-bot-url" type="text" value="${botUrl.replace(/"/g,'&quot;')}" placeholder="https://hype-bot.your-subdomain.workers.dev"
+          style="flex:1;min-width:200px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-md);padding:5px 8px;color:var(--text);font-size:11px;font-family:var(--mono);outline:none">
+        <button onclick="_newsSaveBotUrl()" class="btn btn-ghost btn-sm">Save</button>
+      </div>
+    </details>
+  </div>`;
+}
+
 function _buildPage() {
   const el = document.getElementById('news-content');
   if (!el) return;
-  el.innerHTML = _renderFNG() + _renderStatus() + _renderFilters() + _renderFeed();
+  el.innerHTML = _renderFNG() + _renderStatus() + _renderAIBar() + _renderFilters() + _renderFeed();
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
@@ -372,6 +472,7 @@ async function loadNews() {
   await _fetchAllProgressively();
   _newsLoaded = true;
   _buildPage();
+  _analyzeTopArticles();
 
   clearInterval(_newsTimer);
   _newsTimer = setInterval(async () => {
@@ -385,6 +486,16 @@ async function loadNews() {
 function newsFilter(src) { _newsFilter = src; _newsPage = 1; _buildPage(); }
 function newsLoadMore()   { _newsPage++; _buildPage(); }
 
+function _newsSaveBotUrl() {
+  const val = (document.getElementById('news-bot-url')?.value || '').trim().replace(/\/$/, '');
+  if (val) localStorage.setItem('hype_bot_url', val); else localStorage.removeItem('hype_bot_url');
+  _newsAiState = 'idle';
+  _newsAnalyses = {};
+  sessionStorage.removeItem(NEWS_AI_CACHE);
+  _buildPage();
+  if (val) _analyzeTopArticles();
+}
+
 async function newsRefresh() {
   sessionStorage.removeItem(NEWS_CACHE_KEY);
   const btn = document.getElementById('news-refresh-btn');
@@ -396,4 +507,5 @@ async function newsRefresh() {
   await _fetchAllProgressively();
   _newsLoaded = true;
   _buildPage();
+  _analyzeTopArticles();
 }
