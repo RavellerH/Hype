@@ -9,7 +9,7 @@
  *   midnight UTC     — daily snapshot → Supabase + Telegram
  *   Sunday midnight  — weekly performance review
  *
- * Secrets: WALLET, TG_TOKEN, TG_CHAT, SUPABASE_URL, SUPABASE_KEY
+ * Secrets: WALLET, TG_TOKEN, TG_CHAT, SUPABASE_URL, SUPABASE_KEY, COINGLASS_KEY
  * KV namespace: ALERT_STATE
  * Env vars: SIGNAL_COINS, ARB_THRESHOLD, MAX_FUNDING, FG_GREED_GATE
  */
@@ -320,6 +320,26 @@ async function getFearGreed() {
     const d = await r.json();
     return { value: parseInt(d.data[0].value), label: d.data[0].value_classification };
   } catch (_) { return { value: 50, label: 'Neutral' }; }
+}
+
+async function getCoinGlassLiq(cgKey, pair = 'BTCUSDT') {
+  if (!cgKey) return null;
+  try {
+    const r = await fetch(
+      `https://open-api.coinglass.com/public/v2/liquidation_ex_chart?ex=Binance&pair=${pair}&interval=4h`,
+      { headers: { 'coinglassSecret': cgKey } }
+    );
+    if (!r.ok) return null;
+    const j = await r.json();
+    if (j.code !== '0' || !j.data) return null;
+    const { longLiquidationUsd24h: longs, shortLiquidationUsd24h: shorts } = j.data;
+    const l = parseFloat(longs || 0), s = parseFloat(shorts || 0);
+    const total = l + s;
+    const bias = total > 0
+      ? (s / total > 0.65 ? '🟢 Short squeeze' : s / total < 0.35 ? '🔴 Long flush' : '⚪ Balanced')
+      : '—';
+    return { longs: l, shorts: s, bias };
+  } catch (_) { return null; }
 }
 
 // ── Telegram ──────────────────────────────────────────────────────────────────
@@ -818,12 +838,21 @@ async function handleTgCommand(cmd, arg, env) {
   }
 
   if (cmd === '/status') {
-    const [hlFunding, fg] = await Promise.all([getFundingRates(), getFearGreed()]);
+    const [hlFunding, fg, cgLiq] = await Promise.all([
+      getFundingRates(),
+      getFearGreed(),
+      getCoinGlassLiq(env.COINGLASS_KEY, 'BTCUSDT'),
+    ]);
     const btcFunding = (((hlFunding['BTC']?.fundingRate) ?? 0) * 100).toFixed(4);
+    const fmtUSD = n => n >= 1e9 ? `$${(n/1e9).toFixed(2)}B` : n >= 1e6 ? `$${(n/1e6).toFixed(1)}M` : `$${n.toFixed(0)}`;
+    const liqLine = cgLiq
+      ? `BTC liq 24h: longs ${fmtUSD(cgLiq.longs)} / shorts ${fmtUSD(cgLiq.shorts)} — ${cgLiq.bias}\n`
+      : '';
     return `⚙️ <b>Bot Status</b>\n\n` +
       `Time: ${new Date().toUTCString()}\n` +
       `F&G: ${fg.value} (${fg.label})\n` +
       `BTC funding 8h: ${btcFunding}%\n` +
+      liqLine +
       `Watching: ${coins.join(', ')}\n` +
       `Sentiment gate: F&G > ${env.FG_GREED_GATE || 80} = caution mode\n` +
       `Signal threshold: 5/10 | Reversal cooldown: 12h`;
