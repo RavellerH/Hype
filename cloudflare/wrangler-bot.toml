@@ -26,3 +26,7 @@ MAX_FUNDING = "0.0020"
 BTC_GATE_PCT = "-5"
 # Fear & Greed gate — signal alerts show caution warning above this value
 FG_GREED_GATE = "80"
+# OI spike threshold — % change in open interest to trigger alert (0.08 = 8%)
+OI_SPIKE_PCT = "0.08"
+# Liquidation cascade threshold — total 24h liq in USD to trigger alert
+LIQ_CASCADE_USD = "150000000"
