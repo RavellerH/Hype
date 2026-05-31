@@ -6,7 +6,7 @@ compatibility_date = "2024-09-23"
 mode = "smart"
 
 [triggers]
-crons = ["*/15 * * * *", "0 0 * * *"]
+crons = ["*/15 * * * *", "0 */4 * * *", "0 0 * * *", "0 0 * * 0"]
 
 # KV namespace for alert deduplication (4h cooldown per coin)
 # Create with: npx wrangler kv:namespace create ALERT_STATE
@@ -24,3 +24,5 @@ ARB_THRESHOLD = "0.001"
 MAX_FUNDING = "0.0020"
 # Minimum BTC 24h% for bullish macro gate (not yet wired — reserved for future use)
 BTC_GATE_PCT = "-5"
+# Fear & Greed gate — signal alerts show caution warning above this value
+FG_GREED_GATE = "80"
