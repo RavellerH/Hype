@@ -12,8 +12,9 @@ async function loadOnchain() {
 }
 
 async function _ocFetch() {
-  const glKey = localStorage.getItem('hype_glassnode_key') || '';
   const cqKey = localStorage.getItem('hype_cryptoquant_key') || '';
+  const cgKey = localStorage.getItem('hype_coinglass_key') || '';
+  const cgH   = cgKey ? { 'coinglassSecret': cgKey } : {};
 
   const fetches = {
     bcStats:     fetch('https://blockchain.info/stats?format=json').then(r => r.ok ? r.json() : Promise.reject(new Error('bc ' + r.status))),
@@ -21,13 +22,10 @@ async function _ocFetch() {
     fees:        fetch('https://mempool.space/api/v1/fees/recommended').then(r => r.ok ? r.json() : Promise.reject(new Error('fees ' + r.status))),
     hlMeta:      hlPost({ type: 'metaAndAssetCtxs' }),
     stablecoins: fetch('https://stablecoins.llama.fi/stablecoins?includePrices=true').then(r => r.ok ? r.json() : Promise.reject(new Error('stable ' + r.status))),
+    cgLiqBtc:    fetch('https://open-api.coinglass.com/public/v2/liquidation_ex_chart?ex=Binance&pair=BTCUSDT&interval=4h', { headers: cgH }).then(r => r.ok ? r.json() : Promise.reject(new Error('cg liq btc ' + r.status))),
+    cgLiqEth:    fetch('https://open-api.coinglass.com/public/v2/liquidation_ex_chart?ex=Binance&pair=ETHUSDT&interval=4h', { headers: cgH }).then(r => r.ok ? r.json() : Promise.reject(new Error('cg liq eth ' + r.status))),
+    cgOI:        fetch('https://open-api.coinglass.com/public/v2/openInterest', { headers: cgH }).then(r => r.ok ? r.json() : Promise.reject(new Error('cg oi ' + r.status))),
   };
-
-  if (glKey) {
-    fetches.glActiveAddr = fetch(`https://api.glassnode.com/v1/metrics/addresses/active_count?a=BTC&i=24h&api_key=${encodeURIComponent(glKey)}`).then(r => r.ok ? r.json() : Promise.reject(new Error('gl addr ' + r.status)));
-    fetches.glNetflow    = fetch(`https://api.glassnode.com/v1/metrics/transactions/transfers_volume_exchanges_net?a=BTC&i=24h&api_key=${encodeURIComponent(glKey)}`).then(r => r.ok ? r.json() : Promise.reject(new Error('gl flow ' + r.status)));
-    fetches.glSopr       = fetch(`https://api.glassnode.com/v1/metrics/indicators/sopr?a=BTC&i=24h&api_key=${encodeURIComponent(glKey)}`).then(r => r.ok ? r.json() : Promise.reject(new Error('gl sopr ' + r.status)));
-  }
 
   if (cqKey) {
     const cqH = { 'Authorization': 'Bearer ' + cqKey };
@@ -69,8 +67,6 @@ async function _ocFetch() {
       if (!targets.includes(a.symbol)) return;
       const circ = a.circulating?.peggedUSD || 0;
       total += circ;
-      const w7 = a.chainCirculating ? Object.values(a.chainCirculating).reduce((s, c) => s + (c.current?.peggedUSD || 0), 0) : circ;
-      const prev7 = a.circulatingPrevDay ? a.circulatingPrevDay * 7 : w7;
       total7dAgo += (a.circulatingPrev7d?.peggedUSD || circ);
     });
     d.stableTotal = total;
@@ -78,10 +74,15 @@ async function _ocFetch() {
     d.stable7dChg = total7dAgo > 0 ? ((total - total7dAgo) / total7dAgo) * 100 : null;
   }
 
-  if (glKey) {
-    d.glActiveAddr = resolved.glActiveAddr ? _ocLatestVal(resolved.glActiveAddr) : null;
-    d.glNetflow    = resolved.glNetflow    ? _ocLatestVal(resolved.glNetflow)    : null;
-    d.glSopr       = resolved.glSopr       ? _ocLatestVal(resolved.glSopr)       : null;
+  // CoinGlass — liquidation clusters (free, no key)
+  d.cgLiqBtc = _ocParseCGLiq(resolved.cgLiqBtc);
+  d.cgLiqEth = _ocParseCGLiq(resolved.cgLiqEth);
+
+  // CoinGlass — OI by exchange
+  if (resolved.cgOI?.code === '0' && Array.isArray(resolved.cgOI?.data)) {
+    d.cgOI = resolved.cgOI.data;
+  } else {
+    d.cgOI = null;
   }
 
   if (cqKey) {
@@ -99,10 +100,15 @@ async function _ocFetch() {
   _ocTs = Date.now();
 }
 
-function _ocLatestVal(arr) {
-  if (!Array.isArray(arr) || !arr.length) return null;
-  const last = arr[arr.length - 1];
-  return typeof last === 'object' ? (last.v ?? last.value ?? null) : last;
+function _ocParseCGLiq(resp) {
+  if (!resp || resp.code !== '0') return null;
+  const data = resp.data || {};
+  return {
+    longLiq24h:  parseFloat(data.longLiquidationUsd24h  || data.buyLiquidationUsd24h  || 0),
+    shortLiq24h: parseFloat(data.shortLiquidationUsd24h || data.sellLiquidationUsd24h || 0),
+    longs:       Array.isArray(data.buyList)  ? data.buyList  : [],
+    shorts:      Array.isArray(data.sellList) ? data.sellList : [],
+  };
 }
 
 function _ocLatestCQ(resp) {
@@ -115,10 +121,10 @@ function _ocRender() {
   const el = document.getElementById('onchain-content');
   if (!el) return;
   const d = window._onchainData;
-  const glKey = localStorage.getItem('hype_glassnode_key') || '';
   const cqKey = localStorage.getItem('hype_cryptoquant_key') || '';
+  const cgKey = localStorage.getItem('hype_coinglass_key') || '';
 
-  const signals = _ocComputeSignals(d, glKey, cqKey);
+  const signals = _ocComputeSignals(d, cqKey);
   const bullCount = signals.filter(s => s === 'bull').length;
   const bearCount = signals.filter(s => s === 'bear').length;
   const total = signals.length;
@@ -140,14 +146,14 @@ function _ocRender() {
 
   ${_ocSectionNetwork(d)}
   ${_ocSectionFlow(d)}
-  ${glKey ? _ocSectionGlassnode(d) : _ocSectionLocked('Glassnode', 'hype_glassnode_key', 'Glassnode API Key')}
+  ${_ocSectionCoinGlass(d, cgKey)}
   ${cqKey ? _ocSectionCQ(d) : _ocSectionLocked('CryptoQuant', 'hype_cryptoquant_key', 'CryptoQuant API Key')}
   ${_ocSectionSettings()}
 
 </div>`;
 }
 
-function _ocComputeSignals(d, glKey, cqKey) {
+function _ocComputeSignals(d, cqKey) {
   const signals = [];
 
   if (d.fees?.fastestFee != null) {
@@ -171,12 +177,13 @@ function _ocComputeSignals(d, glKey, cqKey) {
     signals.push(d.hlOI.BTC > d.prevBtcOi * 1.02 ? 'bear' : d.hlOI.BTC < d.prevBtcOi * 0.98 ? 'bull' : 'neutral');
   }
 
-  if (glKey && d.glNetflow != null) {
-    signals.push(d.glNetflow < -1000 ? 'bull' : d.glNetflow > 1000 ? 'bear' : 'neutral');
-  }
-
-  if (glKey && d.glSopr != null) {
-    signals.push(d.glSopr > 1.05 ? 'bear' : d.glSopr < 0.95 ? 'bull' : 'neutral');
+  // CoinGlass liquidation bias — more shorts liquidated = squeeze up (bull signal)
+  if (d.cgLiqBtc) {
+    const { longLiq24h, shortLiq24h } = d.cgLiqBtc;
+    if (longLiq24h > 0 || shortLiq24h > 0) {
+      const ratio = shortLiq24h / (longLiq24h + shortLiq24h + 1);
+      signals.push(ratio > 0.65 ? 'bull' : ratio < 0.35 ? 'bear' : 'neutral');
+    }
   }
 
   if (cqKey && d.cqReserve) {
@@ -272,41 +279,76 @@ function _ocSectionFlow(d) {
 </div>`;
 }
 
-function _ocSectionGlassnode(d) {
-  const addr   = d.glActiveAddr;
-  const flow   = d.glNetflow;
-  const sopr   = d.glSopr;
+function _ocSectionCoinGlass(d, cgKey) {
+  const liqBtc = d.cgLiqBtc;
+  const liqEth = d.cgLiqEth;
+  const oi     = d.cgOI;
 
-  let addrDisp = addr != null ? _ocNum(addr) : '—';
-  let addrLbl  = _ocNA();
-  if (addr != null) {
-    addrLbl = addr > 900000 ? _ocBadge('HIGH','green') : addr < 600000 ? _ocBadge('LOW','red') : _ocBadge('NORMAL','blue');
+  // BTC liquidations
+  let btcLongDisp = '—', btcShortDisp = '—', btcBias = _ocNA();
+  if (liqBtc) {
+    btcLongDisp  = _ocFmtBig(liqBtc.longLiq24h);
+    btcShortDisp = _ocFmtBig(liqBtc.shortLiq24h);
+    const total  = liqBtc.longLiq24h + liqBtc.shortLiq24h;
+    if (total > 0) {
+      const shortRatio = liqBtc.shortLiq24h / total;
+      btcBias = shortRatio > 0.65 ? _ocBadge('SHORT SQUEEZE','green')
+              : shortRatio < 0.35 ? _ocBadge('LONG FLUSH','red')
+              : _ocBadge('BALANCED','blue');
+    }
   }
 
-  let flowDisp = flow != null ? (flow >= 0 ? '+' : '') + _ocFmtBig(Math.abs(flow)) + ' BTC' : '—';
-  let flowLbl  = _ocNA();
-  if (flow != null) {
-    if (flow < -1000)      flowLbl = _ocBadge('OUTFLOW','green');
-    else if (flow > 1000)  flowLbl = _ocBadge('INFLOW','red');
-    else                   flowLbl = _ocBadge('NEUTRAL','blue');
+  // ETH liquidations
+  let ethLongDisp = '—', ethShortDisp = '—', ethBias = _ocNA();
+  if (liqEth) {
+    ethLongDisp  = _ocFmtBig(liqEth.longLiq24h);
+    ethShortDisp = _ocFmtBig(liqEth.shortLiq24h);
+    const total  = liqEth.longLiq24h + liqEth.shortLiq24h;
+    if (total > 0) {
+      const shortRatio = liqEth.shortLiq24h / total;
+      ethBias = shortRatio > 0.65 ? _ocBadge('SHORT SQUEEZE','green')
+              : shortRatio < 0.35 ? _ocBadge('LONG FLUSH','red')
+              : _ocBadge('BALANCED','blue');
+    }
   }
 
-  let soprDisp = sopr != null ? sopr.toFixed(4) : '—';
-  let soprLbl  = _ocNA();
-  if (sopr != null) {
-    if (sopr > 1.05)       soprLbl = _ocBadge('PROFIT TAKING','red');
-    else if (sopr < 0.95)  soprLbl = _ocBadge('CAPITULATION','green');
-    else                   soprLbl = _ocBadge('NEUTRAL','blue');
+  // OI by exchange — show top 5 by USD value
+  let oiRows = '';
+  if (Array.isArray(oi) && oi.length) {
+    const sorted = [...oi].sort((a, b) => (parseFloat(b.openInterestUsd || 0) - parseFloat(a.openInterestUsd || 0)));
+    const top = sorted.slice(0, 5);
+    const maxUSD = parseFloat(top[0]?.openInterestUsd || 0) || 1;
+    oiRows = top.map(ex => {
+      const name  = ex.exchangeName || '—';
+      const usd   = parseFloat(ex.openInterestUsd || 0);
+      const pct   = ((usd / maxUSD) * 100).toFixed(0);
+      return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px">
+        <div style="width:70px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;font-size:10px">${name}</div>
+        <div style="flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden">
+          <div style="width:${pct}%;height:100%;background:var(--blue);border-radius:3px"></div>
+        </div>
+        <div style="width:60px;text-align:right;font-family:var(--mono);color:var(--text)">${_ocFmtBig(usd)}</div>
+      </div>`;
+    }).join('');
   }
+
+  const noData = !liqBtc && !liqEth && !oi;
 
   return `
 <div class="oc-section">
-  <div class="oc-section-title">Glassnode On-Chain</div>
+  <div class="oc-section-title">CoinGlass · Liquidations &amp; OI</div>
+  ${!cgKey ? `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px;font-size:12px;color:var(--text-muted)">Add a CoinGlass API key in Settings below to unlock liquidation &amp; OI data.</div>` : noData ? `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px;font-size:12px;color:var(--text-muted)">CoinGlass data unavailable — CORS may block browser requests. Data loads normally from the Telegram bot.</div>` : `
   <div class="oc-grid2">
-    ${_ocCard('Active Addresses 24h', addrDisp, addrLbl)}
-    ${_ocCard('Exchange Netflow', flowDisp, flowLbl)}
-    ${_ocCard('SOPR', soprDisp, soprLbl)}
+    ${_ocCard('BTC Longs Liq 24h', btcLongDisp, btcBias)}
+    ${_ocCard('BTC Shorts Liq 24h', btcShortDisp, '')}
+    ${_ocCard('ETH Longs Liq 24h', ethLongDisp, ethBias)}
+    ${_ocCard('ETH Shorts Liq 24h', ethShortDisp, '')}
   </div>
+  ${oiRows ? `<div style="margin-top:14px">
+    <div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);margin-bottom:8px">OI by Exchange (Top 5)</div>
+    ${oiRows}
+  </div>` : ''}
+  `}
 </div>`;
 }
 
@@ -350,7 +392,7 @@ function _ocSectionLocked(name, lsKey, placeholder) {
 }
 
 function _ocSectionSettings() {
-  const glKey = localStorage.getItem('hype_glassnode_key') || '';
+  const cgKey = localStorage.getItem('hype_coinglass_key') || '';
   const cqKey = localStorage.getItem('hype_cryptoquant_key') || '';
   return `
 <div class="oc-section">
@@ -360,12 +402,13 @@ function _ocSectionSettings() {
     </summary>
     <div style="padding:12px 0;display:flex;flex-direction:column;gap:12px">
       <div>
-        <label style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);display:block;margin-bottom:4px">Glassnode API Key</label>
+        <label style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);display:block;margin-bottom:4px">CoinGlass API Key</label>
         <div style="display:flex;gap:8px">
-          <input id="oc-gl-key" type="password" value="${_ocEsc(glKey)}" placeholder="Enter key…"
+          <input id="oc-cg-key" type="password" value="${_ocEsc(cgKey)}" placeholder="Enter key…"
             style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-md);padding:7px 10px;color:var(--text);font-size:12px;font-family:var(--mono);outline:none">
-          <button onclick="_ocSaveKey('hype_glassnode_key','oc-gl-key')" class="btn btn-ghost btn-sm">Save</button>
+          <button onclick="_ocSaveKey('hype_coinglass_key','oc-cg-key')" class="btn btn-ghost btn-sm">Save</button>
         </div>
+        <div style="font-size:10px;color:var(--text-faint);margin-top:4px">Free · unlocks liquidation clusters and OI by exchange</div>
       </div>
       <div>
         <label style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);display:block;margin-bottom:4px">CryptoQuant API Key</label>
@@ -374,6 +417,7 @@ function _ocSectionSettings() {
             style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-md);padding:7px 10px;color:var(--text);font-size:12px;font-family:var(--mono);outline:none">
           <button onclick="_ocSaveKey('hype_cryptoquant_key','oc-cq-key')" class="btn btn-ghost btn-sm">Save</button>
         </div>
+        <div style="font-size:10px;color:var(--text-faint);margin-top:4px">Optional · unlocks Exchange Reserve and Miner-to-Exchange flow data</div>
       </div>
     </div>
   </details>
