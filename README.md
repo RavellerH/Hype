@@ -183,7 +183,22 @@ npx wrangler secret put SUPABASE_KEY   --config wrangler-bot.toml
 npx wrangler deploy --config wrangler-bot.toml
 ```
 
-**Manual trigger endpoints** (after deploy):
+**Telegram commands** (after webhook registration):
+
+| Command | Action |
+|---|---|
+| `/signals` | Run signal scan instantly |
+| `/snapshot` | Portfolio snapshot now |
+| `/arb` | Funding arb check now |
+| `/status` | Bot health + BTC funding |
+| `/help` | Show command menu |
+
+**Register webhook** (one-time, open in browser after deploy):
+```
+https://hype-bot.<your-subdomain>.workers.dev/register-webhook
+```
+
+**Manual trigger endpoints:**
 ```
 GET https://hype-bot.<your-subdomain>.workers.dev/run-signals
 GET https://hype-bot.<your-subdomain>.workers.dev/run-arb
@@ -210,8 +225,14 @@ Env vars in `wrangler-bot.toml [vars]`: `SIGNAL_COINS`, `ARB_THRESHOLD`, `MAX_FU
 
 ## Changelog
 
-### 2026-05-30 (latest — bot worker)
+### 2026-05-31 (latest — telegram bot + webhook)
+- **Telegram command bot** — bot now responds to `/signals`, `/snapshot`, `/arb`, `/status`, `/help` commands interactively via Telegram webhook. Commands execute instantly on demand without waiting for the next cron.
+- **Webhook registration endpoint** — `/register-webhook` auto-registers the Cloudflare Worker URL with Telegram. One-time setup.
+- **BotFather config** — command menu, description, and about text registered via BotFather for clean UX.
+
+### 2026-05-31 (bot worker)
 - **Cloudflare Bot Worker** — autonomous cron Worker (`cloudflare/bot-worker.js`) with KV dedup. Signal alerts (EMA/MACD/RSI + funding gate), funding arb alerts (HL vs Binance/Bybit), daily portfolio snapshot to Supabase + Telegram. No VPS required.
+- **KV deduplication** — 4h cooldown per coin prevents alert spam across both signal and arb scanners.
 
 ### 2026-05-30 (auto-journal)
 - **Auto-Journal** — detects closed trades automatically from Hyperliquid fills (runs on load + every 10 min). Each entry gets: coin, side, PnL, hold time, open/close dates.
