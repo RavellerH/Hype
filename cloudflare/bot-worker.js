@@ -2,22 +2,16 @@
  * Hype Bot Worker — Cloudflare Worker with cron triggers
  *
  * Crons:
- *   every 15 min  — signal scan (TA + funding gate + sentiment gate)
- *   every 15 min  — funding arb scan
- *   every 4h      — reversal pattern scan (4h candle close)
- *   midnight UTC  — daily snapshot → Supabase + Telegram
- *   Sunday midnight — weekly performance review
+ *   every 15 min     — signal scan (TA + funding gate + sentiment gate)
+ *   every 15 min     — funding arb scan
+ *   every 4h         — reversal pattern scan (4h candle close)
+ *   every 4h         — multi-TF trend alignment check
+ *   midnight UTC     — daily snapshot → Supabase + Telegram
+ *   Sunday midnight  — weekly performance review
  *
- * Secrets (wrangler secret put <NAME> --config wrangler-bot.toml):
- *   WALLET, TG_TOKEN, TG_CHAT, SUPABASE_URL, SUPABASE_KEY
- *
- * KV namespace: ALERT_STATE (dedup cooldowns)
- *
- * Env vars ([vars] in wrangler-bot.toml):
- *   SIGNAL_COINS    — default "BTC,ETH,SOL,HYPE,SUI"
- *   ARB_THRESHOLD   — default "0.001" (0.1% 8h spread)
- *   MAX_FUNDING     — default "0.0020" (max HL 8h rate for long signals)
- *   FG_GREED_GATE   — default "80" (skip bullish signals above this F&G)
+ * Secrets: WALLET, TG_TOKEN, TG_CHAT, SUPABASE_URL, SUPABASE_KEY
+ * KV namespace: ALERT_STATE
+ * Env vars: SIGNAL_COINS, ARB_THRESHOLD, MAX_FUNDING, FG_GREED_GATE
  */
 
 // ── TA Helpers ────────────────────────────────────────────────────────────────
@@ -54,6 +48,80 @@ function iRSI(arr, p = 14) {
 function avgVolume(candles, period = 20) {
   const vols = candles.slice(-period - 1, -1).map(c => parseFloat(c.v));
   return vols.reduce((a, b) => a + b, 0) / vols.length;
+}
+
+function iATR(highs, lows, closes, p=14) {
+  const tr=closes.map((c,i)=>i===0?highs[0]-lows[0]:Math.max(highs[i]-lows[i],Math.abs(highs[i]-closes[i-1]),Math.abs(lows[i]-closes[i-1])));
+  let atr=tr.slice(0,p).reduce((a,b)=>a+b)/p;
+  const out=[...new Array(p-1).fill(null),atr];
+  for(let i=p;i<tr.length;i++){atr=(atr*(p-1)+tr[i])/p;out.push(atr);}
+  return out;
+}
+
+function iADX(highs, lows, closes, p=14) {
+  if(highs.length<p+2) return {adx:[],pdi:[],mdi:[]};
+  const tr=[],pDM=[],mDM=[];
+  for(let i=1;i<highs.length;i++){
+    const h=highs[i]-highs[i-1],l=lows[i-1]-lows[i];
+    pDM.push(h>l&&h>0?h:0); mDM.push(l>h&&l>0?l:0);
+    tr.push(Math.max(highs[i]-lows[i],Math.abs(highs[i]-closes[i-1]),Math.abs(lows[i]-closes[i-1])));
+  }
+  const ws=arr=>{const o=[arr.slice(0,p).reduce((a,b)=>a+b,0)];for(let i=p;i<arr.length;i++)o.push(o.at(-1)-o.at(-1)/p+arr[i]);return o;};
+  const aTR=ws(tr),sPDM=ws(pDM),sMDM=ws(mDM);
+  const pdi=sPDM.map((v,i)=>aTR[i]?100*v/aTR[i]:0);
+  const mdi=sMDM.map((v,i)=>aTR[i]?100*v/aTR[i]:0);
+  const adx=ws(pdi.map((v,i)=>{const s=v+mdi[i];return s?100*Math.abs(v-mdi[i])/s:0;}));
+  return {adx,pdi,mdi};
+}
+
+function iSupertrend(highs, lows, closes, period=10, mult=3) {
+  const atr=iATR(highs,lows,closes,period);
+  const out=[];let trend=1,pU=Infinity,pL=-Infinity;
+  for(let i=0;i<closes.length;i++){
+    if(!atr[i]){out.push(null);continue;}
+    const mid=(highs[i]+lows[i])/2;
+    let u=mid+mult*atr[i],l=mid-mult*atr[i];
+    if(out.length&&out.at(-1)){l=Math.max(l,pL);u=Math.min(u,pU);}
+    if(closes[i]>pU)trend=1;else if(closes[i]<pL)trend=-1;
+    pU=u;pL=l;out.push({trend,line:trend===1?l:u});
+  }
+  return out;
+}
+
+function detectMarketStructure(candles, lb=5) {
+  if(candles.length<lb*2+2) return {structure:'NEUTRAL',details:[],breakout:null};
+  const H=candles.map(c=>parseFloat(c.h)),L=candles.map(c=>parseFloat(c.l)),C=candles.map(c=>parseFloat(c.c));
+  const sH=[],sL=[];
+  for(let i=lb;i<candles.length-lb;i++){
+    if(H.slice(i-lb,i).every(h=>h<=H[i])&&H.slice(i+1,i+lb+1).every(h=>h<=H[i]))sH.push({i,price:H[i]});
+    if(L.slice(i-lb,i).every(l=>l>=L[i])&&L.slice(i+1,i+lb+1).every(l=>l>=L[i]))sL.push({i,price:L[i]});
+  }
+  let structure='NEUTRAL',details=[];
+  if(sH.length>=2&&sL.length>=2){
+    const hh=sH.at(-1).price>sH.at(-2).price,hl=sL.at(-1).price>sL.at(-2).price;
+    const lh=sH.at(-1).price<sH.at(-2).price,ll=sL.at(-1).price<sL.at(-2).price;
+    if(hh&&hl){structure='UPTREND';details=['HH','HL'];}
+    else if(lh&&ll){structure='DOWNTREND';details=['LH','LL'];}
+    else if(hh&&ll){structure='EXPANDING';details=['HH','LL'];}
+    else if(lh&&hl){structure='CONTRACTING';details=['LH','HL'];}
+  }
+  const cur=C.at(-1);
+  let breakout=null;
+  if(sH.at(-1)&&cur>sH.at(-1).price&&structure!=='UPTREND')breakout={type:'BULLISH_BREAK',level:sH.at(-1).price};
+  else if(sL.at(-1)&&cur<sL.at(-1).price&&structure!=='DOWNTREND')breakout={type:'BEARISH_BREAK',level:sL.at(-1).price};
+  return {structure,details,breakout,swingHighs:sH,swingLows:sL};
+}
+
+function detectRSIDivergence(closes,p=14){
+  const rsi=iRSI(closes,p),pH=[],pL=[],divs=[];
+  for(let i=3;i<closes.length-3;i++){
+    if(rsi[i]===null)continue;
+    if(closes.slice(i-3,i).every(c=>c<=closes[i])&&closes.slice(i+1,i+4).every(c=>c<=closes[i]))pH.push({i,price:closes[i],rsi:rsi[i]});
+    if(closes.slice(i-3,i).every(c=>c>=closes[i])&&closes.slice(i+1,i+4).every(c=>c>=closes[i]))pL.push({i,price:closes[i],rsi:rsi[i]});
+  }
+  if(pH.length>=2){const[a,b]=[pH.at(-2),pH.at(-1)];if(b.price>a.price&&b.rsi<a.rsi&&b.rsi>55)divs.push({type:'BEARISH',label:'Price HH / RSI LH',strength:b.rsi>68?'STRONG':'MEDIUM'});}
+  if(pL.length>=2){const[a,b]=[pL.at(-2),pL.at(-1)];if(b.price<a.price&&b.rsi>a.rsi&&b.rsi<45)divs.push({type:'BULLISH',label:'Price LL / RSI HL',strength:b.rsi<32?'STRONG':'MEDIUM'});}
+  return divs;
 }
 
 function detectCandlePatterns(candles) {
@@ -433,6 +501,98 @@ async function checkReversals(env) {
   return alerts.length;
 }
 
+// ── Multi-TF Trend Alignment ──────────────────────────────────────────────────
+
+async function analyzeTrend(coin) {
+  const [c1h, c4h, c1d] = await Promise.all([
+    getCandles(coin, '1h', 7),
+    getCandles(coin, '4h', 60),
+    getCandles(coin, '1d', 200),
+  ]);
+
+  const analyze = (candles, tf) => {
+    if (candles.length < 52) return null;
+    const H=candles.map(c=>parseFloat(c.h)), L=candles.map(c=>parseFloat(c.l)), C=candles.map(c=>parseFloat(c.c));
+    const ema20=iEMA(C,20), ema50=iEMA(C,50);
+    const price=C.at(-1);
+    const emaBull = price>ema20.at(-1) && ema20.at(-1)>ema50.at(-1);
+    const emaBear = price<ema20.at(-1) && ema20.at(-1)<ema50.at(-1);
+    const {adx} = iADX(H,L,C,14);
+    const adxVal = adx.at(-1) ?? 0;
+    const st = iSupertrend(H,L,C,10,3);
+    const stBull = st.at(-1)?.trend === 1;
+    const ms = detectMarketStructure(candles);
+    const rsiArr = iRSI(C,14).filter(v=>v!==null);
+    const rsi = rsiArr.at(-1) ?? 50;
+    const div = detectRSIDivergence(C,14);
+    const bullScore = (emaBull?1:0)+(stBull?1:0)+(ms.structure==='UPTREND'?1:0);
+    const bearScore = (emaBear?1:0)+(!stBull?1:0)+(ms.structure==='DOWNTREND'?1:0);
+    const bias = bullScore>bearScore?'BULL':bearScore>bullScore?'BEAR':'NEUTRAL';
+    return {tf, bias, emaBull, emaBear, adxVal, stBull, structure:ms.structure, rsi, div, breakout:ms.breakout};
+  };
+
+  const [r1h, r4h, r1d] = [analyze(c1h,'1h'), analyze(c4h,'4h'), analyze(c1d,'1d')];
+  const results = [r1h, r4h, r1d].filter(Boolean);
+  const bullCount = results.filter(r=>r.bias==='BULL').length;
+  const bearCount = results.filter(r=>r.bias==='BEAR').length;
+  const aligned = bullCount===3?'FULL BULL':bearCount===3?'FULL BEAR':bullCount===2?'BULL LEAN':bearCount===2?'BEAR LEAN':'MIXED';
+  const divs4h = r4h?.div ?? [];
+  const price = c4h.length ? parseFloat(c4h.at(-1).c) : 0;
+  return {coin, price, r1h, r4h, r1d, aligned, bullCount, bearCount, divs4h};
+}
+
+async function checkTrendAlignment(env) {
+  const coins = (env.SIGNAL_COINS || 'BTC,ETH,SOL,HYPE,SUI').split(',').map(c=>c.trim());
+  const alerts = [];
+
+  for (const coin of coins) {
+    try {
+      const kvKey = `trend:${coin}`;
+      const prev = await env.ALERT_STATE.get(`${kvKey}:bias`);
+      const { aligned, bullCount, bearCount, divs4h, price, r4h } = await analyzeTrend(coin);
+
+      // Alert only on full alignment flip or new divergence
+      const isFullAlign = aligned === 'FULL BULL' || aligned === 'FULL BEAR';
+      const prevWasFullAlign = prev === 'FULL BULL' || prev === 'FULL BEAR';
+      const alignChanged = prev && prev !== aligned;
+
+      // Save current bias
+      await env.ALERT_STATE.put(`${kvKey}:bias`, aligned, { expirationTtl: 86400 });
+
+      const hasDivAlert = divs4h.length > 0 && !(await isOnCooldown(env.ALERT_STATE, `${kvKey}:div`, 'reversal'));
+      const hasAlignAlert = isFullAlign && alignChanged && !(await isOnCooldown(env.ALERT_STATE, kvKey, 'reversal'));
+
+      if (hasDivAlert) {
+        const d = divs4h[0];
+        alerts.push({
+          key: `${kvKey}:div`,
+          text: `${d.type==='BEARISH'?'🔻':'🔺'} <b>RSI Divergence: ${coin} (4h)</b>\n` +
+            `${d.label} [${d.strength}]\n` +
+            `Price: $${price.toFixed(coin==='BTC'?0:4)} | RSI: ${r4h?.rsi?.toFixed(1)}\n` +
+            `Trend: ${aligned}`,
+        });
+      }
+
+      if (hasAlignAlert) {
+        const emoji = aligned === 'FULL BULL' ? '🟢🟢🟢' : '🔴🔴🔴';
+        alerts.push({
+          key: kvKey,
+          text: `${emoji} <b>Multi-TF Flip: ${coin}</b>\n` +
+            `1h + 4h + 1d → <b>${aligned}</b>\n` +
+            `Price: $${price.toFixed(coin==='BTC'?0:4)}\n` +
+            `<i>All timeframes aligned — high confidence setup</i>`,
+        });
+      }
+    } catch (_) { /* skip */ }
+  }
+
+  for (const alert of alerts) {
+    await tgSend(env.TG_TOKEN, env.TG_CHAT, alert.text);
+    await setCooldown(env.ALERT_STATE, alert.key);
+  }
+  return alerts.length;
+}
+
 // ── Check Funding Arb ─────────────────────────────────────────────────────────
 
 async function checkFundingArb(env) {
@@ -555,6 +715,7 @@ async function handleTgCommand(cmd, arg, env) {
       `/signals — Run signal scan now\n` +
       `/snapshot — Portfolio snapshot\n` +
       `/positions — Open positions detail\n` +
+      `/trend &lt;coin&gt; — Multi-TF trend: 1h/4h/1d alignment, ADX, Supertrend, structure, RSI div\n` +
       `/price &lt;coin&gt; — Price + RSI + funding + patterns\n` +
       `/arb — Funding arb check\n` +
       `/status — Bot status\n` +
@@ -562,6 +723,8 @@ async function handleTgCommand(cmd, arg, env) {
       `<b>Auto alerts:</b>\n` +
       `• Signals every 15 min (4h cooldown)\n` +
       `• Reversal patterns every 4h (12h cooldown)\n` +
+      `• Multi-TF flip alert every 4h (fires when all 3 TF align)\n` +
+      `• RSI divergence on 4h (12h cooldown)\n` +
       `• Arb every 15 min (4h cooldown)\n` +
       `• Daily snapshot at midnight UTC\n` +
       `• Weekly review every Sunday`;
@@ -593,6 +756,31 @@ async function handleTgCommand(cmd, arg, env) {
         (p.liquidationPx ? ` | Liq: $${p.liquidationPx.toFixed(2)}` : '');
     }).join('\n\n');
     return `📂 <b>Open Positions</b>\nAccount: $${accountValue.toFixed(2)}\n\n${lines}`;
+  }
+
+  if (cmd === '/trend') {
+    const coin = (arg || 'BTC').toUpperCase();
+    try {
+      const { r1h, r4h, r1d, aligned, price, divs4h } = await analyzeTrend(coin);
+      const tfLine = (r, label) => {
+        if (!r) return `${label}: —`;
+        const bias = r.bias === 'BULL' ? '🟢' : r.bias === 'BEAR' ? '🔴' : '⚪';
+        const adx = r.adxVal > 40 ? 'STRONG' : r.adxVal > 25 ? 'TREND' : 'RANGE';
+        const st = r.stBull ? '↑ST' : '↓ST';
+        const str = r.structure === 'UPTREND' ? 'HH/HL' : r.structure === 'DOWNTREND' ? 'LH/LL' : r.structure.slice(0,4);
+        return `${bias} <b>${label}</b>: ${r.bias} | ADX ${r.adxVal.toFixed(0)} (${adx}) | ${st} | ${str} | RSI ${r.rsi.toFixed(0)}`;
+      };
+      const divLine = divs4h.length ? divs4h.map(d=>`${d.type==='BEARISH'?'🔻':'🔺'} ${d.label} [${d.strength}]`).join('\n') : '  No divergence';
+      const alignEmoji = aligned==='FULL BULL'?'🟢🟢🟢':aligned==='FULL BEAR'?'🔴🔴🔴':aligned.includes('BULL')?'🟢⚪':'🔴⚪';
+      return `📐 <b>Trend: ${coin}</b>\n` +
+        `Price: $${price.toFixed(coin==='BTC'?0:4)}\n` +
+        `Alignment: ${alignEmoji} <b>${aligned}</b>\n\n` +
+        `${tfLine(r1h,'1h')}\n${tfLine(r4h,'4h')}\n${tfLine(r1d,'1d')}\n\n` +
+        `<b>4h RSI Divergence:</b>\n${divLine}` +
+        (r4h?.breakout ? `\n\n⚠️ Structure break: ${r4h.breakout.type} at $${r4h.breakout.level.toFixed(2)}` : '');
+    } catch(e) {
+      return `❌ Could not analyse ${coin}: ${e.message}`;
+    }
   }
 
   if (cmd === '/price') {
@@ -659,6 +847,7 @@ export default {
       }
     } else if (cron === '0 */4 * * *') {
       ctx.waitUntil(checkReversals(env));
+      ctx.waitUntil(checkTrendAlignment(env));
     } else if (cron === '0 0 * * *') {
       ctx.waitUntil(dailySnapshot(env));
     } else if (cron === '0 0 * * 0') {
@@ -702,8 +891,9 @@ export default {
     if (url.pathname === '/run-signals')  { ctx.waitUntil(checkSignals(env));   return new Response('Signal check triggered', { status: 202 }); }
     if (url.pathname === '/run-arb')      { ctx.waitUntil(checkFundingArb(env)); return new Response('Arb check triggered', { status: 202 }); }
     if (url.pathname === '/run-snapshot') { ctx.waitUntil(dailySnapshot(env));  return new Response('Snapshot triggered', { status: 202 }); }
-    if (url.pathname === '/run-reversals'){ ctx.waitUntil(checkReversals(env)); return new Response('Reversal scan triggered', { status: 202 }); }
-    if (url.pathname === '/run-weekly')   { ctx.waitUntil(weeklyReview(env));   return new Response('Weekly review triggered', { status: 202 }); }
+    if (url.pathname === '/run-reversals'){ ctx.waitUntil(checkReversals(env));      return new Response('Reversal scan triggered', { status: 202 }); }
+    if (url.pathname === '/run-trend')    { ctx.waitUntil(checkTrendAlignment(env)); return new Response('Trend alignment check triggered', { status: 202 }); }
+    if (url.pathname === '/run-weekly')   { ctx.waitUntil(weeklyReview(env));        return new Response('Weekly review triggered', { status: 202 }); }
     if (url.pathname === '/health') {
       return new Response(JSON.stringify({ ok: true, ts: Date.now() }), {
         headers: { 'Content-Type': 'application/json' },
@@ -711,7 +901,7 @@ export default {
     }
 
     return new Response(
-      'Hype Bot Worker\n\nEndpoints:\n  /run-signals\n  /run-arb\n  /run-snapshot\n  /run-reversals\n  /run-weekly\n  /register-webhook\n  /health',
+      'Hype Bot Worker\n\nEndpoints:\n  /run-signals\n  /run-arb\n  /run-snapshot\n  /run-reversals\n  /run-trend\n  /run-weekly\n  /register-webhook\n  /health',
       { status: 200 }
     );
   },

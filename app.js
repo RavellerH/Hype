@@ -579,7 +579,7 @@ function navigate(page) {
     pageEl.classList.add('active');
     document.querySelectorAll(`[data-page="${page}"]`).forEach(el=>el.classList.add('active'));
     currentPage = page;
-    const loaders={overview:loadOverview,trades:loadTrades,funding:loadFunding,flows:loadFlows,monitor:loadMonitor,markets:loadMarkets,phases:loadPhases,intel:typeof loadIntel!=='undefined'?loadIntel:null,watchlist:loadWatchlist,journal:typeof loadJournal!=='undefined'?loadJournal:null,indicators:typeof loadIndicators!=='undefined'?loadIndicators:null,smartmoney:typeof loadNansen!=='undefined'?loadNansen:null,analytics:typeof loadAnalytics!=='undefined'?loadAnalytics:null,signals:typeof loadSignals!=='undefined'?loadSignals:null,news:typeof loadNews!=='undefined'?loadNews:null,fundamentals:typeof loadFundamentals!=='undefined'?loadFundamentals:null,ai:typeof loadAI!=='undefined'?loadAI:null,arb:typeof loadArb!=='undefined'?loadArb:null,defi:typeof loadDefi!=='undefined'?loadDefi:null,kb:typeof loadKB!=='undefined'?loadKB:null};
+    const loaders={overview:loadOverview,trades:loadTrades,funding:loadFunding,flows:loadFlows,monitor:loadMonitor,markets:loadMarkets,phases:loadPhases,intel:typeof loadIntel!=='undefined'?loadIntel:null,watchlist:loadWatchlist,journal:typeof loadJournal!=='undefined'?loadJournal:null,indicators:typeof loadIndicators!=='undefined'?loadIndicators:null,smartmoney:typeof loadNansen!=='undefined'?loadNansen:null,analytics:typeof loadAnalytics!=='undefined'?loadAnalytics:null,signals:typeof loadSignals!=='undefined'?loadSignals:null,news:typeof loadNews!=='undefined'?loadNews:null,fundamentals:typeof loadFundamentals!=='undefined'?loadFundamentals:null,ai:typeof loadAI!=='undefined'?loadAI:null,arb:typeof loadArb!=='undefined'?loadArb:null,defi:typeof loadDefi!=='undefined'?loadDefi:null,kb:typeof loadKB!=='undefined'?loadKB:null,trend:typeof loadTrend!=='undefined'?loadTrend:null,onchain:typeof loadOnchain!=='undefined'?loadOnchain:null};
     if(loaders[page]) loaders[page]();
   } catch(e) { console.error('navigate error:', e); }
 }
@@ -2447,6 +2447,95 @@ function iATR(highs, lows, closes, p=14) {
   const out=[...new Array(p-1).fill(null),atr];
   for(let i=p;i<tr.length;i++){atr=(atr*(p-1)+tr[i])/p;out.push(atr);}
   return out;
+}
+
+function iADX(highs, lows, closes, p=14) {
+  if (highs.length < p+2) return { adx:[], pdi:[], mdi:[] };
+  const tr=[], pDM=[], mDM=[];
+  for (let i=1; i<highs.length; i++) {
+    const h=highs[i]-highs[i-1], l=lows[i-1]-lows[i];
+    pDM.push(h>l&&h>0?h:0);
+    mDM.push(l>h&&l>0?l:0);
+    tr.push(Math.max(highs[i]-lows[i],Math.abs(highs[i]-closes[i-1]),Math.abs(lows[i]-closes[i-1])));
+  }
+  const ws=(arr)=>{
+    const out=[arr.slice(0,p).reduce((a,b)=>a+b,0)];
+    for(let i=p;i<arr.length;i++) out.push(out.at(-1)-out.at(-1)/p+arr[i]);
+    return out;
+  };
+  const aTR=ws(tr), sPDM=ws(pDM), sMDM=ws(mDM);
+  const pdi=sPDM.map((v,i)=>aTR[i]?100*v/aTR[i]:0);
+  const mdi=sMDM.map((v,i)=>aTR[i]?100*v/aTR[i]:0);
+  const dx=pdi.map((v,i)=>{const s=v+mdi[i];return s?100*Math.abs(v-mdi[i])/s:0;});
+  const adx=ws(dx);
+  return {adx, pdi, mdi};
+}
+
+function iSupertrend(highs, lows, closes, period=10, mult=3) {
+  const atr=iATR(highs,lows,closes,period);
+  const out=[];
+  let trend=1, prevUpper=Infinity, prevLower=-Infinity;
+  for (let i=0; i<closes.length; i++) {
+    if (!atr[i]) { out.push(null); continue; }
+    const mid=(highs[i]+lows[i])/2;
+    let upper=mid+mult*atr[i];
+    let lower=mid-mult*atr[i];
+    if (out.length>0 && out.at(-1)) {
+      lower=Math.max(lower,prevLower);
+      upper=Math.min(upper,prevUpper);
+    }
+    if (closes[i]>prevUpper) trend=1;
+    else if (closes[i]<prevLower) trend=-1;
+    prevUpper=upper; prevLower=lower;
+    out.push({trend, upper, lower, line:trend===1?lower:upper});
+  }
+  return out;
+}
+
+function detectMarketStructure(candles, lb=5) {
+  if (candles.length < lb*2+2) return {structure:'NEUTRAL',details:[],breakout:null,swingHighs:[],swingLows:[]};
+  const highs=candles.map(c=>parseFloat(c.h));
+  const lows=candles.map(c=>parseFloat(c.l));
+  const closes=candles.map(c=>parseFloat(c.c));
+  const sH=[], sL=[];
+  for (let i=lb; i<candles.length-lb; i++) {
+    if (highs.slice(i-lb,i).every(h=>h<=highs[i])&&highs.slice(i+1,i+lb+1).every(h=>h<=highs[i])) sH.push({i,price:highs[i]});
+    if (lows.slice(i-lb,i).every(l=>l>=lows[i])&&lows.slice(i+1,i+lb+1).every(l=>l>=lows[i])) sL.push({i,price:lows[i]});
+  }
+  let structure='NEUTRAL', details=[];
+  if (sH.length>=2&&sL.length>=2) {
+    const hh=sH.at(-1).price>sH.at(-2).price, hl=sL.at(-1).price>sL.at(-2).price;
+    const lh=sH.at(-1).price<sH.at(-2).price, ll=sL.at(-1).price<sL.at(-2).price;
+    if (hh&&hl){structure='UPTREND';details=['HH','HL'];}
+    else if (lh&&ll){structure='DOWNTREND';details=['LH','LL'];}
+    else if (hh&&ll){structure='EXPANDING';details=['HH','LL'];}
+    else if (lh&&hl){structure='CONTRACTING';details=['LH','HL'];}
+  }
+  const cur=closes.at(-1);
+  let breakout=null;
+  if (sH.at(-1)&&cur>sH.at(-1).price&&structure!=='UPTREND') breakout={type:'BULLISH_BREAK',level:sH.at(-1).price};
+  else if (sL.at(-1)&&cur<sL.at(-1).price&&structure!=='DOWNTREND') breakout={type:'BEARISH_BREAK',level:sL.at(-1).price};
+  return {structure,details,breakout,swingHighs:sH,swingLows:sL};
+}
+
+function detectRSIDivergence(closes, candles, p=14) {
+  const rsi=iRSI(closes,p);
+  const divs=[];
+  const priceH=[], priceL=[];
+  for (let i=3; i<closes.length-3; i++) {
+    if (rsi[i]===null) continue;
+    if (closes.slice(i-3,i).every(c=>c<=closes[i])&&closes.slice(i+1,i+4).every(c=>c<=closes[i])) priceH.push({i,price:closes[i],rsi:rsi[i]});
+    if (closes.slice(i-3,i).every(c=>c>=closes[i])&&closes.slice(i+1,i+4).every(c=>c>=closes[i])) priceL.push({i,price:closes[i],rsi:rsi[i]});
+  }
+  if (priceH.length>=2) {
+    const [a,b]=[priceH.at(-2),priceH.at(-1)];
+    if (b.price>a.price&&b.rsi<a.rsi&&b.rsi>55) divs.push({type:'BEARISH',label:'Price HH / RSI LH',strength:b.rsi>68?'STRONG':'MEDIUM'});
+  }
+  if (priceL.length>=2) {
+    const [a,b]=[priceL.at(-2),priceL.at(-1)];
+    if (b.price<a.price&&b.rsi>a.rsi&&b.rsi<45) divs.push({type:'BULLISH',label:'Price LL / RSI HL',strength:b.rsi<32?'STRONG':'MEDIUM'});
+  }
+  return divs;
 }
 function iMoneyFlow(opens, closes, volumes, p=20) {
   let bSum=0, sSum=0;
