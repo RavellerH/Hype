@@ -351,6 +351,57 @@ async function dailySnapshot(env) {
   await tgSend(env.TG_TOKEN, env.TG_CHAT, msg);
 }
 
+// ── Telegram Command Handler ──────────────────────────────────────────────────
+
+async function handleTgCommand(cmd, env) {
+  const coins = (env.SIGNAL_COINS || 'BTC,ETH,SOL,HYPE,SUI').split(',').map(c => c.trim());
+
+  if (cmd === '/start' || cmd === '/help') {
+    return `🤖 <b>Hype Bot</b>\n\n` +
+      `<b>Commands:</b>\n` +
+      `/signals — Run signal scan now\n` +
+      `/snapshot — Portfolio snapshot\n` +
+      `/arb — Funding arb check\n` +
+      `/status — Bot status\n` +
+      `/help — Show this menu\n\n` +
+      `<b>Auto alerts:</b>\n` +
+      `• Signals every 15 min (4h cooldown)\n` +
+      `• Arb every 15 min (4h cooldown)\n` +
+      `• Daily snapshot at midnight UTC`;
+  }
+
+  if (cmd === '/signals') {
+    const count = await checkSignals(env);
+    return count > 0 ? `✅ Signal scan done — ${count} alert(s) sent above` : `📡 Signal scan done — no entries right now (all WATCH/SKIP or on cooldown)`;
+  }
+
+  if (cmd === '/arb') {
+    const count = await checkFundingArb(env);
+    return count > 0 ? `✅ Arb scan done — ${count} opportunity(s) sent above` : `💤 Arb scan done — no spreads above threshold right now`;
+  }
+
+  if (cmd === '/snapshot') {
+    await dailySnapshot(env);
+    return null; // snapshot sends its own message
+  }
+
+  if (cmd === '/status') {
+    const hlFunding = await getFundingRates();
+    const btc = hlFunding['BTC'];
+    const fundingPct = btc ? (btc.fundingRate * 100).toFixed(4) : '?';
+    const now = new Date().toUTCString();
+    return `⚙️ <b>Bot Status</b>\n\n` +
+      `Time: ${now}\n` +
+      `BTC funding 8h: ${fundingPct}%\n` +
+      `Watching: ${coins.join(', ')}\n` +
+      `Signal threshold: 5/10\n` +
+      `Arb threshold: ${((parseFloat(env.ARB_THRESHOLD||'0.001'))*100).toFixed(2)}%\n` +
+      `Alert cooldown: 4h`;
+  }
+
+  return `❓ Unknown command. Send /help for the menu.`;
+}
+
 // ── Request Handler ───────────────────────────────────────────────────────────
 
 export default {
@@ -359,8 +410,6 @@ export default {
     const cron = event.cron;
 
     if (cron === '*/15 * * * *') {
-      // Alternate between signals and arb on each 15-min tick
-      // Use minute to decide: even = signals, odd = arb
       const minute = new Date().getMinutes();
       if (minute % 30 < 15) {
         ctx.waitUntil(checkSignals(env));
@@ -372,10 +421,37 @@ export default {
     }
   },
 
-  // Manual HTTP trigger endpoints
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
+    // Telegram webhook — receives messages from users
+    if (url.pathname === '/webhook' && request.method === 'POST') {
+      const body = await request.json().catch(() => null);
+      const msg = body?.message;
+      if (msg?.text && msg.chat?.id) {
+        const chatId = String(msg.chat.id);
+        const text = msg.text.trim().split(' ')[0].toLowerCase(); // command only, strip args
+        ctx.waitUntil((async () => {
+          const reply = await handleTgCommand(text, env);
+          if (reply) await tgSend(env.TG_TOKEN, chatId, reply);
+        })());
+      }
+      return new Response('ok');
+    }
+
+    // Register webhook — call once after deploy
+    if (url.pathname === '/register-webhook') {
+      const workerUrl = `${url.protocol}//${url.host}/webhook`;
+      const r = await fetch(
+        `https://api.telegram.org/bot${env.TG_TOKEN}/setWebhook`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: workerUrl, allowed_updates: ['message'] }) }
+      );
+      const data = await r.json();
+      return new Response(JSON.stringify(data), { headers: { 'Content-Type': 'application/json' } });
+    }
+
+    // Manual HTTP trigger endpoints
     if (url.pathname === '/run-signals') {
       ctx.waitUntil(checkSignals(env));
       return new Response('Signal check triggered', { status: 202 });
@@ -394,7 +470,7 @@ export default {
       });
     }
 
-    return new Response('Hype Bot Worker\n\nEndpoints:\n  /run-signals\n  /run-arb\n  /run-snapshot\n  /health', {
+    return new Response('Hype Bot Worker\n\nEndpoints:\n  /run-signals\n  /run-arb\n  /run-snapshot\n  /health\n  /register-webhook', {
       status: 200,
     });
   },
