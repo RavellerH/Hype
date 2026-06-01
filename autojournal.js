@@ -46,6 +46,7 @@ function _ajId(t) { return `${t.coin}-${t.entry_time}`; }
 
 async function journalAutoCheck() {
   if (!currentWallet) return;
+  if (typeof buildTrades !== 'function') { console.warn('[AutoJournal] buildTrades not ready'); return; }
   try {
     const rawFills = await getUserFills(currentWallet);
     const trades   = buildTrades(rawFills);
