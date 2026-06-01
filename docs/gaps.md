@@ -1,6 +1,43 @@
 # Known Gaps & TODOs
 
-Audit findings: stubs, partially wired features, and future work identified as of 2026-05-31.
+Audit findings: stubs, partially wired features, and future work.
+*Updated: 2026-06-01 (deep audit pass)*
+
+---
+
+## Bugs — autojournal.js
+
+### 1. No error handling on localStorage JSON.parse (🔴 High)
+All `JSON.parse(localStorage.getItem(...))` calls are bare — corrupted or truncated storage crashes the entire module on load.
+**Fix:** Wrap every parse in try/catch with fallback to `{}` or `[]`.
+
+### 2. `buildTrades()` called without local definition (🔴 High)
+`_ajDetectNew()` calls `buildTrades()` which is defined in `app.js`, not `autojournal.js`. If load order changes or app.js is refactored, this throws a ReferenceError silently swallowed by the enclosing async.
+**Fix:** Import or define `buildTrades` locally, or add a guard:
+```js
+if (typeof buildTrades !== 'function') { console.warn('autojournal: buildTrades not ready'); return; }
+```
+
+### 3. `_callClaude()` unguarded reference (🟡 Medium)
+`_ajRequestLesson()` and `journalWeeklyReview()` call `_callClaude()` without checking if it exists. If invoked when no API key is configured, throws ReferenceError.
+**Fix:** Add `if (typeof _callClaude !== 'function') return;` guard before each call.
+
+### 4. `currentWallet` read without existence check (🟡 Medium)
+`_ajDetectNew()` reads the global `currentWallet` without checking if it's been set. On first page load before wallet setup, this passes `undefined` to the Hyperliquid fills API.
+**Fix:** Add early return: `if (!currentWallet) return;`
+
+### 5. Duplicate `_ajScheduleDaily()` calls (🟡 Medium)
+If `loadJournal()` is called multiple times (tab switching), multiple midnight timeouts are registered. Only the last matters but the extras linger.
+**Fix:** Clear any existing timeout before scheduling: `clearTimeout(_ajDailyTimer); _ajDailyTimer = setTimeout(...)`
+
+---
+
+## Bugs — journal.js vs autojournal.js
+
+### 6. Dual `loadJournal()` shadowing (🔴 High)
+Both `journal.js` and `autojournal.js` define `window.loadJournal` / a global `loadJournal` function. Whichever `<script>` tag appears last in `index.html` wins and silently replaces the other.
+**Check:** Open `index.html` and confirm which script loads last. If autojournal.js should be primary, it must come after journal.js.
+**Fix:** Rename one to `loadManualJournal()` and update the `navigate()` dispatcher accordingly.
 
 ---
 
