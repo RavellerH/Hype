@@ -53,7 +53,7 @@ from config          import (PRIVATE_KEY, WALLET_ADDRESS, WATCH_COINS,
                               MIN_CONFLUENCE_SCORE, MAX_LONG_FUNDING_RATE,
                               MAX_DAILY_LOSS_PCT, MAX_CONSECUTIVE_LOSSES, HALT_HOURS,
                               ASSET_COOLDOWN_MINUTES, BTC_MACRO_GATE_PCT,
-                              LLM_VETO_ENABLED, LLM_VETO_MIN_SCORE, LLM_VETO_MODEL)
+                              LLM_VETO_ENABLED, LLM_VETO_MIN_SCORE, LLM_ROUTER_URL)
 from indicators      import parse_candles, ema, macd, rsi, volume_ratio
 from phase_detector  import detect_phase, estimate_phase_duration
 from wallet_monitor  import scan_all_wallets, has_wallet_signal, wallet_summary, get_wallet_longs
@@ -64,7 +64,7 @@ from phase_recorder  import record_snapshot
 
 try:
     import anthropic as _anthropic_lib
-    _anthropic_client = _anthropic_lib.Anthropic() if LLM_VETO_ENABLED else None
+    _anthropic_client = _anthropic_lib.Anthropic() if (LLM_VETO_ENABLED and not LLM_ROUTER_URL) else None
 except ImportError:
     _anthropic_client = None
 
@@ -344,41 +344,63 @@ def check_btc_macro_gate(info: Info, is_long: bool) -> tuple[bool, str]:
         return True, "BTC macro: check failed (passing)"
 
 
-# ── LLM veto: Claude judges scored signals before execution
+# ── LLM veto: judges scored signals before execution via llm-router or SDK
 def llm_veto_check(
     coin: str, score: int, phase_confidence: float, funding_rate: float,
     wallet_longs: list[str], ta_1h: dict, ta_15m: dict,
 ) -> tuple[bool, str]:
     """
-    Returns (proceed, reason). Inspired by Senpi AI's LLM decision gate
-    which filters ~30-40% of rule-based signals that pass scoring.
+    Returns (proceed, reason). Routes through Supabase llm-router when
+    LLM_ROUTER_URL is set; falls back to direct Anthropic SDK call.
     Only called when LLM_VETO_ENABLED and score >= LLM_VETO_MIN_SCORE.
     """
-    if not LLM_VETO_ENABLED or _anthropic_client is None:
+    if not LLM_VETO_ENABLED:
         return True, "LLM veto disabled"
+
+    prompt = (
+        f"You are a Hyperliquid trading risk manager. "
+        f"Should this LONG entry PROCEED or be VETOED?\n\n"
+        f"Asset: {coin}\n"
+        f"Confluence score: {score}/10\n"
+        f"Phase: Wyckoff ACCUMULATION {phase_confidence:.0%} confidence\n"
+        f"Funding rate: {funding_rate:.4%}/8h\n"
+        f"Smart wallets long: {', '.join(wallet_longs) or 'none'}\n"
+        f"1h: EMA={'bull' if ta_1h.get('ema_bull') else 'bear'} "
+        f"MACD={'bull' if ta_1h.get('macd_bull') else 'bear'} "
+        f"RSI={'above50' if ta_1h.get('rsi_above') else 'below50'} "
+        f"Vol={ta_1h.get('vol_ratio', 0):.2f}x\n"
+        f"15m: MACD={'bull' if ta_15m.get('macd_bull') else 'bear'} "
+        f"RSI={'above50' if ta_15m.get('rsi_above') else 'below50'}\n\n"
+        f"Reply: PROCEED or VETO + reason (max 12 words)."
+    )
+
     try:
-        prompt = (
-            f"You are a Hyperliquid trading risk manager. "
-            f"Should this LONG entry PROCEED or be VETOED?\n\n"
-            f"Asset: {coin}\n"
-            f"Confluence score: {score}/10\n"
-            f"Phase: Wyckoff ACCUMULATION {phase_confidence:.0%} confidence\n"
-            f"Funding rate: {funding_rate:.4%}/8h\n"
-            f"Smart wallets long: {', '.join(wallet_longs) or 'none'}\n"
-            f"1h: EMA={'bull' if ta_1h.get('ema_bull') else 'bear'} "
-            f"MACD={'bull' if ta_1h.get('macd_bull') else 'bear'} "
-            f"RSI={'above50' if ta_1h.get('rsi_above') else 'below50'} "
-            f"Vol={ta_1h.get('vol_ratio', 0):.2f}x\n"
-            f"15m: MACD={'bull' if ta_15m.get('macd_bull') else 'bear'} "
-            f"RSI={'above50' if ta_15m.get('rsi_above') else 'below50'}\n\n"
-            f"Reply: PROCEED or VETO + reason (max 12 words)."
-        )
-        resp = _anthropic_client.messages.create(
-            model=LLM_VETO_MODEL,
-            max_tokens=60,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        text = resp.content[0].text.strip()
+        import urllib.request, json as _json
+        if LLM_ROUTER_URL:
+            body = _json.dumps({
+                "task": "veto",
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 60,
+            }).encode()
+            req = urllib.request.Request(
+                LLM_ROUTER_URL,
+                data=body,
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                d = _json.loads(resp.read())
+            text = (d.get("text") or "").strip()
+        elif _anthropic_client is not None:
+            resp = _anthropic_client.messages.create(
+                model="claude-haiku-4-5-20251001",
+                max_tokens=60,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            text = resp.content[0].text.strip()
+        else:
+            return True, "LLM veto disabled (no router URL or SDK)"
+
         proceed = text.upper().startswith("PROCEED")
         return proceed, f"LLM: {text[:80]}"
     except Exception as e:

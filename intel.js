@@ -386,8 +386,8 @@ function _renderIntel(el, d, r) {
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:6px">
       <button class="btn btn-ghost btn-sm" onclick="intelRefresh()" id="intel-refresh-btn">↺ Refresh</button>
-      <button class="btn btn-ghost btn-sm" onclick="intelGenSynth()" id="intel-synth-btn" ${!_intelEdgeUrl() ? 'title="Configure Claude in AI tab first"' : ''}>✦ AI Synthesis</button>
-      <button class="btn btn-ghost btn-sm" onclick="intelGenSetups()" id="intel-setups-btn" ${!_intelEdgeUrl() ? 'title="Configure Claude in AI tab first"' : ''}>✦ Generate Setups</button>
+      <button class="btn btn-ghost btn-sm" onclick="intelGenSynth()" id="intel-synth-btn">✦ AI Synthesis</button>
+      <button class="btn btn-ghost btn-sm" onclick="intelGenSetups()" id="intel-setups-btn">✦ Generate Setups</button>
     </div>
   </div>
 
@@ -535,11 +535,11 @@ function _renderIntel(el, d, r) {
   <div class="card" id="intel-synth-card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px">
       <div class="card-title" style="margin:0">AI Synthesis</div>
-      <button class="btn btn-ghost btn-sm" onclick="intelGenSynth()" id="intel-synth-btn2">${_intelEdgeUrl() ? '✦ Regenerate' : '⚙ Configure Claude in AI tab'}</button>
+      <button class="btn btn-ghost btn-sm" onclick="intelGenSynth()" id="intel-synth-btn2">✦ Regenerate</button>
     </div>
     ${_intelSynth
       ? `<blockquote class="intel-quote">${_intelSynth}</blockquote>`
-      : `<div class="muted" style="font-size:12px;font-style:italic;padding:10px 0">${_intelEdgeUrl() ? 'Click "AI Synthesis" above to generate market analysis.' : 'Configure the Claude Edge Function in the AI tab to enable synthesis.'}</div>`
+      : `<div class="muted" style="font-size:12px;font-style:italic;padding:10px 0">Click "AI Synthesis" above to generate market analysis.</div>`
     }
   </div>
 
@@ -547,9 +547,9 @@ function _renderIntel(el, d, r) {
   <div class="card" id="intel-setups-card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:6px">
       <div class="card-title" style="margin:0">Desk Setups</div>
-      <button class="btn btn-ghost btn-sm" onclick="intelGenSetups()" id="intel-setups-btn2">${_intelEdgeUrl() ? '✦ Generate with Claude' : '⚙ Configure Claude in AI tab'}</button>
+      <button class="btn btn-ghost btn-sm" onclick="intelGenSetups()" id="intel-setups-btn2">✦ Generate Setups</button>
     </div>
-    ${_intelSetups ? _renderParsedSetups(_intelSetups) : `<div class="muted" style="font-size:12px;font-style:italic;padding:10px 0">${_intelEdgeUrl() ? 'Click "Generate Setups" above — Claude will analyse live funding, OI, and price data to suggest entries.' : 'Configure the Claude Edge Function in the AI tab to generate setups.'}</div>`}
+    ${_intelSetups ? _renderParsedSetups(_intelSetups) : `<div class="muted" style="font-size:12px;font-style:italic;padding:10px 0">Click "Generate Setups" above — AI will analyse live funding, OI, and price data to suggest entries.</div>`}
   </div>
 
   <!-- ── Staged Trades (from AI tab) ──────────────────────────────────────── -->
@@ -601,7 +601,7 @@ function _renderTopMovers(cgCoins) {
 }
 
 function _intelEdgeUrl() {
-  return (typeof _edgeUrl === 'function' ? _intelEdgeUrl() : null) || localStorage.getItem('hype_edge_fn_url') || '';
+  return localStorage.getItem('hype_edge_fn_url') || '';
 }
 
 function _renderStagedInIntel() {
@@ -692,28 +692,14 @@ HL per-coin funding APR: ${INTEL_TRACK.map(c => `${c} ${d.hlFundApr[c] != null ?
 }
 
 async function intelGenSynth() {
-  const url = _intelEdgeUrl();
-  if (!url) { alert('Configure Claude in the AI tab first (⚙ Setup).'); return; }
   const ctx = _intelClaudeCtx();
   if (!ctx) { alert('Data not loaded yet — wait for the page to finish loading.'); return; }
 
   const btn = document.getElementById('intel-synth-btn') || document.getElementById('intel-synth-btn2');
   if (btn) { btn.disabled = true; btn.textContent = '✦ Generating…'; }
 
-  try {
-    const r = await fetch(url, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({
-        message: `Based on this live market data, write a concise 3-4 sentence trading posture synthesis. Include: current regime assessment, key risk or opportunity, and one actionable note. Be direct and specific.\n\n${ctx}`,
-        history: [],
-      }),
-    });
-    const d = await r.json();
-    _intelSynth = d.reply || d.content || d.text || '(empty response)';
-  } catch (e) {
-    _intelSynth = `Error: ${e.message}`;
-  }
+  const prompt = `Based on this live market data, write a concise 3-4 sentence trading posture synthesis. Include: current regime assessment, key risk or opportunity, and one actionable note. Be direct and specific.\n\n${ctx}`;
+  _intelSynth = await _callLLM('synthesis', prompt, { maxTokens: 512 }) || 'LLM router unavailable — set hype_edge_fn_url in AI tab settings.';
 
   // Update just the synthesis card
   const card = document.getElementById('intel-synth-card');
@@ -727,28 +713,14 @@ async function intelGenSynth() {
 }
 
 async function intelGenSetups() {
-  const url = _intelEdgeUrl();
-  if (!url) { alert('Configure Claude in the AI tab first (⚙ Setup).'); return; }
   const ctx = _intelClaudeCtx();
   if (!ctx) { alert('Data not loaded yet.'); return; }
 
   const btn = document.getElementById('intel-setups-btn') || document.getElementById('intel-setups-btn2');
   if (btn) { btn.disabled = true; btn.textContent = '✦ Generating…'; }
 
-  try {
-    const r = await fetch(url, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({
-        message: `Based on this live market data, suggest 2-3 specific trade setups. For each: coin, direction (Long/Short), approximate entry price (% from current), stop loss, take profit, and a 1-sentence rationale grounded in the data. Format clearly with **COIN** headers.\n\n${ctx}`,
-        history: [],
-      }),
-    });
-    const d = await r.json();
-    _intelSetups = d.reply || d.content || d.text || '(empty response)';
-  } catch (e) {
-    _intelSetups = `Error: ${e.message}`;
-  }
+  const prompt = `Based on this live market data, suggest 2-3 specific trade setups. For each: coin, direction (Long/Short), approximate entry price (% from current), stop loss, take profit, and a 1-sentence rationale grounded in the data. Format clearly with **COIN** headers.\n\n${ctx}`;
+  _intelSetups = await _callLLM('setups', prompt, { maxTokens: 768 }) || 'LLM router unavailable — set hype_edge_fn_url in AI tab settings.';
 
   const card = document.getElementById('intel-setups-card');
   if (card) {

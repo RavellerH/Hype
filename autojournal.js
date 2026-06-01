@@ -142,10 +142,6 @@ function _ajScheduleDaily() {
 // ── AI lesson per trade ───────────────────────────────────────────────────────
 
 async function _ajRequestLesson(entry, state) {
-  const apiKey = localStorage.getItem('claude_api_key') || '';
-  const backend = (localStorage.getItem('nansen_backend_url') || '').trim();
-  if (!apiKey && !backend) return;
-
   try {
     const holdH   = Math.round(entry.hold_ms / 3600000);
     const outcome = entry.net_pnl >= 0 ? 'WIN' : 'LOSS';
@@ -153,7 +149,7 @@ async function _ajRequestLesson(entry, state) {
 
 Write ONE specific lesson in max 15 words. Direct and actionable, no generic advice. Just the lesson text, nothing else.`;
 
-    const lesson = await _callClaude(prompt, apiKey, backend);
+    const lesson = await _callLLM('lesson', prompt, { maxTokens: 64 });
     if (!lesson?.trim()) return;
 
     const fresh = _ajState();
@@ -173,10 +169,6 @@ Write ONE specific lesson in max 15 words. Direct and actionable, no generic adv
 // ── Weekly AI pattern review ──────────────────────────────────────────────────
 
 async function journalWeeklyReview(force = false) {
-  const apiKey  = localStorage.getItem('claude_api_key') || '';
-  const backend = (localStorage.getItem('nansen_backend_url') || '').trim();
-  if (!apiKey && !backend) return null;
-
   const state   = _ajState();
   const weekAgo = Date.now() - 7 * 86400000;
 
@@ -203,7 +195,7 @@ ${weekEntries.filter(e => e.lesson).length > 0 ? `- Lessons: ${weekEntries.filte
 
 Write 2-3 sentences: key pattern, one concrete rule to implement next week. Specific and data-driven. No generic advice.`;
 
-    const text = await _callClaude(prompt, apiKey, backend);
+    const text = await _callLLM('weekly_review', prompt, { maxTokens: 256 });
     if (!text?.trim()) return null;
 
     const review = { text: text.trim(), ts: Date.now(), trade_count: weekEntries.length };
