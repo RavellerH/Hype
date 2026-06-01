@@ -58,11 +58,11 @@ ASSET_COOLDOWN_MINUTES = 120    # per-asset cool-down (minutes) after a loss on 
 # ── BTC macro gate: skip entries if BTC 4h move is hostile (blocks trades into momentum)
 BTC_MACRO_GATE_PCT  = 0.03   # block long if BTC 4h dropped >3%; short if BTC 4h gained >3%
 
-# ── LLM veto layer: pass top signals through Claude for final judgment
-# Activated automatically when ANTHROPIC_API_KEY is set in the environment.
-LLM_VETO_ENABLED      = bool(os.getenv("ANTHROPIC_API_KEY", ""))
+# ── LLM veto layer: route through Supabase llm-router Edge Function
+# Set LLM_ROUTER_URL=https://xxx.supabase.co/functions/v1/llm-router in .env to enable.
+LLM_ROUTER_URL        = os.getenv("LLM_ROUTER_URL", "")
+LLM_VETO_ENABLED      = bool(LLM_ROUTER_URL) or bool(os.getenv("ANTHROPIC_API_KEY", ""))
 LLM_VETO_MIN_SCORE    = 6       # only run LLM veto when confluence score >= this
-LLM_VETO_MODEL        = "claude-haiku-4-5-20251001"  # fast + cheap for gatekeeping
 
 # ── Coins the bot can trade
 WATCH_COINS = ["BTC", "ETH", "SOL", "HYPE", "SUI", "AVAX"]

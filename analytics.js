@@ -334,24 +334,12 @@ function _renderAnalyticsCharts(an) {
   }
 }
 
-// ── AI Debrief (Tier 3) ────────────────────────────────────────────────────────
+// ── AI Debrief ────────────────────────────────────────────────────────────────
 
 function _renderAiSection(an) {
-  const savedKey     = localStorage.getItem('claude_api_key') || '';
-  const savedBackend = localStorage.getItem('nansen_backend_url') || '';
   return `<div class="an-section an-ai-section">
-    <div class="an-title">AI Trade Debrief <span class="an-title-sub">— powered by Claude</span></div>
+    <div class="an-title">AI Trade Debrief <span class="an-title-sub">— auto-routed via LLM router</span></div>
     <div class="an-ai-form">
-      <div class="an-ai-row">
-        <div class="an-ai-field">
-          <label>Anthropic API Key</label>
-          <input id="an-claude-key" type="password" value="${savedKey}" placeholder="sk-ant-..." autocomplete="off">
-        </div>
-        <div class="an-ai-field">
-          <label>Vercel App URL <span class="muted">(proxy, same as Nansen)</span></label>
-          <input id="an-backend-url" type="text" value="${savedBackend}" placeholder="https://your-app.vercel.app" autocomplete="off">
-        </div>
-      </div>
       <div class="an-ai-btns">
         <button class="an-ai-btn primary" onclick="runAnalyticsDebrief()">Analyze My Trades</button>
         <button class="an-ai-btn" onclick="runRegimeBriefing()">Daily Regime Briefing</button>
@@ -361,39 +349,19 @@ function _renderAiSection(an) {
   </div>`;
 }
 
-function _saveAiSettings() {
-  const key     = (document.getElementById('an-claude-key')?.value     || '').trim();
-  const backend = (document.getElementById('an-backend-url')?.value || '').trim();
-  if (key)     localStorage.setItem('claude_api_key', key);
-  if (backend) localStorage.setItem('nansen_backend_url', backend);
-  return { key, backend };
-}
-
 async function runAnalyticsDebrief() {
-  const { key, backend } = _saveAiSettings();
-  if (!key && !backend) { alert('Enter your Anthropic API key or Vercel app URL.'); return; }
   if (!_analyticsCache) { alert('Analytics not loaded yet.'); return; }
   _showAiLoading('Analyzing your trades…');
-  try {
-    const prompt = _buildDebriefPrompt(_analyticsCache);
-    const text   = await _callClaude(prompt, key, backend);
-    _showAiResult(text);
-  } catch (err) {
-    _showAiError(err.message);
-  }
+  const text = await _callLLM('debrief', _buildDebriefPrompt(_analyticsCache), { maxTokens: 1024 });
+  if (text) _showAiResult(text);
+  else _showAiError('LLM router unavailable — set hype_edge_fn_url in AI tab settings.');
 }
 
 async function runRegimeBriefing() {
-  const { key, backend } = _saveAiSettings();
-  if (!key && !backend) { alert('Enter your Anthropic API key or Vercel app URL.'); return; }
   _showAiLoading('Generating regime briefing…');
-  try {
-    const prompt = _buildRegimePrompt();
-    const text   = await _callClaude(prompt, key, backend);
-    _showAiResult(text);
-  } catch (err) {
-    _showAiError(err.message);
-  }
+  const text = await _callLLM('synthesis', _buildRegimePrompt(), { maxTokens: 512 });
+  if (text) _showAiResult(text);
+  else _showAiError('LLM router unavailable — set hype_edge_fn_url in AI tab settings.');
 }
 
 function _showAiLoading(msg) {
@@ -493,45 +461,6 @@ Write a 3–4 sentence daily regime briefing covering:
 3. One tactical suggestion for the current setup
 
 Be direct. No disclaimers.`;
-}
-
-async function _callClaude(prompt, apiKey, backendUrl) {
-  const base = (backendUrl || '').replace(/\/$/, '');
-
-  if (base) {
-    const resp = await fetch(`${base}/api/claude`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt, key: apiKey }),
-    });
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({}));
-      throw new Error(err.error || `Proxy ${resp.status}`);
-    }
-    return (await resp.json()).text;
-  }
-
-  // Direct browser call (requires anthropic-dangerous-direct-browser-access header)
-  if (!apiKey) throw new Error('No API key or proxy URL configured.');
-  const resp = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1024,
-      messages: [{ role: 'user', content: prompt }],
-    }),
-  });
-  if (!resp.ok) {
-    const err = await resp.json().catch(() => ({}));
-    throw new Error(err.error?.message || `Anthropic API ${resp.status}`);
-  }
-  return (await resp.json()).content?.[0]?.text || '';
 }
 
 // Very small markdown → HTML (only what Claude outputs)

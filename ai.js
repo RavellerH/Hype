@@ -57,19 +57,6 @@ async function _stageDelete(id) {
 
 function _edgeUrl() { return localStorage.getItem('hype_edge_fn_url') || ''; }
 
-async function _callClaude(message) {
-  const url = _edgeUrl();
-  if (!url) throw new Error('no-edge-fn');
-  const r = await fetch(url, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ message, history: _chatMsgs.slice(-12) }),
-  });
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  const d = await r.json();
-  return d.reply || d.content || d.text || '(empty response)';
-}
-
 // ── Page entry ────────────────────────────────────────────────────────────────
 
 async function loadAI() {
@@ -329,15 +316,11 @@ async function sendChat() {
   _chatMsgs.push({ role: 'user', content: msg });
   _chatLoading = true;
   _renderChatMsgs(true);
-  try {
-    const reply = await _callClaude(msg);
-    _chatMsgs.push({ role: 'assistant', content: reply });
-  } catch (e) {
-    const text = e.message === 'no-edge-fn'
-      ? 'Edge Function URL not set. Click ⚙ Setup above.'
-      : `Error: ${e.message}`;
-    _chatMsgs.push({ role: 'assistant', content: text });
-  }
+  const reply = await _callLLM('chat', msg, { history: _chatMsgs.slice(-12), maxTokens: 1024 });
+  _chatMsgs.push({
+    role: 'assistant',
+    content: reply || 'LLM router unavailable — set hype_edge_fn_url in AI tab settings.',
+  });
   _chatLoading = false;
   _renderChatMsgs(false);
 }
