@@ -1012,8 +1012,13 @@ export default {
         const cmd = parts[0].toLowerCase().split('@')[0]; // strip @botname suffix
         const arg = parts[1] || '';
         ctx.waitUntil((async () => {
-          const reply = await handleTgCommand(cmd, arg, env);
-          if (reply) await tgSend(env.TG_TOKEN, chatId, reply);
+          try {
+            const reply = await handleTgCommand(cmd, arg, env);
+            if (reply) await tgSend(env.TG_TOKEN, chatId, reply);
+          } catch (e) {
+            // Surface errors to chat instead of silently dropping them
+            await tgSend(env.TG_TOKEN, chatId, `⚠️ bot error\n<code>${e.message}</code>`).catch(() => {});
+          }
         })());
       }
       return new Response('ok');
@@ -1040,6 +1045,37 @@ export default {
     if (url.pathname === '/run-weekly')   { ctx.waitUntil(weeklyReview(env));        return new Response('Weekly review triggered', { status: 202 }); }
     if (url.pathname === '/health') {
       return new Response(JSON.stringify({ ok: true, ts: Date.now() }), {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // ── Debug — check env bindings + Telegram webhook status ──────────────────
+    if (url.pathname === '/debug') {
+      const envCheck = {
+        TG_TOKEN:      !!env.TG_TOKEN,
+        TG_CHAT:       !!env.TG_CHAT,
+        WALLET:        !!env.WALLET,
+        SUPABASE_URL:  !!env.SUPABASE_URL,
+        SUPABASE_KEY:  !!env.SUPABASE_KEY,
+        COINGLASS_KEY: !!env.COINGLASS_KEY,
+        ALERT_STATE_KV: !!env.ALERT_STATE,
+        AI_BINDING:    !!env.AI,
+      };
+      let webhookInfo = null;
+      try {
+        const r = await fetch(`https://api.telegram.org/bot${env.TG_TOKEN}/getWebhookInfo`);
+        webhookInfo = await r.json();
+      } catch (e) {
+        webhookInfo = { error: e.message };
+      }
+      // KV read test
+      let kvTest = 'ok';
+      try {
+        await env.ALERT_STATE.get('__debug_probe__');
+      } catch (e) {
+        kvTest = `ERROR: ${e.message}`;
+      }
+      return new Response(JSON.stringify({ envCheck, webhookInfo, kvTest }, null, 2), {
         headers: { 'Content-Type': 'application/json' },
       });
     }
