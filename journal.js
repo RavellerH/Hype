@@ -32,11 +32,13 @@ async function loadJournal() {
 
   if (!url || !key) {
     el.innerHTML = _jSetupPanel();
+    await _jInjectAutoPanel(el);
     return;
   }
 
   if (_jTs && Date.now() - _jTs < _J_TTL && window._journalData.length >= 0) {
     _jRender(window._journalData);
+    await _jInjectAutoPanel(el);
     return;
   }
 
@@ -49,6 +51,19 @@ async function loadJournal() {
   } catch (e) {
     el.innerHTML = `<div style="padding:20px;color:var(--red);font-size:13px">Failed to load journal: ${_jEsc(e.message)}</div>` + _jSettingsSection(url, key);
   }
+  await _jInjectAutoPanel(el);
+}
+
+async function _jInjectAutoPanel(el) {
+  if (typeof renderAutoJournalPanel !== 'function') return;
+  const ajHtml = await renderAutoJournalPanel();
+  if (!ajHtml || !el.isConnected) return;
+  const existing = document.getElementById('aj-panel-root');
+  if (existing) existing.remove();
+  const d = document.createElement('div');
+  d.id = 'aj-panel-root';
+  d.innerHTML = ajHtml;
+  el.insertBefore(d, el.firstChild);
 }
 
 // ── Fetch ─────────────────────────────────────────────────────────────────────

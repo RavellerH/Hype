@@ -46,6 +46,7 @@ function _ajId(t) { return `${t.coin}-${t.entry_time}`; }
 
 async function journalAutoCheck() {
   if (!currentWallet) return;
+  if (typeof buildTrades !== 'function') { console.warn('[AutoJournal] buildTrades not ready'); return; }
   try {
     const rawFills = await getUserFills(currentWallet);
     const trades   = buildTrades(rawFills);
@@ -351,7 +352,7 @@ async function renderAutoJournalPanel() {
   const state   = _ajState();
   const entries = state.entries.slice(0, 60);
   const wr      = state.weekly_review;
-  const hasAI   = !!(localStorage.getItem('claude_api_key') || localStorage.getItem('nansen_backend_url'));
+  const hasAI   = !!(localStorage.getItem('hype_edge_fn_url'));
   const lastSnap = _ajLoadSnaps().filter(s => s.type === 'daily').at(-1);
 
   const weekReviewHtml = wr?.text ? `<div class="aj-weekly-review">
@@ -384,7 +385,7 @@ async function renderAutoJournalPanel() {
     ${weekReviewHtml}
 
     ${!hasAI ? `<div class="aj-ai-notice">
-      Add Claude API key in <strong>Analytics → AI Trade Debrief</strong> to enable auto-lessons and weekly reviews.
+      Set your <strong>Edge Function URL</strong> in the AI tab to enable auto-lessons and weekly reviews.
     </div>` : ''}
 
     <div id="aj-entries">
