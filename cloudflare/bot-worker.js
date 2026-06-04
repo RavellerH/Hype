@@ -9,7 +9,7 @@
  *   midnight UTC     — daily snapshot → Supabase + Telegram
  *   Sunday midnight  — weekly performance review
  *
- * Secrets: WALLET, TG_TOKEN, TG_CHAT, SUPABASE_URL, SUPABASE_KEY, COINGLASS_KEY
+ * Secrets: WALLET, TG_TOKEN, TG_CHAT, SUPABASE_URL, SUPABASE_KEY, COINGLASS_KEY, LLM_ROUTER_URL
  * KV namespace: ALERT_STATE
  * Env vars: SIGNAL_COINS, ARB_THRESHOLD, MAX_FUNDING, FG_GREED_GATE
  */
@@ -1022,6 +1022,151 @@ async function checkLiqCascade(env) {
   return alerts.length;
 }
 
+// ── Last Trade Analyzer ───────────────────────────────────────────────────────
+
+function _buildLastTrade(rawFills) {
+  const closes = rawFills
+    .map(f => ({ ...f, _pnl: parseFloat(f.closedPnl || 0), _fee: parseFloat(f.fee || 0), _sz: parseFloat(f.sz || 0), _px: parseFloat(f.px || 0) }))
+    .filter(f => f._pnl !== 0)
+    .sort((a, b) => b.time - a.time);
+  if (!closes.length) return null;
+
+  const anchor = closes[0];
+  const WINDOW = 45 * 60 * 1000;
+  const group = closes.filter(f => f.coin === anchor.coin && Math.abs(f.time - anchor.time) < WINDOW);
+
+  const totalPnl  = group.reduce((s, f) => s + f._pnl, 0);
+  const totalFees = group.reduce((s, f) => s + f._fee, 0);
+  const totalSz   = group.reduce((s, f) => s + f._sz, 0);
+  const avgExit   = totalSz > 0 ? group.reduce((s, f) => s + f._px * f._sz, 0) / totalSz : anchor._px;
+
+  // Closing a long = 'S' fill; closing a short = 'B' fill
+  const dir = (anchor.dir || '').toLowerCase();
+  const side = dir.includes('long') ? 'LONG' : dir.includes('short') ? 'SHORT' : anchor.side === 'S' ? 'LONG' : 'SHORT';
+
+  // Estimate entry from PnL (long: pnl = (exit-entry)*sz; short: pnl = (entry-exit)*sz)
+  const estEntry = side === 'LONG'
+    ? avgExit - totalPnl / totalSz
+    : avgExit + totalPnl / totalSz;
+
+  return {
+    coin:     anchor.coin,
+    side,
+    exitPx:   avgExit,
+    estEntry,
+    pnl:      totalPnl,
+    netPnl:   totalPnl - totalFees,
+    fees:     totalFees,
+    size:     totalSz,
+    time:     anchor.time,
+    fills:    group,
+  };
+}
+
+async function _llmGrade(env, trade, rsi, funding, aligned) {
+  const url = env.LLM_ROUTER_URL;
+  if (!url) return null;
+  const pnlSign = trade.netPnl >= 0 ? '+' : '';
+  const prompt = `Perps trade just closed on Hyperliquid:
+- ${trade.coin} ${trade.side}
+- Est. entry $${trade.estEntry.toFixed(2)} → exit $${trade.exitPx.toFixed(2)}
+- Net PnL ${pnlSign}$${trade.netPnl.toFixed(2)}, fees $${trade.fees.toFixed(2)}, size $${(trade.size * trade.exitPx).toFixed(0)}
+- At exit: RSI ${rsi.toFixed(0)}, funding ${(funding * 100).toFixed(4)}%, trend ${aligned}
+
+Grade this trade A–F. Two sentences max: what was done well, what could improve. End with one specific lesson.`;
+  try {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ task: 'veto', messages: [{ role: 'user', content: prompt }], max_tokens: 120 }),
+    });
+    if (!r.ok) return null;
+    const d = await r.json();
+    return d.text || null;
+  } catch (_) { return null; }
+}
+
+async function analyzeLastTrade(env, sinceTs = 0) {
+  if (!env.WALLET) return 'WALLET secret not set';
+  const fills = await getRecentFills(env.WALLET, 14);
+  const filtered = sinceTs ? fills.filter(f => f.time > sinceTs) : fills;
+  const trade = _buildLastTrade(filtered);
+  if (!trade) return sinceTs ? null : 'No closed trades found in last 14 days.';
+
+  // Fetch market context at time of analysis
+  const [candles1h, rates] = await Promise.all([
+    getCandles(trade.coin, '1h', 2).catch(() => []),
+    getFundingRates().catch(() => ({})),
+  ]);
+
+  const closes1h = candles1h.map(c => parseFloat(c.c));
+  const rsi = closes1h.length >= 15 ? (iRSI(closes1h).at(-1) ?? 50) : 50;
+  const funding = rates[trade.coin]?.fundingRate ?? 0;
+  const markPx  = rates[trade.coin]?.markPx ?? trade.exitPx;
+
+  // Quick 1h bias
+  const ema20 = closes1h.length >= 20 ? iEMA(closes1h, 20).at(-1) : null;
+  const bias1h = ema20 ? (closes1h.at(-1) > ema20 ? 'BULL' : 'BEAR') : 'NEUT';
+  const aligned = bias1h;
+
+  // LLM grade (non-blocking timeout via Promise.race)
+  const gradeP = _llmGrade(env, trade, rsi, funding, aligned);
+  const grade = await Promise.race([gradeP, new Promise(r => setTimeout(() => r(null), 8000))]);
+
+  const pnlSign  = trade.netPnl >= 0 ? '+' : '';
+  const pnlColor = trade.netPnl >= 0 ? '[PROFIT]' : '[LOSS]';
+  const pnlUsd   = `${pnlSign}$${trade.netPnl.toFixed(2)}`;
+  const estMove  = trade.side === 'LONG'
+    ? ((trade.exitPx - trade.estEntry) / trade.estEntry * 100).toFixed(2)
+    : ((trade.estEntry - trade.exitPx) / trade.estEntry * 100).toFixed(2);
+  const moveSign = parseFloat(estMove) >= 0 ? '+' : '';
+
+  const BAR = '─'.repeat(26);
+  const lines = [
+    `<b>░▒▓ TRADE CLOSED ▓▒░</b>`,
+    `<pre>${BAR}`,
+    `  ${trade.coin.padEnd(10)}${trade.side}`,
+    `  EST ENTRY ${_px(trade.coin, trade.estEntry).padStart(14)}`,
+    `  EXIT      ${_px(trade.coin, trade.exitPx).padStart(14)}`,
+    `  MOVE      ${(moveSign + estMove + '%').padStart(14)}`,
+    `  NET PnL   ${pnlUsd.padStart(14)} ${pnlColor}`,
+    `  FEES      ${('$' + trade.fees.toFixed(2)).padStart(14)}`,
+    `  SIZE      ${('$' + (trade.size * trade.exitPx / 1000).toFixed(1) + 'K').padStart(14)}`,
+    `${BAR}</pre>`,
+    `<pre>MARKET CONTEXT`,
+    `  RSI 1h    ${rsi.toFixed(0).padStart(6)}  ${_rsiT(rsi)}`,
+    `  FUNDING   ${(funding * 100).toFixed(4).padStart(6)}%  ${_fundT(funding)}`,
+    `  BIAS 1h   ${bias1h.padStart(6)}  ${_biasT(bias1h)}`,
+    `  MARK      $${_px(trade.coin, markPx)}`,
+    `${BAR}</pre>`,
+  ];
+
+  if (grade) {
+    lines.push(`<pre>AI GRADE\n${grade.trim()}\n${BAR}</pre>`);
+  }
+
+  return lines.join('\n');
+}
+
+async function checkNewTrades(env) {
+  if (!env.WALLET || !env.ALERT_STATE) return;
+  const kvKey = `last_trade_ts:${env.WALLET}`;
+  const lastStr = await env.ALERT_STATE.get(kvKey);
+  const lastTs = lastStr ? parseInt(lastStr) : (Date.now() - 86400000);
+
+  const msg = await analyzeLastTrade(env, lastTs);
+  if (!msg) return;
+
+  // Update the watermark to the trade's close time
+  const fills = await getRecentFills(env.WALLET, 14).catch(() => []);
+  const closes = fills.filter(f => parseFloat(f.closedPnl || 0) !== 0).sort((a, b) => b.time - a.time);
+  if (closes.length) {
+    await env.ALERT_STATE.put(kvKey, String(closes[0].time), { expirationTtl: 86400 * 7 });
+  }
+
+  await tgSend(env.TG_TOKEN, env.TG_CHAT, msg);
+}
+
 // ── Telegram Commands ─────────────────────────────────────────────────────────
 
 async function handleTgCommand(cmd, arg, env, msg) {
@@ -1035,6 +1180,7 @@ async function handleTgCommand(cmd, arg, env, msg) {
       '  /research [coin]  full TA + levels',
       '  /watch            confluence scan',
       '  /signals          signal scan now',
+      '  /lasttrade        last trade + AI grade',
       '  /trend [coin]     multi-TF trend',
       '  /price [coin]     price + patterns',
       '  /alert C P [a|b]  set price alert',
@@ -1051,6 +1197,7 @@ async function handleTgCommand(cmd, arg, env, msg) {
       '  reversal  4h · candle patterns',
       '  liq       4h · cascade alert',
       '  position  4h · close/hold/add',
+      '  trade     15m · close detect',
       '  snap      00:00 UTC daily',
     ]);
   }
@@ -1072,6 +1219,11 @@ async function handleTgCommand(cmd, arg, env, msg) {
   if (cmd === '/snapshot') {
     await dailySnapshot(env);
     return null;
+  }
+
+  if (cmd === '/lasttrade') {
+    const result = await analyzeLastTrade(env, 0);
+    return result;
   }
 
   if (cmd === '/positions') return handleTgCommand('/pnl', arg, env, msg);
@@ -1373,6 +1525,7 @@ export default {
       } else {
         ctx.waitUntil(checkFundingArb(env));
       }
+      ctx.waitUntil(checkNewTrades(env));
     } else if (cron === '0 */4 * * *') {
       ctx.waitUntil(checkReversals(env));
       ctx.waitUntil(checkTrendAlignment(env));
