@@ -14,6 +14,8 @@ const AJ_TAG_STYLE = {
   FOMO:        { bg: 'rgba(251,191,36,0.15)',  fg: '#fbbf24', border: 'rgba(251,191,36,0.35)' },
   Tilted:      { bg: 'rgba(248,113,113,0.15)', fg: '#f87171', border: 'rgba(248,113,113,0.35)' },
 };
+let _ajDailyTimer = null;
+let _ajDailyInterval = null;
 
 // ── Persistence ───────────────────────────────────────────────────────────────
 
@@ -130,13 +132,16 @@ async function journalDailySnapshot() {
 
 function _ajScheduleDaily() {
   journalDailySnapshot(); // run on load in case today's snap is missing
+  if (_ajDailyTimer) clearTimeout(_ajDailyTimer);
+  if (_ajDailyInterval) clearInterval(_ajDailyInterval);
 
   const now = new Date();
   const midnight = new Date(now);
   midnight.setHours(24, 0, 30, 0); // 00:00:30 next day
-  setTimeout(() => {
+  _ajDailyTimer = setTimeout(() => {
     journalDailySnapshot();
-    setInterval(journalDailySnapshot, 86400000);
+    _ajDailyTimer = null;
+    _ajDailyInterval = setInterval(journalDailySnapshot, 86400000);
   }, midnight - now);
 }
 

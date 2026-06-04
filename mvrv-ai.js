@@ -1048,14 +1048,16 @@ async function sendChat() {
   ].filter(Boolean).join('\n');
 
   try {
-    const res = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ system, messages: _chatHistory.map(m => ({ role: m.role, content: m.content })) }),
+    if (typeof _callLLM !== 'function') {
+      throw new Error('LLM router unavailable - set hype_edge_fn_url in AI settings');
+    }
+    const reply = await _callLLM('chat', q, {
+      system,
+      history: _chatHistory.slice(0, -1).map(m => ({ role: m.role, content: m.content })),
+      maxTokens: 1024,
     });
-    const d = await res.json();
-    if (!res.ok) throw new Error(d.error || `HTTP ${res.status}`);
-    _chatHistory.push({ role: 'assistant', content: d.content || JSON.stringify(d) });
+    if (!reply) throw new Error('LLM router unavailable - set hype_edge_fn_url in AI settings');
+    _chatHistory.push({ role: 'assistant', content: reply });
   } catch(e) {
     _chatHistory.push({ role: 'assistant', content: `Error: ${e.message}` });
   }
@@ -1076,15 +1078,3 @@ function mdToHtml(md) {
     .replace(/`([^`]+)`/g, '<code style="background:var(--surface2);padding:1px 4px;border-radius:3px;font-family:var(--mono);font-size:12px">$1</code>')
     .replace(/\n/g, '<br>');
 }
-
-// ── Patch navigate() ──────────────────────────────────────────────────────────
-
-(function patchNavigate() {
-  const _orig = window.navigate;
-  if (!_orig) return;
-  window.navigate = function(page) {
-    _orig(page);
-    if (page === 'mvrv') loadMVRV();
-    if (page === 'ai')   loadAI();
-  };
-})();

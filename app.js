@@ -579,7 +579,7 @@ function navigate(page) {
     pageEl.classList.add('active');
     document.querySelectorAll(`[data-page="${page}"]`).forEach(el=>el.classList.add('active'));
     currentPage = page;
-    const loaders={overview:loadOverview,trades:loadTrades,funding:loadFunding,flows:loadFlows,monitor:loadMonitor,markets:loadMarkets,phases:loadPhases,intel:typeof loadIntel!=='undefined'?loadIntel:null,watchlist:loadWatchlist,journal:typeof loadJournal!=='undefined'?loadJournal:null,indicators:typeof loadIndicators!=='undefined'?loadIndicators:null,smartmoney:typeof loadNansen!=='undefined'?loadNansen:null,analytics:typeof loadAnalytics!=='undefined'?loadAnalytics:null,signals:typeof loadSignals!=='undefined'?loadSignals:null,news:typeof loadNews!=='undefined'?loadNews:null,fundamentals:typeof loadFundamentals!=='undefined'?loadFundamentals:null,ai:typeof loadAI!=='undefined'?loadAI:null,arb:typeof loadArb!=='undefined'?loadArb:null,defi:typeof loadDefi!=='undefined'?loadDefi:null,kb:typeof loadKB!=='undefined'?loadKB:null,trend:typeof loadTrend!=='undefined'?loadTrend:null,onchain:typeof loadOnchain!=='undefined'?loadOnchain:null,heatmap:typeof loadHeatmap!=='undefined'?loadHeatmap:null};
+    const loaders={overview:loadOverview,trades:loadTrades,funding:loadFunding,flows:loadFlows,monitor:loadMonitor,markets:loadMarkets,phases:loadPhases,intel:typeof loadIntel!=='undefined'?loadIntel:null,mvrv:typeof loadMVRV!=='undefined'?loadMVRV:null,watchlist:loadWatchlist,journal:typeof loadJournal!=='undefined'?loadJournal:null,indicators:typeof loadIndicators!=='undefined'?loadIndicators:null,smartmoney:typeof loadNansen!=='undefined'?loadNansen:null,analytics:typeof loadAnalytics!=='undefined'?loadAnalytics:null,signals:typeof loadSignals!=='undefined'?loadSignals:null,news:typeof loadNews!=='undefined'?loadNews:null,fundamentals:typeof loadFundamentals!=='undefined'?loadFundamentals:null,ai:typeof loadAI!=='undefined'?loadAI:null,arb:typeof loadArb!=='undefined'?loadArb:null,defi:typeof loadDefi!=='undefined'?loadDefi:null,kb:typeof loadKB!=='undefined'?loadKB:null,trend:typeof loadTrend!=='undefined'?loadTrend:null,onchain:typeof loadOnchain!=='undefined'?loadOnchain:null,heatmap:typeof loadHeatmap!=='undefined'?loadHeatmap:null};
     if(loaders[page]) loaders[page]();
   } catch(e) { console.error('navigate error:', e); }
 }
@@ -3316,8 +3316,13 @@ async function checkNewListings() {
     const coins = (meta?.universe || []).map((a, i) => ({ name: a.name, px: parseFloat(ctxs[i]?.markPx || 0) })).filter(c => c.name);
     const names = coins.map(c => c.name);
     if (_knownCoins === null) {
-      const stored = localStorage.getItem('hype_known_coins');
-      _knownCoins = stored ? new Set(JSON.parse(stored)) : null;
+      try {
+        const stored = localStorage.getItem('hype_known_coins');
+        _knownCoins = stored ? new Set(JSON.parse(stored)) : null;
+      } catch (_) {
+        _knownCoins = null;
+        localStorage.removeItem('hype_known_coins');
+      }
     }
     if (_knownCoins === null) {
       _knownCoins = new Set(names);

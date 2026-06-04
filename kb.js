@@ -344,6 +344,25 @@ async function kbWikiLinkTrade(wikiId, tradeId) {
 }
 
 // ── Wiki AI ───────────────────────────────────────────────────
+function _kbParseAiJson(text) {
+  const raw = String(text || '').trim();
+  if (!raw) return {};
+  try { return JSON.parse(raw); } catch (_) {}
+  const match = raw.match(/\{[\s\S]*\}/);
+  if (!match) return {};
+  try { return JSON.parse(match[0]); } catch (_) { return {}; }
+}
+
+async function _kbCallJsonLLM(task, prompt, system, maxTokens = 1200) {
+  if (typeof _callLLM !== 'function') {
+    throw new Error('LLM router unavailable - set hype_edge_fn_url in AI settings');
+  }
+  const text = await _callLLM(task, prompt, { system, maxTokens });
+  const data = _kbParseAiJson(text);
+  if (!Object.keys(data).length) throw new Error('AI returned invalid JSON');
+  return data;
+}
+
 async function kbWikiAiGenerate() {
   const title   = (document.getElementById('kbwf-title')?.value   || '').trim();
   const cat     = document.getElementById('kbwf-cat')?.value      || 'lesson';
@@ -356,12 +375,18 @@ async function kbWikiAiGenerate() {
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Generating…'; }
 
   try {
-    const resp = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mode: 'wiki-generate', title, category: cat, coins: coinsRaw, tags: tagsRaw })
-    });
-    const data = await resp.json();
+    const data = await _kbCallJsonLLM(
+      'summary',
+      `Generate a wiki entry for: "${title}" (category: ${cat || 'lesson'}, coins: ${coinsRaw || 'any'}, tags: ${tagsRaw || 'none'})`,
+      `You are building a crypto trading knowledge base wiki. Generate a wiki entry.
+Return ONLY valid JSON:
+{
+  "title": "exact title",
+  "summary": "one sentence summary",
+  "content": "3-5 paragraphs of trading knowledge, when to use it, what to watch for, common mistakes"
+}`,
+      1200
+    );
     if (data.title) {
       const titleEl = document.getElementById('kbwf-title');
       const contentEl = document.getElementById('kbwf-content');
@@ -386,12 +411,17 @@ async function kbWikiAiEnhance(wikiId) {
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Enhancing…'; }
 
   try {
-    const resp = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mode: 'wiki-enhance', title: entry.title, category: entry.category, content: entry.content })
-    });
-    const data = await resp.json();
+    const data = await _kbCallJsonLLM(
+      'summary',
+      `Enhance this wiki entry:\nTitle: ${entry.title}\nCategory: ${entry.category || 'lesson'}\n\n${entry.content || ''}`,
+      `You are enhancing a trading knowledge base entry. Make it deeper, more specific, add examples.
+Return ONLY valid JSON:
+{
+  "summary": "improved one sentence summary",
+  "content": "enhanced content, 4-6 paragraphs"
+}`,
+      1500
+    );
     if (data.content) {
       entry.summary = data.summary || entry.summary;
       entry.content = data.content;
@@ -707,12 +737,42 @@ async function kbConfirmClose(tradeId) {
 
 async function _analyzeTradeWithAI(trade) {
   try {
-    const resp = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mode: 'trade-analyze', trade })
-    });
-    const data = await resp.json();
+    const data = await _kbCallJsonLLM(
+      'summary',
+      `Trade Journal Entry:
+Coin: ${trade.coin} | Direction: ${trade.direction} | Status: CLOSED
+Entry: $${trade.entry_price} | Exit: $${trade.exit_price} | PnL: ${trade.pnl_pct != null ? trade.pnl_pct.toFixed(1) : 'N/A'}% ($${trade.pnl_usd != null ? trade.pnl_usd.toFixed(0) : 'N/A'})
+Size: $${trade.size_usd || 'N/A'} | Timeframe: ${trade.timeframe || 'not specified'}
+
+ENTRY REASONING:
+Setup/Pattern: ${trade.setup || 'not recorded'}
+Thesis: ${trade.thesis || 'not recorded'}
+Invalidation scenario: ${trade.invalidation || 'not recorded'}
+Conviction: ${trade.conviction || 'not recorded'}/5
+Expected timeline: ${trade.expected_tf || 'not recorded'}
+
+EXIT REVIEW:
+Thesis correct: ${trade.thesis_correct || 'not recorded'}
+What happened: ${trade.exit_review || 'not recorded'}
+Mistakes: ${trade.mistakes || 'none recorded'}
+Key lesson: ${trade.lessons || 'not recorded'}
+
+Analyze this trade and extract the most valuable lesson for the knowledge base.`,
+      `You are a trading coach analyzing a crypto trade journal entry.
+Return ONLY valid JSON with this exact structure:
+{
+  "assessment": "2-3 sentence assessment of what happened",
+  "wiki_entry": {
+    "title": "concise lesson title (max 8 words)",
+    "category": "lesson",
+    "summary": "one sentence summary",
+    "content": "3-4 paragraph wiki entry with the lesson, what to watch for, and how to apply it",
+    "tags": ["tag1", "tag2"],
+    "coins": ["BTC"]
+  }
+}`,
+      1500
+    );
     if (!data.assessment && !data.wiki_entry) {
       kbToast('AI analysis returned empty result', 'error');
       return;
@@ -897,15 +957,3 @@ async function kbDeleteTrade(id) {
   _kbRenderActiveTab();
   kbToast('Trade deleted');
 }
-
-// ══════════════════════════════════════════════════════════════
-//  NAVIGATION PATCH
-// ══════════════════════════════════════════════════════════════
-(function() {
-  const _orig = window.navigate;
-  if (!_orig) return;
-  window.navigate = function(page) {
-    _orig(page);
-    if (page === 'kb') loadKB();
-  };
-})();
