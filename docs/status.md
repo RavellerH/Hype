@@ -1,0 +1,181 @@
+# Feature Status Audit
+*Last audited: 2026-06-01*
+
+Legend: ✅ Working · ⚠️ Needs config / partial · ❌ Broken / blocked · 🔲 Stub / not implemented
+
+---
+
+## Dashboard Tabs
+
+| Tab | Status | Notes |
+|---|---|---|
+| Portfolio (overview) | ✅ | Live positions, PnL, health score, order scenario analysis |
+| Trades | ✅ | Full fill history, win rate, realized PnL, fees |
+| Funding | ✅ | Payments by coin, daily bar chart, annualized rate |
+| Flows | ✅ | Deposit/withdrawal ledger with IDR conversion |
+| Live | ✅ | WebSocket price feed, order book, liquidation tracker |
+| Markets | ✅ | OI leaderboard, funding rates, market detail modal |
+| Phases | ✅ | Wyckoff detection 1h/4h/1d |
+| Intel | ✅ | 7-factor regime score, radar chart, auto-refresh 3min |
+| Intel → AI Synthesis | ⚠️ | Requires Supabase Edge Function + ANTHROPIC_API_KEY |
+| Intel → Generate Setups | ⚠️ | Requires same Edge Function |
+| MVRV | ✅ | BTC/ETH/SOL/HYPE cycle indicator, beginner guide |
+| MVRV → AI Commentary | ⚠️ | Requires Edge Function |
+| AI → Trade Staging | ⚠️ | Requires Supabase (staged_trades table) |
+| AI → Claude Chat | ⚠️ | Requires Supabase Edge Function URL in settings |
+| Watchlist | ✅ | Monitor any HL wallet address |
+| Auto Journal | ⚠️ | See dedicated section below |
+| Manual Journal | ⚠️ | Requires Supabase (hype_journal table + anon key) |
+| Indicators | ✅ | F&G, BMSB, Pi Cycle, Regime Summary card |
+| Smart Money | ⚠️ | Requires Nansen API key or Vercel proxy |
+| Analytics | ✅ | Equity curve, Kelly criterion, PnL distribution |
+| Analytics → AI Debrief | ⚠️ | Requires Claude API key in settings |
+| KB (Knowledge Base) | ⚠️ | Requires Supabase (kb_wiki, kb_trades tables) |
+| Signals | ✅ | Confluence scanner, L/S ratio, Binance OI |
+| News | ✅ | 9 sources, progressive load, source filter, F&G widget |
+| News → AI Analysis | ⚠️ | Requires bot worker URL set in News tab settings |
+| Fundamentals | ✅ | CoinGecko top 100, sortable, 5min auto-refresh |
+| DeFi | ✅ | DeFiLlama TVL, stablecoins, protocols, chains |
+| Arb | ✅ | HL / Binance / Bybit / OKX funding arb scanner |
+| Trend | ✅ | 1h/4h/1d alignment, ADX, Supertrend, structure per coin |
+| On-chain | ⚠️ | Network stats free; CoinGlass key needed for liq data; CryptoQuant key for exchange flows |
+| Heatmap | ✅ | All HL perps funding heatmap, sort by fund/OI/name |
+| Position Meta | ✅ | Per-position intent/thesis modal, risk calc, TA on demand |
+| Logger | ✅ | Hourly snapshots to Supabase (market, indicators, portfolio) |
+
+---
+
+## Auto Journal — Detailed Status
+
+### What it does
+- Detects closed trades from Hyperliquid fills automatically on load + every 10 minutes
+- Stores entries in localStorage (`hype_autojournal_v1`)
+- Optional: Supabase sync, AI lessons per trade, weekly AI pattern review, GitHub Gist backup, daily portfolio snapshot
+
+### Is it working? ⚠️ Partially — core works, features need config
+
+| Sub-feature | Status | Requirement |
+|---|---|---|
+| Trade detection | ✅ | `buildTrades()` defined in app.js ← relies on this |
+| localStorage persistence | ✅ | No config needed |
+| Outcome tagging (Textbook/FOMO etc.) | ✅ | No config needed |
+| Daily snapshot at midnight | ✅ | No config needed |
+| Supabase sync | ⚠️ | `hype_sb_url` + `hype_sb_anon` in Settings |
+| AI lesson per trade | ⚠️ | `claude_api_key` or `nansen_backend_url` in Settings |
+| Weekly AI pattern review | ⚠️ | Same as above |
+| GitHub Gist backup | ⚠️ | GitHub PAT with `gist` scope in Settings |
+| JSON export | ✅ | No config needed |
+
+### Known bugs in autojournal.js
+
+| # | Severity | Bug | Location |
+|---|---|---|---|
+| 1 | 🔴 High | No `try/catch` on `JSON.parse()` from localStorage — corrupted data crashes the whole module | Lines ~48, 52, 60 |
+| 2 | 🔴 High | `buildTrades()` is called but not defined locally — depends on app.js having it in scope; if app.js changes it breaks | `_ajDetectNew()` |
+| 3 | 🟡 Medium | `_callClaude()` called without checking if it exists — unguarded reference if AI features are invoked without API key | Lines ~155, 190 |
+| 4 | 🟡 Medium | `currentWallet` global read without existence check — will fail on first load before wallet is set | `_ajDetectNew()` |
+| 5 | 🟡 Medium | `_ajScheduleDaily()` called each time the module loads — multiple timeouts if loadJournal() is called more than once | |
+| 6 | 🟡 Medium | **Shadowing risk** — both `autojournal.js` and `journal.js` export `loadJournal()`. Whichever `<script>` tag loads last wins. Check script order in index.html | index.html |
+
+### Quick fix for the JSON.parse crash
+Wrap every localStorage read like this:
+```js
+// Before (crashes on corrupt data)
+const state = JSON.parse(localStorage.getItem('hype_autojournal_v1')) || {};
+
+// After (safe)
+let state = {};
+try { state = JSON.parse(localStorage.getItem('hype_autojournal_v1')) || {}; } catch(_) {}
+```
+
+---
+
+## Cloudflare Bot Worker
+
+| Feature | Status | Notes |
+|---|---|---|
+| Signal alerts (15min) | ✅ | EMA/MACD/RSI + funding gate + F&G gate |
+| Funding arb alerts (15min) | ✅ | HL vs Binance vs Bybit spread |
+| Reversal pattern scan (4h) | ✅ | 15+ candlestick patterns with volMult |
+| Trend alignment alerts (4h) | ✅ | Full 3-TF BULL/BEAR flip + RSI divergence |
+| OI spike alerts (4h) | ✅ | >8% OI change threshold |
+| Liquidation cascade alerts (4h) | ⚠️ | Requires `COINGLASS_KEY` secret |
+| Daily snapshot (midnight) | ⚠️ | Requires `WALLET` secret |
+| Weekly review (Sunday midnight) | ✅ | Runs inside daily midnight cron on Sundays |
+| Funding flip alerts (15min) | ✅ | Detects positive↔negative sign change |
+| /help, /signals, /arb | ✅ | |
+| /snapshot | ⚠️ | Requires `WALLET` secret |
+| /positions | ⚠️ | Requires `WALLET` secret |
+| /trend [coin] | ✅ | |
+| /price [coin] | ✅ | |
+| /status | ✅ | Shows less data without COINGLASS_KEY |
+| /analyze-news | ⚠️ | Requires `[ai]` binding + redeploy with latest wrangler-bot.toml |
+| /debug | ⚠️ | Added in latest code — needs redeploy to activate |
+| Error reporting to chat | ⚠️ | Added in latest code — needs redeploy to activate |
+
+**Pending redeploy** — run `npx wrangler deploy --config wrangler-bot.toml` to get:
+- `/debug` endpoint
+- `/analyze-news` endpoint
+- Error messages sent to Telegram instead of silent failures
+
+---
+
+## Python Bot (`bot/`)
+
+| Feature | Status | Notes |
+|---|---|---|
+| Phase detection (Wyckoff, 4h) | ✅ | |
+| 1h/15m TA confluence scoring | ✅ | |
+| Smart wallet monitoring | ⚠️ | 4 real wallets, 6 placeholders need real addresses |
+| DSL ratcheting trail stops | ✅ | |
+| BTC macro gate | ✅ | |
+| LLM veto (Claude Haiku) | ⚠️ | Auto-enables if `ANTHROPIC_API_KEY` in .env |
+| Risk guardrails | ✅ | Daily loss cap, consecutive loss halt |
+| Telegram alerts | ✅ | Entry/exit/wallet/error notifications |
+| /help /status /positions | ✅ | Added this session |
+| /halt /resume | ✅ | Added this session |
+| Phase log recording | ✅ | Hourly JSONL snapshot |
+| Phase duration forecasting | ✅ | Self-improves with more data |
+| Supabase snapshot sync | ⚠️ | Requires SUPABASE_URL + SUPABASE_KEY in .env |
+
+---
+
+## What Needs Setup (priority order)
+
+| Priority | Item | How |
+|---|---|---|
+| 🔴 1 | Set `WALLET` secret in bot worker | `npx wrangler secret put WALLET --config wrangler-bot.toml` |
+| 🔴 2 | Redeploy bot worker | `npx wrangler deploy --config wrangler-bot.toml` |
+| 🟡 3 | Replace 6 placeholder smart wallet addresses in `bot/config.py` | Source from Hyperliquid leaderboard / Lookonchain |
+| 🟡 4 | Set Supabase URL + anon key in dashboard Settings | Unlocks: journal, AI staging, KB, logger |
+| 🟡 5 | Set bot worker URL in News tab → ⚙ Bot URL | Unlocks: AI news analysis |
+| 🟢 6 | Set CoinGlass key in On-chain tab → Settings | Unlocks: liquidation heatmap in dashboard |
+| 🟢 7 | Set Supabase Edge Function URL in AI tab → Setup | Unlocks: Claude chat, Intel AI synthesis |
+| 🟢 8 | Set `ANTHROPIC_API_KEY` in bot `.env` | Unlocks: LLM veto, AI lessons in autojournal |
+
+---
+
+## External API Status
+
+| API | Key required | Where to set | Used by |
+|---|---|---|---|
+| Hyperliquid | ❌ None | — | Everything |
+| Binance | ❌ None | — | Markets, Signals, Arb, Trend, Bot |
+| Bybit | ❌ None | — | Arb, Bot |
+| OKX | ❌ None | — | Arb |
+| CoinGecko | ❌ None (optional demo key) | Settings | Fundamentals, Intel, MVRV |
+| DeFiLlama | ❌ None | — | DeFi, On-chain |
+| alternative.me | ❌ None | — | Indicators, News, Bot |
+| blockchain.info | ❌ None | — | On-chain |
+| mempool.space | ❌ None | — | On-chain |
+| CryptoCompare | ❌ None | — | News |
+| Messari | ❌ None | — | News |
+| Reddit | ❌ None | — | News |
+| RSS feeds (6) | ❌ None | — | News |
+| Telegram | ✅ Bot token | Cloudflare secret / .env | Bot worker, Python bot |
+| Supabase | ✅ Anon key | Settings / .env | Journal, AI, KB, Logger, Bot |
+| CoinGlass | ✅ API key | On-chain Settings / Cloudflare secret | On-chain, Bot |
+| CryptoQuant | ✅ API key | On-chain Settings | On-chain |
+| Anthropic (Claude) | ✅ API key | Supabase secret / .env | AI Chat, AI lessons, LLM veto |
+| Nansen | ✅ API key or Vercel proxy | Smart Money Settings | Smart Money tab |
+| GitHub | ✅ PAT (gist scope) | Auto-journal Settings | Gist backup |

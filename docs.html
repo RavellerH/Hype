@@ -397,7 +397,13 @@
         <span class="icon">📊</span> MVRV
       </a>
       <a class="nav-link" href="#tab-ai" onclick="setActive(this)">
-        <span class="icon">🤖</span> AI
+        <span class="icon">🤖</span> AI · Trade Staging
+      </a>
+      <a class="nav-link" href="#tab-fundamentals" onclick="setActive(this)">
+        <span class="icon">🏦</span> Fundamentals
+      </a>
+      <a class="nav-link" href="#tab-news" onclick="setActive(this)">
+        <span class="icon">📰</span> News
       </a>
       <a class="nav-link" href="#tab-watchlist" onclick="setActive(this)">
         <span class="icon">👁</span> Watchlist
@@ -453,6 +459,9 @@
 
     <div class="nav-group">
       <span class="nav-group-label">Reference</span>
+      <a class="nav-link" href="#changelog" onclick="setActive(this)">
+        <span class="icon">📋</span> Changelog
+      </a>
       <a class="nav-link" href="#faq" onclick="setActive(this)">
         <span class="icon">❓</span> FAQ
       </a>
@@ -512,15 +521,20 @@
       <h2>Architecture</h2>
       <p>The dashboard is a single-page application (SPA) with no build step. All logic lives in plain JavaScript files loaded by <code>index.html</code>.</p>
       <pre><code>Hype/
-├── index.html          ← Entry point, tab shell
-├── app.js              ← All tab logic, API calls, WebSocket, charts
-├── ta-signal.js        ← TA engine: indicators, CVD, OI, signal scoring
+├── index.html          ← Entry point, tab shell, navigation
+├── app.js              ← Core: portfolio, trades, funding, flows, live, markets, phases
+├── intel.js            ← Live market intelligence (HL + Binance + Bybit + CoinGecko)
+├── ai.js               ← Trade staging (Supabase) + Claude AI chat (Edge Function)
+├── fundamentals.js     ← CoinGecko top 100 market data
+├── news.js             ← Multi-source crypto news aggregator (progressive loading)
+├── ta-signal.js        ← TA engine: confluence scanner, CVD, OI, signal scoring
+├── mvrv-ai.js          ← MVRV Z-Score + Supabase client + AI commentary
 ├── analytics.js        ← PnL analytics, equity curve
-├── intel.js            ← Research snapshot, macro intel
 ├── indicators.js       ← Fear & Greed, BMSB, Pi Cycle
 ├── nansen.js           ← Smart Money wallet tracking
-├── mvrv-ai.js          ← MVRV Z-score, AI commentary
-├── kb.js               ← Knowledge base & trade journal
+├── journal.js          ← Trade journal (localStorage)
+├── kb.js               ← Knowledge base
+├── signals.js          ← Confluence scanner UI
 ├── position-meta.js    ← Per-position intent / thesis modal
 ├── logger.js           ← Data logger & portfolio snapshots
 ├── styles.css          ← All styles (single file, CSS variables)
@@ -692,20 +706,44 @@
       <div class="tab-detail">
         <div class="tab-detail-header">
           <span style="font-size:22px">🧠</span>
-          <h3 style="margin:0">Research Snapshot</h3>
-          <span class="tab-badge badge-local">Static snapshot</span>
+          <h3 style="margin:0">Live Market Intelligence</h3>
+          <span class="tab-badge badge-live">Live · auto-scored</span>
         </div>
-        <p>A curated macro + on-chain research snapshot sourced from cryptowatch.id. Updated manually when new research is published.</p>
+        <p>Fully automated market regime dashboard. Replaces the old static Cryptowatch paste — all data is fetched live and the regime verdict is computed by a scoring algorithm.</p>
+        <h3>Data sources (all free, no API key)</h3>
+        <table class="doc-table">
+          <thead><tr><th>Source</th><th>Data fetched</th></tr></thead>
+          <tbody>
+            <tr><td>Hyperliquid</td><td>Prices, funding APR, OI for BTC / ETH / SOL / HYPE</td></tr>
+            <tr><td>Binance Futures</td><td>BTC market-wide OI (USD), funding rate, 24h OI history</td></tr>
+            <tr><td>Bybit</td><td>BTC funding rate (averaged with HL + Binance)</td></tr>
+            <tr><td>CoinGecko</td><td>BTC dominance, altcoin breadth (% of top 100 up 24h), global mcap</td></tr>
+            <tr><td>alternative.me</td><td>Fear &amp; Greed Index</td></tr>
+            <tr><td>mvrv-ai.js global</td><td>MVRV Z-Score (from the MVRV tab)</td></tr>
+          </tbody>
+        </table>
+        <h3>Scoring engine</h3>
+        <p>7 weighted signals combine into a score on a ±10 scale. The score maps to a <b>BUY / BULL / WAIT / CAUTION / SELL</b> regime verdict.</p>
+        <table class="doc-table">
+          <thead><tr><th>Signal</th><th>Weight</th><th>Bullish condition</th><th>Bearish condition</th></tr></thead>
+          <tbody>
+            <tr><td>MVRV Z-Score</td><td>3×</td><td>Z &lt; 1 (undervalued)</td><td>Z &gt; 6 (danger zone)</td></tr>
+            <tr><td>Fear &amp; Greed</td><td>2×</td><td>&lt; 35 (fear)</td><td>&gt; 75 (extreme greed)</td></tr>
+            <tr><td>BTC Funding APR</td><td>2×</td><td>&lt; 5% (uncrowded)</td><td>&gt; 30% (very crowded)</td></tr>
+            <tr><td>Altcoin Breadth</td><td>1×</td><td>&gt; 65% of top 100 up</td><td>&lt; 45%</td></tr>
+            <tr><td>Global MCap 24h</td><td>1×</td><td>&gt; +3%</td><td>&lt; −3%</td></tr>
+            <tr><td>BTC OI Change 24h</td><td>1×</td><td>&lt; −8% (flushed)</td><td>&gt; +5% (crowding)</td></tr>
+            <tr><td>BTC Dominance</td><td>1×</td><td>&lt; 50% (alt season)</td><td>&gt; 58%</td></tr>
+          </tbody>
+        </table>
+        <h3>Claude integration</h3>
         <ul class="doc-list">
-          <li><b>Macro posture</b> — overall market stance: BUY / WAIT / SELL with confidence score.</li>
-          <li><b>Regime radar</b> — spider chart showing Macro, Cycle, OnChain, Derivatives, Funding, ETF, and Sentiment axes (0–10).</li>
-          <li><b>Evidence layers</b> — breakdown of supporting evidence per analysis layer.</li>
-          <li><b>Cohort behavior</b> — what LTH, ETF/TradFi, and Smart Money are doing.</li>
-          <li><b>Coin plays</b> — specific setups and narrative bets from the research.</li>
+          <li><b>AI Synthesis</b> — sends all live data to Claude and returns a 3–4 sentence market posture analysis.</li>
+          <li><b>Generate Setups</b> — Claude suggests 2–3 desk setups (entry/SL/TP rationale) based on current funding, OI, and price context.</li>
         </ul>
-        <div class="callout warn">
-          <span class="callout-icon">⚠️</span>
-          <div class="callout-body">Intel is a <b>static snapshot</b> — it does not update automatically. Check the <code>snapshot_date</code> at the top of the page and treat stale data accordingly.</div>
+        <div class="callout info">
+          <span class="callout-icon">📌</span>
+          <div class="callout-body">The Intel tab auto-refreshes every <b>3 minutes</b>. Both Claude buttons require the Edge Function to be configured in the AI tab first.</div>
         </div>
       </div>
     </section>
@@ -737,13 +775,100 @@
       <div class="tab-detail">
         <div class="tab-detail-header">
           <span style="font-size:22px">🤖</span>
-          <h3 style="margin:0">AI Trade Analysis</h3>
+          <h3 style="margin:0">Trade Staging + AI Chat</h3>
+          <span class="tab-badge badge-live">Supabase</span>
         </div>
-        <p>AI-assisted trade analysis that combines your current positions, TA signals, phase data, and market context into actionable commentary. Uses your configured AI provider (set in settings).</p>
+        <p>Two panels side by side: <b>Trade Staging</b> (left) for tracking your trade ideas, and <b>AI Chat</b> (right) for Claude-powered market analysis.</p>
+
+        <h3>Trade Staging</h3>
+        <p>Stage a trade before executing it. Fill in the setup details, and the dashboard tracks it through your workflow.</p>
         <ul class="doc-list">
-          <li><b>Portfolio debrief</b> — review of your open positions with risk comments.</li>
-          <li><b>Market regime</b> — plain-English summary of current market conditions.</li>
-          <li><b>Trade ideas</b> — suggestions based on phase + signal confluence.</li>
+          <li><b>Coin + Direction</b> — Long / Short / Spot Buy / Spot Sell.</li>
+          <li><b>Entry / Stop / Target</b> — optional price levels. R:R calculated automatically.</li>
+          <li><b>Rationale + Tags</b> — free-text reason and comma-separated tags (e.g. <code>breakout, funding reset</code>).</li>
+          <li><b>Status workflow</b> — <code>staged → watching → executed</code> or <code>cancelled</code>. Buttons on each card.</li>
+        </ul>
+        <p>Staged trades sync to Supabase and also appear in the <b>Intel tab</b> for visibility alongside live market data.</p>
+        <div class="callout info">
+          <span class="callout-icon">📌</span>
+          <div class="callout-body"><b>Supabase table required.</b> Run this once in your Supabase SQL Editor:
+            <pre style="margin-top:8px;font-size:11px;background:var(--surface2);padding:10px;border-radius:4px;overflow-x:auto">create table staged_trades (
+  id uuid default gen_random_uuid() primary key,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  coin text not null, direction text not null,
+  entry_price numeric, stop_loss numeric, take_profit numeric,
+  rationale text, tags text, status text default 'staged'
+);
+alter table staged_trades enable row level security;
+create policy "anon_all" on staged_trades for all to anon using (true) with check (true);</pre>
+          </div>
+        </div>
+
+        <h3>AI Chat</h3>
+        <p>Chat with Claude about your portfolio, market conditions, or any trade idea. Your Anthropic API key is stored as a Supabase secret — it never touches the browser.</p>
+        <ol class="doc-list">
+          <li>In Supabase → <b>Edge Functions</b> → New Function → name it <code>claude-proxy</code></li>
+          <li>Paste the Edge Function code shown in the AI tab's ⚙ Setup panel</li>
+          <li>In Supabase → <b>Settings → Secrets</b> → add <code>ANTHROPIC_API_KEY</code></li>
+          <li>Copy the function URL (e.g. <code>https://xxx.supabase.co/functions/v1/claude-proxy</code>) into the Setup field in the AI tab</li>
+        </ol>
+        <p>Once connected, the chat sends your last 12 messages as context. Press <kbd>Enter</kbd> to send, <kbd>Shift+Enter</kbd> for a new line.</p>
+      </div>
+    </section>
+
+    <section class="doc-section" id="tab-fundamentals">
+      <h2>Fundamentals</h2>
+      <div class="tab-detail">
+        <div class="tab-detail-header">
+          <span style="font-size:22px">🏦</span>
+          <h3 style="margin:0">Market Fundamentals</h3>
+          <span class="tab-badge badge-live">CoinGecko</span>
+        </div>
+        <p>Top 100 coins by market cap with sortable columns and a live global market summary bar. Data from the CoinGecko public API — no API key required.</p>
+        <ul class="doc-list">
+          <li><b>Global bar</b> — total market cap (with 24h % change), 24h volume, BTC &amp; ETH dominance, active coin count, trending coins.</li>
+          <li><b>Price / 24h / 7d / 30d</b> — price change columns, green/red colored.</li>
+          <li><b>Vol/MCap</b> — volume-to-market-cap ratio. Yellow = elevated (&gt;20%), which signals unusual trading activity.</li>
+          <li><b>ATH %</b> — drawdown from all-time high. Useful for finding deeply discounted assets.</li>
+          <li><b>Sort</b> — click any column header to sort ascending / descending.</li>
+          <li><b>Search</b> — filter by symbol or name.</li>
+        </ul>
+        <div class="callout tip">
+          <span class="callout-icon">💡</span>
+          <div class="callout-body">The Fundamentals tab auto-refreshes every <b>5 minutes</b>. CoinGecko's free tier rate-limits at ~10–30 req/min — if the table shows empty, wait a moment and click Refresh.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="doc-section" id="tab-news">
+      <h2>News</h2>
+      <div class="tab-detail">
+        <div class="tab-detail-header">
+          <span style="font-size:22px">📰</span>
+          <h3 style="margin:0">Crypto News Monitor</h3>
+          <span class="tab-badge badge-live">9 sources</span>
+        </div>
+        <p>Aggregated crypto news from 9 sources covering the last 3 days. Articles appear progressively as each source resolves — first results show in under a second.</p>
+        <table class="doc-table">
+          <thead><tr><th>Source</th><th>Type</th><th>Coverage</th></tr></thead>
+          <tbody>
+            <tr><td>CryptoCompare</td><td>API</td><td>High-volume crypto news aggregator</td></tr>
+            <tr><td>Messari</td><td>API</td><td>Research-grade crypto journalism</td></tr>
+            <tr><td>Reddit r/CryptoCurrency</td><td>JSON API</td><td>Community discussion, new posts sorted by recency</td></tr>
+            <tr><td>CoinDesk</td><td>RSS</td><td>Industry news leader</td></tr>
+            <tr><td>Cointelegraph</td><td>RSS</td><td>Breaking news + analysis</td></tr>
+            <tr><td>Decrypt</td><td>RSS</td><td>Web3 and DeFi coverage</td></tr>
+            <tr><td>CryptoNews</td><td>RSS</td><td>Market and project news</td></tr>
+            <tr><td>The Block</td><td>RSS</td><td>Institutional + on-chain analysis</td></tr>
+            <tr><td>Bitcoin Magazine</td><td>RSS</td><td>BTC-focused commentary</td></tr>
+          </tbody>
+        </table>
+        <ul class="doc-list">
+          <li><b>Fear &amp; Greed bar</b> — last 7 days of F&amp;G index shown at the top.</li>
+          <li><b>Source filters</b> — filter the feed to a single source or view all.</li>
+          <li><b>Cache</b> — results cached in <code>sessionStorage</code> for 5 minutes, so switching tabs is instant.</li>
+          <li><b>RSS proxy</b> — RSS feeds are fetched via allorigins.win and rss2json.com in parallel; whichever responds first is used.</li>
         </ul>
       </div>
     </section>
@@ -1046,6 +1171,65 @@
     <hr class="divider">
 
     <!-- FAQ -->
+    <section class="doc-section" id="changelog">
+      <div class="section-eyebrow">Reference</div>
+      <h2>Changelog</h2>
+
+      <div style="margin-bottom:24px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <span style="font-family:var(--mono);font-size:12px;color:var(--accent);background:var(--accent-subtle);padding:2px 10px;border-radius:100px">2026-05-30</span>
+        </div>
+        <div class="tab-detail" style="margin-bottom:10px">
+          <div class="tab-detail-header"><h3 style="margin:0">Intel tab — full live rebuild</h3><span class="tab-badge badge-live">New</span></div>
+          <p>Replaced the static Cryptowatch paste with a fully automated live data dashboard. Auto-scoring engine from 7 weighted signals (MVRV Z, F&amp;G, BTC funding, alt breadth, OI change, mcap, BTC dominance) produces a <b>BULL / WAIT / CAUTION / SELL</b> regime verdict on a ±10 scale. Regime radar, evidence trail, and cycle score all computed from live data. Sources: Hyperliquid + Binance Futures + Bybit + CoinGecko. Refreshes every 3 minutes. Claude "AI Synthesis" and "Generate Setups" buttons generate analysis on demand.</p>
+        </div>
+        <div class="tab-detail" style="margin-bottom:10px">
+          <div class="tab-detail-header"><h3 style="margin:0">News tab — 3× faster with progressive loading</h3><span class="tab-badge badge-live">Improved</span></div>
+          <p>Each of the 9 news sources now updates the feed independently as it resolves — first articles appear in under 500ms. RSS proxies (allorigins.win + rss2json) are raced in parallel via <code>Promise.any</code> instead of sequential fallback. History window cut to 3 days (was 14), eliminating 4+ pages of sequential CryptoCompare pagination. Results cached in <code>sessionStorage</code> for 5 minutes so tab-switching is instant.</p>
+        </div>
+        <div class="tab-detail" style="margin-bottom:10px">
+          <div class="tab-detail-header"><h3 style="margin:0">Fundamentals tab</h3><span class="tab-badge badge-live">New</span></div>
+          <p>New tab showing CoinGecko top 100 coins with sortable columns: price, 24h/7d/30d change, market cap, 24h volume, vol/mcap ratio, ATH drawdown. Global bar shows total market cap, BTC &amp; ETH dominance, active coin count, and trending coins. 5-minute auto-refresh.</p>
+        </div>
+        <div class="tab-detail">
+          <div class="tab-detail-header"><h3 style="margin:0">AI tab — trade staging + Claude chat</h3><span class="tab-badge badge-live">New</span></div>
+          <p>Trade staging panel: stage trade ideas with coin, direction, entry/SL/TP, rationale, and tags. R:R calculated automatically. Status workflow (<code>staged → watching → executed</code>) persisted to Supabase. Claude AI chat via Supabase Edge Function — Anthropic API key stays in Supabase secrets, never in the browser. Staged trades also visible in the Intel tab.</p>
+        </div>
+      </div>
+
+      <div style="margin-bottom:24px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <span style="font-family:var(--mono);font-size:12px;color:var(--text-muted);background:var(--surface2);padding:2px 10px;border-radius:100px;border:1px solid var(--border)">2026-05-17</span>
+        </div>
+        <div class="tab-detail" style="margin-bottom:10px">
+          <div class="tab-detail-header"><h3 style="margin:0">MVRV beginner guide</h3></div>
+          <p>Expandable explainer section on the MVRV tab for users unfamiliar with on-chain metrics. Covers what MVRV Z-Score measures, how to read each zone, and how it fits into a broader trading strategy.</p>
+        </div>
+        <div class="tab-detail">
+          <div class="tab-detail-header"><h3 style="margin:0">News tab (initial release)</h3></div>
+          <p>Crypto news monitor with Fear &amp; Greed widget. Initial version with CryptoCompare + Reddit + 4 RSS feeds (CoinDesk, Cointelegraph, Decrypt, CryptoNews).</p>
+        </div>
+      </div>
+
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <span style="font-family:var(--mono);font-size:12px;color:var(--text-muted);background:var(--surface2);padding:2px 10px;border-radius:100px;border:1px solid var(--border)">Earlier</span>
+        </div>
+        <ul class="doc-list">
+          <li><b>Signals tab</b> — multi-factor confluence scanner (funding z-score, CVD, OI momentum, trend bias) across configurable coin list.</li>
+          <li><b>Recent PnL widget</b> — collapsible 24h/7d PnL summary strip on the Portfolio tab.</li>
+          <li><b>Order scenario analysis</b> — shows margin impact and flags liq-before-SL risk on the Portfolio tab.</li>
+          <li><b>Market detail modal</b> — click any coin in the Markets tab for phase, TA signals, L/S ratio, and OI sparkline.</li>
+          <li><b>Cloudflare Worker proxy</b> — optional edge-cached API proxy for low-latency connections.</li>
+          <li><b>PWA support</b> — installable on iOS/Android, offline static asset caching via service worker.</li>
+          <li><b>Telegram alerts</b> — threshold-based unrealized PnL notifications via Telegram bot (configured in Settings).</li>
+          <li><b>IDR conversion</b> — all values shown in USD and Indonesian Rupiah simultaneously, with live exchange rates.</li>
+          <li><b>Smart Money tracking</b> — on-chain whale wallet monitoring (Nansen-style).</li>
+          <li><b>Analytics tab</b> — equity curve, trade win rate, performance breakdown by coin and direction.</li>
+        </ul>
+      </div>
+    </section>
+
     <section class="doc-section" id="faq">
       <div class="section-eyebrow">Reference</div>
       <h2>FAQ</h2>

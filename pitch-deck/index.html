@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pitch Deck</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #0c0c0e;
+    --bg2:     #131316;
+    --border:  #1e1e24;
+    --text:    #e8e8f0;
+    --muted:   #6b6b80;
+    --faint:   #3a3a48;
+    --green:   #22c55e;
+    --red:     #ef4444;
+    --yellow:  #f59e0b;
+    --blue:    #3b82f6;
+    --purple:  #8b5cf6;
+    --cyan:    #06b6d4;
+    --green-dim: rgba(34,197,94,.12);
+    --red-dim:   rgba(239,68,68,.12);
+    --blue-dim:  rgba(59,130,246,.12);
+    --cyan-dim:  rgba(6,182,212,.12);
+  }
+
+  body {
+    background: #060608;
+    font-family: 'Inter', sans-serif;
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 32px;
+    padding: 40px 20px 80px;
+  }
+
+  /* Each slide is 1080×1350 — portrait ratio for Threads */
+  .slide {
+    width: 1080px;
+    height: 1350px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+
+  /* ── shared components ── */
+  .slide-num {
+    position: absolute;
+    bottom: 36px;
+    right: 44px;
+    font-size: 13px;
+    color: var(--faint);
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: .04em;
+  }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .tag.green  { background: var(--green-dim);  border-color: rgba(34,197,94,.25);   color: var(--green); }
+  .tag.blue   { background: var(--blue-dim);   border-color: rgba(59,130,246,.25);  color: var(--blue); }
+  .tag.cyan   { background: var(--cyan-dim);   border-color: rgba(6,182,212,.25);   color: var(--cyan); }
+  .tag.red    { background: var(--red-dim);    border-color: rgba(239,68,68,.25);   color: var(--red); }
+  .tag.yellow { background: rgba(245,158,11,.1); border-color: rgba(245,158,11,.25); color: var(--yellow); }
+
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  .divider {
+    width: 48px;
+    height: 2px;
+    background: var(--faint);
+    border-radius: 2px;
+  }
+
+  .pill {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .pill.green  { background: var(--green-dim);  border-color: rgba(34,197,94,.3);  color: var(--green); }
+  .pill.red    { background: var(--red-dim);    border-color: rgba(239,68,68,.3);  color: var(--red); }
+  .pill.yellow { background: rgba(245,158,11,.1); border-color: rgba(245,158,11,.3); color: var(--yellow); }
+  .pill.blue   { background: var(--blue-dim);   border-color: rgba(59,130,246,.3); color: var(--blue); }
+
+  /* glow accent line */
+  .accent-line {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .accent-line.green  { background: linear-gradient(90deg, transparent, var(--green), transparent); }
+  .accent-line.blue   { background: linear-gradient(90deg, transparent, var(--blue), transparent); }
+  .accent-line.cyan   { background: linear-gradient(90deg, transparent, var(--cyan), transparent); }
+  .accent-line.yellow { background: linear-gradient(90deg, transparent, var(--yellow), transparent); }
+  .accent-line.purple { background: linear-gradient(90deg, transparent, var(--purple), transparent); }
+
+  /* ── SLIDE 1 — COVER ── */
+  #s1 {
+    justify-content: center;
+    padding: 80px 80px;
+    gap: 0;
+  }
+  #s1 .eyebrow {
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    margin-bottom: 28px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  #s1 h1 {
+    font-size: 72px;
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -.02em;
+    color: var(--text);
+    margin-bottom: 36px;
+  }
+  #s1 h1 em { font-style: normal; color: var(--cyan); }
+  #s1 .sub {
+    font-size: 22px;
+    font-weight: 400;
+    color: var(--muted);
+    line-height: 1.6;
+    max-width: 660px;
+    margin-bottom: 64px;
+  }
+  #s1 .stack-tags { display: flex; flex-wrap: wrap; gap: 10px; }
+  #s1 .bg-grid {
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(var(--border) 1px, transparent 1px),
+                      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 80px 80px;
+    opacity: .3;
+    pointer-events: none;
+  }
+  #s1 .bg-glow {
+    position: absolute;
+    bottom: -200px;
+    right: -200px;
+    width: 700px;
+    height: 700px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(6,182,212,.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* ── SLIDE 2 — WHAT I BUILT ── */
+  #s2 { padding: 72px 80px; gap: 48px; justify-content: center; }
+  #s2 .section-label {
+    font-size: 12px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--muted); font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 6px;
+  }
+  #s2 h2 { font-size: 52px; font-weight: 800; line-height: 1.1; letter-spacing: -.02em; }
+  #s2 .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .feat-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+  }
+  .feat-card .fc-icon { font-size: 28px; margin-bottom: 16px; }
+  .feat-card .fc-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+  .feat-card .fc-desc { font-size: 14px; color: var(--muted); line-height: 1.6; }
+
+  #s2 .stat-row {
+    display: flex; gap: 0;
+    border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
+  }
+  .stat-cell {
+    flex: 1; padding: 24px 28px; background: var(--bg2);
+    border-right: 1px solid var(--border);
+  }
+  .stat-cell:last-child { border-right: none; }
+  .stat-cell .sv { font-size: 36px; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+  .stat-cell .sl { font-size: 12px; color: var(--muted); margin-top: 4px; letter-spacing: .05em; text-transform: uppercase; }
+
+  /* ── SLIDE 3 — BOT ALERTS ── */
+  #s3 { padding: 72px 80px; gap: 40px; justify-content: center; }
+  #s3 h2 { font-size: 52px; font-weight: 800; letter-spacing: -.02em; }
+  .alert-list { display: flex; flex-direction: column; gap: 14px; }
+  .alert-row {
+    display: flex; align-items: flex-start; gap: 20px;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 14px; padding: 22px 24px;
+  }
+  .alert-row .ar-freq {
+    min-width: 80px; font-size: 11px; font-weight: 600;
+    color: var(--muted); text-transform: uppercase;
+    letter-spacing: .06em; font-family: 'JetBrains Mono', monospace;
+    padding-top: 2px;
+  }
+  .alert-row .ar-name { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .alert-row .ar-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+  /* ── SLIDE 4 — DASHBOARD ── */
+  #s4 { padding: 72px 80px; gap: 40px; justify-content: center; }
+  #s4 h2 { font-size: 52px; font-weight: 800; letter-spacing: -.02em; }
+  .tab-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .tab-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 14px; padding: 20px 22px;
+  }
+  .tab-card .tc-name { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .tab-card .tc-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .tab-card.highlight { border-color: rgba(6,182,212,.3); background: rgba(6,182,212,.05); }
+
+  /* ── SLIDE 5 — AI NEWS ── */
+  #s5 { padding: 72px 80px; gap: 44px; justify-content: center; }
+  #s5 h2 { font-size: 52px; font-weight: 800; letter-spacing: -.02em; line-height: 1.1; }
+  .news-mock {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 16px; overflow: hidden;
+  }
+  .nm-header {
+    padding: 12px 20px; border-bottom: 1px solid var(--border);
+    font-size: 11px; color: var(--muted); letter-spacing: .06em;
+    text-transform: uppercase; font-family: 'JetBrains Mono', monospace;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .nm-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+  .news-item { padding: 20px 24px; border-bottom: 1px solid var(--border); }
+  .news-item:last-child { border-bottom: none; }
+  .ni-title { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.4; }
+  .ni-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .ni-reasoning { font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.5; }
+  .flow-row {
+    display: flex; align-items: center; gap: 16px;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 14px; padding: 22px 28px;
+  }
+  .flow-step { flex: 1; text-align: center; }
+  .flow-step .fs-icon { font-size: 26px; margin-bottom: 8px; }
+  .flow-step .fs-label { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .flow-step .fs-sub { font-size: 11px; color: var(--muted); }
+  .flow-arrow { font-size: 20px; color: var(--faint); }
+
+  /* ── SLIDE 6 — PHILOSOPHY ── */
+  #s6 { padding: 72px 80px; gap: 44px; justify-content: center; }
+  #s6 h2 { font-size: 52px; font-weight: 800; letter-spacing: -.02em; line-height: 1.1; }
+  .principle-list { display: flex; flex-direction: column; gap: 20px; }
+  .principle {
+    display: flex; gap: 24px; align-items: flex-start;
+    padding: 26px 28px; background: var(--bg2);
+    border: 1px solid var(--border); border-radius: 14px;
+  }
+  .principle .p-num {
+    font-size: 32px; font-weight: 800; color: var(--faint);
+    font-family: 'JetBrains Mono', monospace; line-height: 1;
+    min-width: 36px;
+  }
+  .principle .p-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .principle .p-desc { font-size: 14px; color: var(--muted); line-height: 1.6; }
+
+  /* ── SLIDE 7 — STACK ── */
+  #s7 { padding: 72px 80px; gap: 40px; justify-content: center; }
+  #s7 h2 { font-size: 52px; font-weight: 800; letter-spacing: -.02em; }
+  .stack-rows { display: flex; flex-direction: column; gap: 12px; }
+  .stack-row {
+    display: flex; align-items: center; gap: 0;
+    border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+  }
+  .sr-layer {
+    min-width: 140px; padding: 20px 24px;
+    font-size: 11px; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--muted);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .sr-val {
+    flex: 1; padding: 20px 24px;
+    font-size: 15px; font-weight: 500;
+  }
+  .sr-tag { padding: 20px 24px; }
+  .no-cost-badge {
+    font-size: 10px; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; padding: 4px 10px; border-radius: 999px;
+    background: var(--green-dim); border: 1px solid rgba(34,197,94,.25); color: var(--green);
+  }
+
+  /* ── SLIDE 8 — CTA ── */
+  #s8 {
+    justify-content: center; align-items: center;
+    padding: 80px;
+    gap: 0;
+    text-align: center;
+  }
+  #s8 .cta-label {
+    font-size: 13px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--muted); font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 32px;
+  }
+  #s8 h2 {
+    font-size: 64px; font-weight: 800; line-height: 1.1;
+    letter-spacing: -.02em; margin-bottom: 28px;
+  }
+  #s8 h2 em { font-style: normal; color: var(--cyan); }
+  #s8 .cta-sub {
+    font-size: 20px; color: var(--muted); margin-bottom: 64px;
+    max-width: 600px; line-height: 1.6;
+  }
+  #s8 .cta-links { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+  .cta-btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 18px 36px; border-radius: 14px;
+    font-size: 16px; font-weight: 600;
+    border: 1px solid var(--border);
+    text-decoration: none;
+    font-family: 'Inter', sans-serif;
+  }
+  .cta-btn.primary {
+    background: var(--cyan); color: #000;
+    border-color: var(--cyan);
+  }
+  .cta-btn.secondary {
+    background: var(--bg2); color: var(--text);
+  }
+  #s8 .bg-glow {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 800px; height: 800px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(6,182,212,.06) 0%, transparent 65%);
+    pointer-events: none;
+  }
+  #s8 .tagline {
+    margin-top: 48px; font-size: 13px; color: var(--faint);
+    font-family: 'JetBrains Mono', monospace; letter-spacing: .06em;
+  }
+
+  /* print guide */
+  .guide {
+    width: 1080px;
+    background: #111;
+    border: 1px solid #222;
+    border-radius: 12px;
+    padding: 24px 32px;
+    font-size: 13px;
+    color: #666;
+    line-height: 1.8;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .guide b { color: #aaa; }
+</style>
+</head>
+<body>
+
+<div class="guide">
+  <b>SCREENSHOT GUIDE</b> — Each slide is 1080×1350px (portrait, Threads-optimized).<br>
+  Zoom browser to 100%, screenshot each slide. Post as 8-image carousel on Threads.<br>
+  <b>Slide order:</b> 1 Cover · 2 What I Built · 3 Bot Alerts · 4 Dashboard · 5 AI News · 6 Philosophy · 7 Stack · 8 CTA
+</div>
+
+<!-- ──────────────── SLIDE 1 — COVER ──────────────── -->
+<div class="slide" id="s1">
+  <div class="bg-grid"></div>
+  <div class="bg-glow"></div>
+  <div class="accent-line cyan"></div>
+
+  <p class="eyebrow">Side project · built in public</p>
+  <h1>I built a<br>crypto <em>intel</em><br>system.</h1>
+  <p class="sub">Telegram alerts + web dashboard for Hyperliquid. TA, on-chain, funding arb, and AI news analysis — all in one stack.</p>
+
+  <div class="stack-tags">
+    <span class="tag cyan">Cloudflare Workers</span>
+    <span class="tag">Telegram Bot</span>
+    <span class="tag">GitHub Pages</span>
+    <span class="tag">Free to run</span>
+  </div>
+
+  <div class="slide-num">01 / 08</div>
+</div>
+
+<!-- ──────────────── SLIDE 2 — WHAT I BUILT ──────────────── -->
+<div class="slide" id="s2">
+  <div class="accent-line blue"></div>
+
+  <div>
+    <p class="section-label">Overview</p>
+    <h2>Two parts.<br>One system.</h2>
+  </div>
+
+  <div class="cards">
+    <div class="feat-card">
+      <div class="fc-icon">📱</div>
+      <div class="fc-title">Telegram Bot</div>
+      <div class="fc-desc">Auto-alerts fired by cron jobs — signals, reversals, trend flips, funding arb, OI spikes, liquidation cascades.</div>
+    </div>
+    <div class="feat-card">
+      <div class="fc-icon">📊</div>
+      <div class="fc-title">Web Dashboard</div>
+      <div class="fc-desc">GitHub Pages SPA — portfolio, trend scanner, on-chain monitor, funding heatmap, trade journal, AI news.</div>
+    </div>
+    <div class="feat-card">
+      <div class="fc-icon">⛓</div>
+      <div class="fc-title">On-Chain Monitor</div>
+      <div class="fc-desc">Stablecoin supply, mempool fees, liquidation clusters, OI by exchange. Regime: ACCUMULATION / DISTRIBUTION.</div>
+    </div>
+    <div class="feat-card">
+      <div class="fc-icon">🤖</div>
+      <div class="fc-title">AI News Analysis</div>
+      <div class="fc-desc">Headlines auto-analysed by Llama on Cloudflare. BULL/BEAR/NEUTRAL + affected coins + reasoning. Free.</div>
+    </div>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat-cell">
+      <div class="sv" style="color:var(--cyan)">10+</div>
+      <div class="sl">Dashboard tabs</div>
+    </div>
+    <div class="stat-cell">
+      <div class="sv" style="color:var(--green)">7</div>
+      <div class="sl">Alert types</div>
+    </div>
+    <div class="stat-cell">
+      <div class="sv" style="color:var(--yellow)">$0</div>
+      <div class="sl">Monthly cost</div>
+    </div>
+  </div>
+
+  <div class="slide-num">02 / 08</div>
+</div>
+
+<!-- ──────────────── SLIDE 3 — BOT ALERTS ──────────────── -->
+<div class="slide" id="s3">
+  <div class="accent-line green"></div>
+
+  <div>
+    <p style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:6px">Telegram Bot</p>
+    <h2>Alerts that<br>don't miss.</h2>
+  </div>
+
+  <div class="alert-list">
+    <div class="alert-row">
+      <span class="ar-freq">15 min</span>
+      <div>
+        <div class="ar-name">TA Signal <span class="pill green">STRONG / ENTRY</span></div>
+        <div class="ar-desc">EMA, MACD cross, RSI, funding gate, F&G sentiment gate. Score out of 10.</div>
+      </div>
+    </div>
+    <div class="alert-row">
+      <span class="ar-freq">15 min</span>
+      <div>
+        <div class="ar-name">Funding Flip <span class="pill yellow">pos → neg</span></div>
+        <div class="ar-desc">Fires when funding sign flips. Early signal of sentiment shift.</div>
+      </div>
+    </div>
+    <div class="alert-row">
+      <span class="ar-freq">4 h</span>
+      <div>
+        <div class="ar-name">Reversal Pattern <span class="pill red">BEARISH</span></div>
+        <div class="ar-desc">9 candle patterns on 4h close — engulfing, evening star, shooting star… volume-confirmed.</div>
+      </div>
+    </div>
+    <div class="alert-row">
+      <span class="ar-freq">4 h</span>
+      <div>
+        <div class="ar-name">Trend Flip — Full Bull / Full Bear</div>
+        <div class="ar-desc">1h + 4h + 1d all align. ADX, Supertrend, HH/HL structure, RSI divergence.</div>
+      </div>
+    </div>
+    <div class="alert-row">
+      <span class="ar-freq">4 h</span>
+      <div>
+        <div class="ar-name">OI Spike &amp; Liq Cascade</div>
+        <div class="ar-desc">OI change ≥8% or $150M+ liquidated. Know before most people notice.</div>
+      </div>
+    </div>
+    <div class="alert-row">
+      <span class="ar-freq">daily</span>
+      <div>
+        <div class="ar-name">Snapshot · Weekly Review</div>
+        <div class="ar-desc">NAV, unrealised PnL, positions. Sunday: fills, W/L, net PnL.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-num">03 / 08</div>
+</div>
+
+<!-- ──────────────── SLIDE 4 — DASHBOARD ──────────────── -->
+<div class="slide" id="s4">
+  <div class="accent-line cyan"></div>
+
+  <div>
+    <p style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:6px">Web Dashboard</p>
+    <h2>Everything in<br>one place.</h2>
+  </div>
+
+  <div class="tab-grid">
+    <div class="tab-card highlight">
+      <div class="tc-name">📐 Trend Scanner</div>
+      <div class="tc-desc">1h/4h/1d alignment. ADX, Supertrend, market structure, RSI divergence.</div>
+    </div>
+    <div class="tab-card highlight">
+      <div class="tc-name">🔥 Heatmap</div>
+      <div class="tc-desc">All HL perps. Color-coded by funding rate. Sort by |fund|, OI, name.</div>
+    </div>
+    <div class="tab-card highlight">
+      <div class="tc-name">⛓ On-Chain</div>
+      <div class="tc-desc">Network health, stablecoin flow, CoinGlass liq clusters, CryptoQuant flows.</div>
+    </div>
+    <div class="tab-card">
+      <div class="tc-name">📊 Portfolio</div>
+      <div class="tc-desc">Live positions, PnL, account value from Hyperliquid.</div>
+    </div>
+    <div class="tab-card">
+      <div class="tc-name">📰 News + AI</div>
+      <div class="tc-desc">7 sources. Auto BULL/BEAR/NEUTRAL analysis on every headline.</div>
+    </div>
+    <div class="tab-card">
+      <div class="tc-name">📓 Journal</div>
+      <div class="tc-desc">Trade log backed by Supabase. Win rate, avg PnL, per-setup stats.</div>
+    </div>
+    <div class="tab-card">
+      <div class="tc-name">⚖ Funding Arb</div>
+      <div class="tc-desc">HL vs Binance vs Bybit spread. Annualised APR shown.</div>
+    </div>
+    <div class="tab-card">
+      <div class="tc-name">💹 Flows</div>
+      <div class="tc-desc">CVD, open interest, funding rate charts across coins.</div>
+    </div>
+    <div class="tab-card">
+      <div class="tc-name">⚡ Live Monitor</div>
+      <div class="tc-desc">Real-time trades and liquidations streaming from HL.</div>
+    </div>
+  </div>
+
+  <div class="slide-num">04 / 08</div>
+</div>
+
+<!-- ──────────────── SLIDE 5 — AI NEWS ──────────────── -->
+<div class="slide" id="s5">
+  <div class="accent-line purple"></div>
+
+  <div>
+    <p style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:6px">AI News Analysis</p>
+    <h2>Headlines →<br>signal. Auto.</h2>
+  </div>
+
+  <div class="flow-row">
+    <div class="flow-step">
+      <div class="fs-icon">📰</div>
+      <div class="fs-label">7 sources</div>
+      <div class="fs-sub">CoinDesk, CT,<br>Decrypt, Reddit…</div>
+    </div>
+    <div class="flow-arrow">›</div>
+    <div class="flow-step">
+      <div class="fs-icon">🤖</div>
+      <div class="fs-label">Llama 3.1 8B</div>
+      <div class="fs-sub">Cloudflare Workers AI<br>free tier</div>
+    </div>
+    <div class="flow-arrow">›</div>
+    <div class="flow-step">
+      <div class="fs-icon">⚡</div>
+      <div class="fs-label">Signal</div>
+      <div class="fs-sub">Sentiment + coins<br>+ reasoning</div>
+    </div>
+  </div>
+
+  <div class="news-mock">
+    <div class="nm-header">
+      <div class="nm-dot"></div>
+      AI · Llama 3.1 8B · Cloudflare Workers · free
+    </div>
+    <div class="news-item">
+      <div class="ni-title">BlackRock files for Ethereum ETF options, sources say</div>
+      <div class="ni-row">
+        <span class="pill green">BULL</span>
+        <span class="pill blue">short-term</span>
+        <span class="pill">ETH</span>
+        <span class="pill">BTC</span>
+      </div>
+      <div class="ni-reasoning">Institutional product expansion signals continued crypto legitimacy and inflow potential.</div>
+    </div>
+    <div class="news-item">
+      <div class="ni-title">South Korea tightens crypto exchange regulations, new KYC rules</div>
+      <div class="ni-row">
+        <span class="pill red">BEAR</span>
+        <span class="pill yellow">immediate</span>
+        <span class="pill">BTC</span>
+        <span class="pill">ETH</span>
+        <span class="pill">XRP</span>
+      </div>
+      <div class="ni-reasoning">Regulatory friction reduces retail access and creates short-term selling pressure.</div>
+    </div>
+    <div class="news-item">
+      <div class="ni-title">Solana DEX volume hits record $180B in monthly trades</div>
+      <div class="ni-row">
+        <span class="pill green">BULL</span>
+        <span class="pill blue">short-term</span>
+        <span class="pill">SOL</span>
+        <span class="pill">JUP</span>
+      </div>
+      <div class="ni-reasoning">Record DEX activity shows organic demand and ecosystem growth driving SOL price support.</div>
+    </div>
+  </div>
+
+  <div class="slide-num">05 / 08</div>
+</div>
+
+<!-- ──────────────── SLIDE 6 — PHILOSOPHY ──────────────── -->
+<div class="slide" id="s6">
+  <div class="accent-line yellow"></div>
+
+  <div>
+    <p style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:6px">Trading philosophy</p>
+    <h2>Built around<br>how I trade.</h2>
+  </div>
+
+  <div class="principle-list">
+    <div class="principle">
+      <span class="p-num">01</span>
+      <div>
+        <div class="p-title">Follow the market. Don't fight it.</div>
+        <div class="p-desc">Every alert is trend-following, not counter-trend. When all timeframes align, the system tells you. When they don't, it stays quiet.</div>
+      </div>
+    </div>
+    <div class="principle">
+      <span class="p-num">02</span>
+      <div>
+        <div class="p-title">Watch the flow in and out.</div>
+        <div class="p-desc">Stablecoin supply, exchange reserves, OI changes, liquidation clusters. Money flow tells the story before price does.</div>
+      </div>
+    </div>
+    <div class="principle">
+      <span class="p-num">03</span>
+      <div>
+        <div class="p-title">Read the chart before the news.</div>
+        <div class="p-desc">TA signals fire first. News analysis adds context — confirms or questions what the chart already said.</div>
+      </div>
+    </div>
+    <div class="principle">
+      <span class="p-num">04</span>
+      <div>
+        <div class="p-title">On-chain is context, not noise.</div>
+        <div class="p-desc">Regime signal (ACCUMULATION / DISTRIBUTION / WATCH) built from network health, funding, stablecoins, and liquidation data.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-num">06 / 08</div>
+</div>
+
+<!-- ──────────────── SLIDE 7 — STACK ──────────────── -->
+<div class="slide" id="s7">
+  <div class="accent-line blue"></div>
+
+  <div>
+    <p style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:6px">Tech stack</p>
+    <h2>Zero infra cost.<br>100% uptime.</h2>
+  </div>
+
+  <div class="stack-rows">
+    <div class="stack-row">
+      <div class="sr-layer">Bot runtime</div>
+      <div class="sr-val"><strong>Cloudflare Workers</strong> — runs globally, 0ms cold start</div>
+      <div class="sr-tag"><span class="no-cost-badge">free tier</span></div>
+    </div>
+    <div class="stack-row">
+      <div class="sr-layer">AI inference</div>
+      <div class="sr-val"><strong>Workers AI</strong> — Llama 3.1 8B, runs on CF GPUs</div>
+      <div class="sr-tag"><span class="no-cost-badge">free tier</span></div>
+    </div>
+    <div class="stack-row">
+      <div class="sr-layer">Alert dedup</div>
+      <div class="sr-val"><strong>KV Namespace</strong> — cooldown state, per-coin TTL</div>
+      <div class="sr-tag"><span class="no-cost-badge">free tier</span></div>
+    </div>
+    <div class="stack-row">
+      <div class="sr-layer">Dashboard</div>
+      <div class="sr-val"><strong>GitHub Pages</strong> — static SPA, vanilla JS, no build</div>
+      <div class="sr-tag"><span class="no-cost-badge">free</span></div>
+    </div>
+    <div class="stack-row">
+      <div class="sr-layer">Database</div>
+      <div class="sr-val"><strong>Supabase</strong> — trade journal, snapshots, history</div>
+      <div class="sr-tag"><span class="no-cost-badge">free tier</span></div>
+    </div>
+    <div class="stack-row">
+      <div class="sr-layer">Alerts</div>
+      <div class="sr-val"><strong>Telegram Bot API</strong> — webhook, HTML messages</div>
+      <div class="sr-tag"><span class="no-cost-badge">free</span></div>
+    </div>
+    <div class="stack-row">
+      <div class="sr-layer">Data</div>
+      <div class="sr-val"><strong>Hyperliquid API</strong> · CoinGlass · mempool.space · DeFiLlama</div>
+      <div class="sr-tag"><span class="no-cost-badge">free</span></div>
+    </div>
+  </div>
+
+  <div style="margin-top:4px;padding:20px 28px;background:var(--green-dim);border:1px solid rgba(34,197,94,.2);border-radius:14px;font-size:15px;font-weight:600;color:var(--green)">
+    Total monthly cost: $0.00 &nbsp;·&nbsp; <span style="font-weight:400;color:var(--muted)">No VPS, no subscriptions, no SaaS</span>
+  </div>
+
+  <div class="slide-num">07 / 08</div>
+</div>
+
+<!-- ──────────────── SLIDE 8 — CTA ──────────────── -->
+<div class="slide" id="s8">
+  <div class="accent-line cyan"></div>
+  <div class="bg-glow"></div>
+
+  <p class="cta-label">Open source · built in public</p>
+  <h2>Fork it.<br>Run it.<br><em>Own it.</em></h2>
+  <p class="cta-sub">The whole stack is on GitHub. Cloudflare Worker + GitHub Pages dashboard + Telegram bot. Free to run, yours to extend.</p>
+
+  <div class="cta-links">
+    <a href="https://github.com/ravellerh/hype" class="cta-btn primary">⭐ GitHub — ravellerh/hype</a>
+    <a href="#" class="cta-btn secondary">Follow for more builds</a>
+  </div>
+
+  <p class="tagline">// follow the market · watch the flow · read the chart</p>
+
+  <div class="slide-num">08 / 08</div>
+</div>
+
+</body>
+</html>
