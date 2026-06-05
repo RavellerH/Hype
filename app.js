@@ -895,6 +895,8 @@ async function loadOverview(){
 // ── Trades ────────────────────────────────────────────────────────────────────
 let _tradesCoinFilter = '';
 let _tradesSubTab = 'perp';
+let _tradesWindow = 30;
+let _tradesInsights = '';
 
 function switchTradeTab(tab) {
   _tradesSubTab = tab;
@@ -905,6 +907,23 @@ function switchTradeTab(tab) {
     b.style.borderColor = on ? 'var(--accent)' : 'var(--border)';
   });
   renderTradesTables();
+}
+
+function switchTradesWindow(days) {
+  _tradesWindow = days;
+  document.querySelectorAll('.tw-btn').forEach(b => {
+    const on = +b.dataset.days === days;
+    b.style.background = on ? 'var(--accent)' : 'var(--surface2)';
+    b.style.color = on ? '#fff' : 'var(--text-muted)';
+    b.style.borderColor = on ? 'var(--accent)' : 'var(--border)';
+  });
+  if (window._tradesData) _renderTradesContent(window._tradesData.allPerpFills, window._tradesData.allSpotFills);
+}
+
+function _twFills(fills) {
+  if (!_tradesWindow) return fills;
+  const cutoff = Date.now() - _tradesWindow * 86400000;
+  return fills.filter(f => f.time >= cutoff);
 }
 
 function renderTradesTables() {
@@ -943,46 +962,296 @@ function renderTradesTables() {
     ${fills.length>100?`<div class="muted" style="text-align:center;padding:10px;font-size:11px">Showing 100 of ${fills.length} — filter by coin to narrow down</div>`:''}`;
 }
 
-async function loadTrades(){
-  const el=document.getElementById('trades-content');
-  if(!_silentRefresh) el.innerHTML=loading();
-  try{
-    const [rawFills, spotMetaRaw] = await Promise.all([
-      getUserFills(currentWallet),
-      getSpotMeta().catch(()=>null)
-    ]);
-    const spotIndexMap = buildSpotIndexMap(spotMetaRaw);
-    const allFills = tagFills(parseFills(rawFills), spotIndexMap).sort((a,b)=>b.time-a.time);
-    const perpFills = allFills.filter(f=>!f.isSpot);
-    const spotFills = allFills.filter(f=>f.isSpot);
-    const perpPnl = perpFills.reduce((a,f)=>a+f.closed_pnl,0);
-    const totalFees = allFills.reduce((a,f)=>a+f.fee,0);
-    const wins=perpFills.filter(f=>f.closed_pnl>0).length;
-    const losses=perpFills.filter(f=>f.closed_pnl<0).length;
-    window._tradesData = { perpFills, spotFills };
+function _tradeAnalyticsHtml(allPerpFills) {
+  const perpFills = _twFills(allPerpFills);
+  const closes = perpFills.filter(f => f.closed_pnl !== 0);
+  if (closes.length < 2) return `<div style="font-size:11px;color:var(--text-muted);padding:4px 0 14px">Not enough closing fills in this period.</div>`;
 
-    el.innerHTML=`
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding-bottom:11px;border-bottom:1px solid var(--border);margin-bottom:12px">
-        <div style="display:flex;gap:18px;flex-wrap:wrap;font-size:12px;align-items:center">
-          <span class="muted">PnL <strong class="${perpPnl>=0?'pos':'neg'}">${fmt$(perpPnl)}</strong></span>
-          <span class="muted">Win <strong>${wins+losses>0?(wins/(wins+losses)*100).toFixed(0):0}%</strong> <span style="font-size:10px">(${wins}W / ${losses}L)</span></span>
-          <span class="muted">Fees <strong class="neg">−${fmt$(totalFees)}</strong></span>
-        </div>
+  const wins = closes.filter(f => f.closed_pnl > 0);
+  const losses = closes.filter(f => f.closed_pnl < 0);
+  const grossWins = wins.reduce((s, f) => s + f.closed_pnl, 0);
+  const grossLoss = Math.abs(losses.reduce((s, f) => s + f.closed_pnl, 0));
+  const pf = grossLoss > 0 ? grossWins / grossLoss : null;
+  const avgWin = wins.length ? grossWins / wins.length : 0;
+  const avgLoss = losses.length ? grossLoss / losses.length : 0;
+
+  // Current streak (from most recent close)
+  const sorted = [...closes].sort((a, b) => b.time - a.time);
+  let streak = 0, streakWin = null;
+  for (const f of sorted) {
+    const w = f.closed_pnl > 0;
+    if (streakWin === null) { streakWin = w; streak = 1; }
+    else if (w === streakWin) streak++;
+    else break;
+  }
+
+  // Max drawdown from equity peak
+  const chron = [...closes].sort((a, b) => a.time - b.time);
+  let cum = 0, peak = 0, maxDD = 0;
+  for (const f of chron) {
+    cum += f.closed_pnl;
+    if (cum > peak) peak = cum;
+    const dd = peak - cum;
+    if (dd > maxDD) maxDD = dd;
+  }
+
+  // Per-coin breakdown
+  const byCoin = {};
+  for (const f of closes) {
+    if (!byCoin[f.coin]) byCoin[f.coin] = { pnl: 0, wins: 0, total: 0 };
+    byCoin[f.coin].pnl += f.closed_pnl;
+    byCoin[f.coin].total++;
+    if (f.closed_pnl > 0) byCoin[f.coin].wins++;
+  }
+  const coinStats = Object.entries(byCoin)
+    .map(([coin, s]) => ({ coin, ...s, wr: s.wins / s.total }))
+    .sort((a, b) => b.pnl - a.pnl);
+  const topCoins = coinStats.slice(0, 5);
+  const worstCoins = [...coinStats].reverse().filter(c => c.pnl < 0).slice(0, 3);
+  const worstNotInTop = worstCoins.filter(c => !topCoins.find(t => t.coin === c.coin));
+
+  // Hour of day patterns (UTC)
+  const byHour = {};
+  for (const f of closes) {
+    const h = new Date(f.time).getUTCHours();
+    if (!byHour[h]) byHour[h] = { pnl: 0, total: 0 };
+    byHour[h].pnl += f.closed_pnl; byHour[h].total++;
+  }
+  const hourEntries = Object.entries(byHour).sort((a, b) => +a[0] - +b[0]);
+  const maxAbsHour = Math.max(...Object.values(byHour).map(h => Math.abs(h.pnl)), 1);
+
+  // Day of week patterns
+  const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const byDay = {};
+  for (const f of closes) {
+    const d = DAY_NAMES[new Date(f.time).getUTCDay()];
+    if (!byDay[d]) byDay[d] = { pnl: 0, total: 0 };
+    byDay[d].pnl += f.closed_pnl; byDay[d].total++;
+  }
+  const dayEntries = Object.entries(byDay).sort((a, b) => b[1].pnl - a[1].pnl);
+
+  const cs  = `background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 12px`;
+  const ls  = `font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);margin-bottom:4px`;
+  const tdS = `padding:5px 6px;font-size:11px;border-bottom:1px solid var(--border)`;
+  const thS = `padding:4px 6px;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-faint);border-bottom:1px solid var(--border);font-weight:500`;
+
+  const pfColor     = pf === null ? 'var(--text)' : pf >= 1.5 ? 'var(--green)' : pf < 1 ? 'var(--red)' : 'var(--text)';
+  const streakColor = streakWin ? 'var(--green)' : 'var(--red)';
+
+  const coinRow = c => `<tr>
+    <td style="${tdS};font-weight:600">${c.coin}</td>
+    <td style="${tdS};text-align:center;color:var(--text-muted)">${c.total}</td>
+    <td style="${tdS};text-align:right;font-family:var(--mono);color:${c.pnl >= 0 ? 'var(--green)' : 'var(--red)'}">${c.pnl >= 0 ? '+' : ''}${fmt$(c.pnl)}</td>
+    <td style="${tdS};text-align:right;color:var(--text-muted)">${(c.wr * 100).toFixed(0)}%</td>
+  </tr>`;
+
+  return `
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-bottom:14px">
+    <div style="${cs}">
+      <div style="${ls}">Profit Factor</div>
+      <div style="font-size:15px;font-weight:700;font-family:var(--mono);color:${pfColor}">${pf !== null ? pf.toFixed(2) : '—'}</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:2px">${pf !== null ? (pf >= 1.5 ? 'Strong edge' : pf >= 1 ? 'Slight edge' : 'Losing edge') : 'no data'}</div>
+    </div>
+    <div style="${cs}">
+      <div style="${ls}">Avg Win</div>
+      <div style="font-size:15px;font-weight:700;font-family:var(--mono);color:var(--green)">${fmt$(avgWin)}</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:2px">${wins.length} winning closes</div>
+    </div>
+    <div style="${cs}">
+      <div style="${ls}">Avg Loss</div>
+      <div style="font-size:15px;font-weight:700;font-family:var(--mono);color:var(--red)">${fmt$(avgLoss)}</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:2px">${losses.length} losing closes</div>
+    </div>
+    <div style="${cs}">
+      <div style="${ls}">Streak</div>
+      <div style="font-size:15px;font-weight:700;font-family:var(--mono);color:${streakColor}">${streakWin ? 'W' : 'L'}${streak}</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:2px">${streak} in a row</div>
+    </div>
+    <div style="${cs}">
+      <div style="${ls}">Max Drawdown</div>
+      <div style="font-size:15px;font-weight:700;font-family:var(--mono);color:${maxDD > 500 ? 'var(--red)' : 'var(--text)'}">${maxDD > 0 ? '−' + fmt$(maxDD) : '—'}</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:2px">from equity peak</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+    <div style="${cs}">
+      <div style="${ls};margin-bottom:8px">Top Performers</div>
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr>
+          <th style="${thS}">Coin</th><th style="${thS};text-align:center">Closes</th>
+          <th style="${thS};text-align:right">P&L</th><th style="${thS};text-align:right">WR</th>
+        </tr></thead>
+        <tbody>${topCoins.map(coinRow).join('')}</tbody>
+      </table>
+      ${worstNotInTop.length > 0 ? `
+        <div style="${ls};margin:10px 0 6px">Worst Performers</div>
+        <table style="width:100%;border-collapse:collapse">
+          <tbody>${worstNotInTop.map(coinRow).join('')}</tbody>
+        </table>` : ''}
+    </div>
+
+    <div style="${cs}">
+      <div style="${ls};margin-bottom:8px">By Hour (UTC)</div>
+      ${hourEntries.map(([h, d]) => {
+        const barW = Math.round(Math.abs(d.pnl) / maxAbsHour * 80);
+        const pos  = d.pnl >= 0;
+        return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+          <span style="font-size:10px;color:var(--text-muted);width:26px;font-family:var(--mono);flex-shrink:0">${String(h).padStart(2,'0')}h</span>
+          <div style="width:${barW}px;min-width:2px;height:5px;background:${pos?'var(--green)':'var(--red)'};border-radius:2px;opacity:.75;flex-shrink:0"></div>
+          <span style="font-size:10px;font-family:var(--mono);color:${pos?'var(--green)':'var(--red)'}">${pos?'+':''}${fmt$(d.pnl)}</span>
+          <span style="font-size:10px;color:var(--text-muted)">(${d.total})</span>
+        </div>`;
+      }).join('')}
+      <div style="${ls};margin:10px 0 6px">By Day</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">
+        ${dayEntries.map(([day, d]) => `
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px 8px;text-align:center">
+            <div style="font-size:11px;font-weight:600;color:var(--text)">${day}</div>
+            <div style="font-size:10px;font-family:var(--mono);color:${d.pnl >= 0 ? 'var(--green)' : 'var(--red)'}">${d.pnl >= 0 ? '+' : ''}${fmt$(d.pnl)}</div>
+            <div style="font-size:10px;color:var(--text-muted)">${d.total}×</div>
+          </div>`).join('')}
+      </div>
+    </div>
+  </div>
+
+  <div style="${cs};margin-bottom:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div style="${ls}">AI Insights</div>
+      <button onclick="_tradesGenInsights(this)"
+        style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px 12px;color:var(--text);font-size:11px;cursor:pointer;font-family:var(--font)">
+        ✦ Generate
+      </button>
+    </div>
+    <div id="trades-insights-text" style="font-size:12px;line-height:1.6;color:${_tradesInsights ? 'var(--text)' : 'var(--text-muted)'}">
+      ${_tradesInsights || 'Click Generate to get AI analysis of your patterns, strengths, and specific improvements.'}
+    </div>
+  </div>`;
+}
+
+async function _tradesGenInsights(btn) {
+  const d = window._tradesData;
+  if (!d) return;
+  const closes = _twFills(d.allPerpFills).filter(f => f.closed_pnl !== 0);
+  if (closes.length < 3) return;
+  btn.disabled = true; btn.textContent = '…';
+
+  const wins = closes.filter(f => f.closed_pnl > 0);
+  const losses = closes.filter(f => f.closed_pnl < 0);
+  const totalPnl = closes.reduce((s, f) => s + f.closed_pnl, 0);
+  const grossWins = wins.reduce((s, f) => s + f.closed_pnl, 0);
+  const grossLoss = Math.abs(losses.reduce((s, f) => s + f.closed_pnl, 0));
+  const pf = grossLoss > 0 ? (grossWins / grossLoss).toFixed(2) : 'N/A';
+
+  const byCoin = {};
+  for (const f of closes) {
+    if (!byCoin[f.coin]) byCoin[f.coin] = { pnl: 0, total: 0, wins: 0 };
+    byCoin[f.coin].pnl += f.closed_pnl; byCoin[f.coin].total++;
+    if (f.closed_pnl > 0) byCoin[f.coin].wins++;
+  }
+  const coins = Object.entries(byCoin).map(([c, v]) => ({ coin: c, ...v })).sort((a, b) => b.pnl - a.pnl);
+
+  const byHour = {};
+  for (const f of closes) {
+    const h = new Date(f.time).getUTCHours();
+    if (!byHour[h]) byHour[h] = { pnl: 0 };
+    byHour[h].pnl += f.closed_pnl;
+  }
+  const hSorted = Object.entries(byHour).sort((a, b) => b[1].pnl - a[1].pnl);
+
+  const period = _tradesWindow === 0 ? 'all time' : `last ${_tradesWindow}d`;
+  const prompt = `Hyperliquid perps trader, ${period}:
+- ${closes.length} closes: ${wins.length}W/${losses.length}L (${(wins.length/closes.length*100).toFixed(0)}% WR)
+- Net PnL: $${totalPnl.toFixed(0)}, Profit Factor: ${pf}
+- Top coins: ${coins.slice(0, 3).map(c => `${c.coin} $${c.pnl.toFixed(0)} ${(c.wins/c.total*100).toFixed(0)}%WR`).join(', ')}
+${coins.filter(c => c.pnl < 0).length ? `- Worst coins: ${coins.filter(c => c.pnl < 0).reverse().slice(0, 2).map(c => `${c.coin} $${c.pnl.toFixed(0)}`).join(', ')}` : ''}
+${hSorted.length ? `- Best hour: ${hSorted[0][0]}:00 UTC ($${hSorted[0][1].pnl.toFixed(0)}), Worst: ${hSorted.at(-1)[0]}:00 UTC ($${hSorted.at(-1)[1].pnl.toFixed(0)})` : ''}
+
+Write 3 specific, data-driven insights: what's working, what to stop, one concrete rule. Be direct, no generic advice.`;
+
+  const el = document.getElementById('trades-insights-text');
+  if (el) { el.style.color = 'var(--text-muted)'; el.textContent = 'Analyzing patterns…'; }
+
+  const text = await _callLLM('synthesis', prompt, { maxTokens: 300 });
+  _tradesInsights = text || '';
+  if (el) {
+    el.style.color = text ? 'var(--text)' : 'var(--text-muted)';
+    el.textContent = text || 'Set hype_edge_fn_url in AI settings to enable insights.';
+  }
+  btn.disabled = false; btn.textContent = '✦ Refresh';
+}
+
+function _renderTradesContent(allPerpFills, allSpotFills) {
+  const el = document.getElementById('trades-content');
+  if (!el) return;
+  const perpFills = _twFills(allPerpFills);
+  const spotFills = _twFills(allSpotFills);
+  window._tradesData.perpFills = perpFills;
+  window._tradesData.spotFills = spotFills;
+
+  const closes   = perpFills.filter(f => f.closed_pnl !== 0);
+  const perpPnl  = closes.reduce((s, f) => s + f.closed_pnl, 0);
+  const totalFees = perpFills.reduce((s, f) => s + f.fee, 0);
+  const wins   = closes.filter(f => f.closed_pnl > 0).length;
+  const losses = closes.filter(f => f.closed_pnl < 0).length;
+
+  const windowBtns = [7, 30, 90, 0].map((days, i) => {
+    const label = days === 0 ? 'All' : `${days}d`;
+    const on = days === _tradesWindow;
+    return `<button class="tw-btn" data-days="${days}" onclick="switchTradesWindow(${days})"
+      style="padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid ${on ? 'var(--accent)' : 'var(--border)'};
+      ${i === 0 ? 'border-radius:var(--radius-sm) 0 0 var(--radius-sm)' : i === 3 ? 'border-left:none;border-radius:0 var(--radius-sm) var(--radius-sm) 0' : 'border-left:none'};
+      background:${on ? 'var(--accent)' : 'var(--surface2)'};color:${on ? '#fff' : 'var(--text-muted)'}">${label}</button>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding-bottom:11px;border-bottom:1px solid var(--border);margin-bottom:12px">
+      <div style="display:flex;gap:18px;flex-wrap:wrap;font-size:12px;align-items:center">
+        <span class="muted">PnL <strong class="${perpPnl >= 0 ? 'pos' : 'neg'}">${fmt$(perpPnl)}</strong></span>
+        <span class="muted">Win <strong>${wins + losses > 0 ? (wins / (wins + losses) * 100).toFixed(0) : 0}%</strong> <span style="font-size:10px">(${wins}W / ${losses}L)</span></span>
+        <span class="muted">Fees <strong class="neg">−${fmt$(totalFees)}</strong></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <div style="display:flex">${windowBtns}</div>
         <input id="trades-search" type="text" placeholder="Filter coin…" value="${_tradesCoinFilter}"
           oninput="_tradesCoinFilter=this.value;renderTradesTables()"
           style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:5px 10px;font-size:12px;outline:none;width:120px">
       </div>
-      <div style="display:flex;margin-bottom:14px">
-        ${['perp','spot'].map((t,i)=>{const on=_tradesSubTab===t; return `<button class="trades-subtab-btn" data-tab="${t}" onclick="switchTradeTab('${t}')"
-          style="padding:7px 18px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid ${on?'var(--accent)':'var(--border)'};
-          ${i===0?'border-radius:var(--radius-sm) 0 0 var(--radius-sm)':'border-left:none;border-radius:0 var(--radius-sm) var(--radius-sm) 0'};
-          background:${on?'var(--accent)':'var(--surface2)'};color:${on?'#fff':'var(--text-muted)'}">${t==='perp'?'Perp':'Spot'} (${t==='perp'?perpFills.length:spotFills.length})</button>`;}).join('')}
-      </div>
-      <div id="trades-table-wrap"></div>`;
+    </div>
+    <div id="trades-analytics-wrap">${_tradeAnalyticsHtml(allPerpFills)}</div>
+    <div style="display:flex;margin-bottom:14px">
+      ${['perp', 'spot'].map((t, i) => {
+        const on = _tradesSubTab === t;
+        return `<button class="trades-subtab-btn" data-tab="${t}" onclick="switchTradeTab('${t}')"
+          style="padding:7px 18px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid ${on ? 'var(--accent)' : 'var(--border)'};
+          ${i === 0 ? 'border-radius:var(--radius-sm) 0 0 var(--radius-sm)' : 'border-left:none;border-radius:0 var(--radius-sm) var(--radius-sm) 0'};
+          background:${on ? 'var(--accent)' : 'var(--surface2)'};color:${on ? '#fff' : 'var(--text-muted)'}">
+          ${t === 'perp' ? 'Perp' : 'Spot'} (${t === 'perp' ? perpFills.length : spotFills.length})</button>`;
+      }).join('')}
+    </div>
+    <div id="trades-table-wrap"></div>`;
 
-    renderTradesTables();
+  renderTradesTables();
+}
+
+async function loadTrades() {
+  const el = document.getElementById('trades-content');
+  if (!_silentRefresh) el.innerHTML = loading();
+  try {
+    const [rawFills, spotMetaRaw] = await Promise.all([
+      getUserFills(currentWallet),
+      getSpotMeta().catch(() => null)
+    ]);
+    const spotIndexMap = buildSpotIndexMap(spotMetaRaw);
+    const allFills = tagFills(parseFills(rawFills), spotIndexMap).sort((a, b) => b.time - a.time);
+    const allPerpFills = allFills.filter(f => !f.isSpot);
+    const allSpotFills = allFills.filter(f => f.isSpot);
+    window._tradesData = { allPerpFills, allSpotFills, perpFills: [], spotFills: [] };
+    _renderTradesContent(allPerpFills, allSpotFills);
     setRefreshTime();
-  }catch(e){if(!_silentRefresh)el.innerHTML=err(e);}
+  } catch (e) {
+    if (!_silentRefresh) el.innerHTML = err(e);
+  }
 }
 
 // ── Funding ───────────────────────────────────────────────────────────────────
