@@ -1040,6 +1040,8 @@ async function handleTgCommand(cmd, arg, env, msg) {
       '  /alert C P [a|b]  set price alert',
       '  /alerts           list your alerts',
       '  /arb              funding arb scan',
+      '  /hl [style]       HL ecosystem draft',
+      '                    digest|post|thread',
       '  /snapshot         daily snapshot',
       '  /status           market status',
       BAR,
@@ -1052,6 +1054,7 @@ async function handleTgCommand(cmd, arg, env, msg) {
       '  liq       4h · cascade alert',
       '  position  4h · close/hold/add',
       '  snap      00:00 UTC daily',
+      '  hl pulse  00:00 UTC daily draft',
     ]);
   }
 
@@ -1355,7 +1358,122 @@ async function handleTgCommand(cmd, arg, env, msg) {
     ]);
   }
 
+  if (cmd === '/hl') {
+    const style = ['thread', 'post', 'digest'].includes(arg.toLowerCase()) ? arg.toLowerCase() : 'digest';
+    try {
+      const text = await draftHL(env, style);
+      const esc = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return _hdr(`HL PULSE · ${style.toUpperCase()}`) + `\n<pre>${esc}</pre>`;
+    } catch (e) {
+      return `<pre>hl draft error: ${e.message}</pre>`;
+    }
+  }
+
   return _hdr('ERROR') + '\n<pre>  unknown command\n  /help for menu</pre>';
+}
+
+// ── HL Pulse — Hyperliquid ecosystem news digest (Workers AI) ─────────────────
+
+function _hlpMatch(txt = '') {
+  return /hyperliquid|hyperevm|hypercore|hyperbft|hyperunit|\bhip-\d+/i.test(txt) || /\$HYPE\b|\bHYPE\b/.test(txt);
+}
+
+async function getHLNews(limit = 12) {
+  const out = [];
+  const cutSec = Math.floor(Date.now() / 1000) - 7 * 86400;
+  let beforeTs = null;
+  try {
+    for (let page = 0; page < 3; page++) {
+      const base = 'https://min-api.cryptocompare.com/data/v2/news/?lang=EN&sortOrder=latest&limit=50';
+      const r = await fetch(beforeTs ? `${base}&before_ts=${beforeTs}` : base);
+      if (!r.ok) break;
+      const arts = (await r.json())?.Data || [];
+      if (!arts.length) break;
+      for (const a of arts) {
+        if (a.published_on < cutSec) return out.slice(0, limit);
+        if (_hlpMatch(`${a.title} ${a.body || ''}`)) {
+          const ageH = Math.floor((Date.now() / 1000 - a.published_on) / 3600);
+          out.push({ title: a.title, age: ageH < 24 ? `${ageH}h` : `${Math.floor(ageH / 24)}d` });
+        }
+      }
+      beforeTs = arts.at(-1)?.published_on;
+      if (!beforeTs) break;
+    }
+  } catch {}
+  return out.slice(0, limit);
+}
+
+async function getHLStats() {
+  const stats = {};
+  try {
+    const [meta, ctxs] = await hlPost({ type: 'metaAndAssetCtxs' });
+    const idx = meta.universe.findIndex(u => u.name === 'HYPE');
+    const c = idx >= 0 ? ctxs[idx] : null;
+    if (c) {
+      stats.hypePx      = parseFloat(c.markPx);
+      stats.hype24h     = c.prevDayPx ? (stats.hypePx / parseFloat(c.prevDayPx) - 1) * 100 : null;
+      stats.hypeFunding = parseFloat(c.funding);
+      stats.hypeOI      = parseFloat(c.openInterest) * stats.hypePx;
+    }
+    stats.hlVolume24h = ctxs.reduce((s, x) => s + (parseFloat(x.dayNtlVlm) || 0), 0);
+  } catch {}
+  try {
+    const chains = await fetch('https://api.llama.fi/v2/chains').then(r => r.ok ? r.json() : []);
+    stats.evmTvl = chains.filter(ch => /hyperliquid/i.test(ch.name || '')).reduce((s, ch) => s + (ch.tvl || 0), 0) || null;
+  } catch {}
+  return stats;
+}
+
+function _hlpContext(news, stats) {
+  const lines = ['HYPERLIQUID ECOSYSTEM SNAPSHOT — ' + new Date().toUTCString().slice(0, 16)];
+  if (stats.hypePx != null)      lines.push(`HYPE price: $${stats.hypePx.toFixed(2)}${stats.hype24h != null ? ` (${stats.hype24h >= 0 ? '+' : ''}${stats.hype24h.toFixed(2)}% 24h)` : ''}`);
+  if (stats.hypeFunding != null) lines.push(`HYPE funding (8h): ${(stats.hypeFunding * 100).toFixed(4)}%`);
+  if (stats.hypeOI)              lines.push(`HYPE open interest: $${_fmtM(stats.hypeOI)}`);
+  if (stats.hlVolume24h)         lines.push(`Hyperliquid total perp volume 24h: $${_fmtM(stats.hlVolume24h)}`);
+  if (stats.evmTvl)              lines.push(`HyperEVM TVL (DeFiLlama): $${_fmtM(stats.evmTvl)}`);
+  if (news.length) {
+    lines.push('', 'RECENT HEADLINES:');
+    news.forEach(n => lines.push(`- [${n.age} ago] ${n.title}`));
+  }
+  return lines.join('\n');
+}
+
+const HLP_STYLES = {
+  thread: 'Write an X (Twitter) thread of 4-6 tweets about what is happening in the Hyperliquid ecosystem right now. Strong hook tweet first, one idea per tweet, numbered "1/", "2/" etc. Each tweet under 270 characters. Plain text, at most one hashtag total.',
+  post:   'Write ONE X (Twitter) post (under 270 characters) summarizing the most interesting thing happening in the Hyperliquid ecosystem right now. Strong hook, no hashtag spam.',
+  digest: 'Write a concise daily Hyperliquid ecosystem digest: a one-line headline, then 4-6 short bullet points covering price/funding/TVL and the most important headlines, then a one-line takeaway. Under 900 characters total.',
+};
+
+const HLP_SYSTEM = 'You are a sharp crypto content writer focused on the Hyperliquid ecosystem (HYPE, HyperCore, HyperEVM). Write in English. Use ONLY facts and numbers from the provided context — never invent data, prices, or events. No financial advice, no "DYOR" boilerplate.';
+
+async function draftHL(env, style = 'digest', context = null) {
+  if (!env.AI) throw new Error('AI binding not enabled');
+  if (!context) {
+    const [news, stats] = await Promise.all([getHLNews(), getHLStats()]);
+    context = _hlpContext(news, stats);
+  }
+  const result = await env.AI.run('@cf/meta/llama-3.1-8b-instruct-fast', {
+    messages: [
+      { role: 'system', content: HLP_SYSTEM },
+      { role: 'user', content: `${HLP_STYLES[style] || HLP_STYLES.digest}\n\nCONTEXT:\n${context}` },
+    ],
+    max_tokens: 800,
+  });
+  return (result.response || '').trim();
+}
+
+async function hlDailyDigest(env) {
+  try {
+    const [news, stats] = await Promise.all([getHLNews(), getHLStats()]);
+    if (!news.length && stats.hypePx == null) return;   // nothing to report
+    const text = await draftHL(env, 'digest', _hlpContext(news, stats));
+    if (!text) return;
+    const esc = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    await tgSend(env.TG_TOKEN, env.TG_CHAT,
+      _hdr('HL PULSE · DAILY DRAFT') + `\n<pre>${esc}</pre>\n<i>review &amp; edit before posting · /hl thread for a thread version</i>`);
+  } catch (e) {
+    await tgSend(env.TG_TOKEN, env.TG_CHAT, `<b>hl digest error</b>\n<code>${e.message}</code>`).catch(() => {});
+  }
 }
 
 // ── Request Handler ───────────────────────────────────────────────────────────
@@ -1381,6 +1499,7 @@ export default {
       ctx.waitUntil(checkPositionAdvisor(env));
     } else if (cron === '0 0 * * *') {
       ctx.waitUntil(dailySnapshot(env));
+      ctx.waitUntil(hlDailyDigest(env));
       // Sunday (getDay() === 0) → also run weekly review
       if (new Date().getDay() === 0) ctx.waitUntil(weeklyReview(env));
     }
@@ -1430,6 +1549,7 @@ export default {
     if (url.pathname === '/run-reversals'){ ctx.waitUntil(checkReversals(env));      return new Response('Reversal scan triggered', { status: 202 }); }
     if (url.pathname === '/run-trend')    { ctx.waitUntil(checkTrendAlignment(env)); return new Response('Trend alignment check triggered', { status: 202 }); }
     if (url.pathname === '/run-weekly')   { ctx.waitUntil(weeklyReview(env));        return new Response('Weekly review triggered', { status: 202 }); }
+    if (url.pathname === '/run-hl-digest'){ ctx.waitUntil(hlDailyDigest(env));       return new Response('HL digest triggered', { status: 202 }); }
     if (url.pathname === '/health') {
       return new Response(JSON.stringify({ ok: true, ts: Date.now() }), {
         headers: { 'Content-Type': 'application/json' },
@@ -1465,6 +1585,22 @@ export default {
       return new Response(JSON.stringify({ envCheck, webhookInfo, kvTest }, null, 2), {
         headers: { 'Content-Type': 'application/json' },
       });
+    }
+
+    // ── HL Pulse draft (Cloudflare Workers AI — free) ──────────────────────────
+    if (url.pathname === '/draft-hl') {
+      const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type' };
+      if (request.method === 'OPTIONS') return new Response(null, { headers: { ...cors, 'Access-Control-Allow-Methods': 'POST' } });
+      if (request.method !== 'POST') return new Response('POST only', { status: 405, headers: cors });
+      if (!env.AI) return new Response(JSON.stringify({ error: 'AI binding not enabled — add [ai] to wrangler-bot.toml and redeploy' }), { status: 503, headers: { ...cors, 'Content-Type': 'application/json' } });
+
+      const body = await request.json().catch(() => ({}));
+      try {
+        const text = await draftHL(env, body.style || 'digest', typeof body.context === 'string' ? body.context.slice(0, 6000) : null);
+        return new Response(JSON.stringify({ text }), { headers: { ...cors, 'Content-Type': 'application/json' } });
+      } catch (e) {
+        return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...cors, 'Content-Type': 'application/json' } });
+      }
     }
 
     // ── News Analysis (Cloudflare Workers AI — free) ──────────────────────────
@@ -1505,7 +1641,7 @@ coins=up to 4 most impacted tickers. Return ONLY the JSON array, no other text.`
     }
 
     return new Response(
-      'Hype Bot Worker\n\nEndpoints:\n  /run-signals\n  /run-arb\n  /run-snapshot\n  /run-reversals\n  /run-trend\n  /run-weekly\n  /register-webhook\n  /analyze-news\n  /health',
+      'Hype Bot Worker\n\nEndpoints:\n  /run-signals\n  /run-arb\n  /run-snapshot\n  /run-reversals\n  /run-trend\n  /run-weekly\n  /run-hl-digest\n  /register-webhook\n  /analyze-news\n  /draft-hl\n  /health',
       { status: 200 }
     );
   },

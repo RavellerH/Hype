@@ -1,10 +1,11 @@
-const CACHE = 'hype-v10';
+const CACHE = 'hype-v11';
 const STATIC = [
   './',
   './styles.css',
   './app.js',
   './signals.js',
   './news.js',
+  './hlpulse.js',
   './ta-signal.js',
   './position-meta.js',
   './intel.js',

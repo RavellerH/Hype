@@ -4,6 +4,32 @@ Detailed session-by-session development log. For the short changelog see [README
 
 ---
 
+## 2026-06-10 — HL Pulse: Hyperliquid Ecosystem Tab + Content Studio
+
+### What we built
+A Hyperliquid-focused intelligence tab plus an AI content pipeline — the dashboard now tracks the HL ecosystem itself (news, HyperEVM TVL, HYPE stats) and drafts English X posts/threads/digests from live data.
+
+### Features
+| Feature | Detail |
+|---|---|
+| HL Pulse tab | HYPE price/funding/OI, HL total perp volume, HyperEVM TVL, top ecosystem protocols by TVL (DeFiLlama) |
+| HL news feed | CryptoCompare keyword-filtered + r/hyperliquid + News-tab cache, deduped, 7-day window |
+| Content Studio | Generate X thread / single post / daily digest from live context — llm-router first, bot worker Workers AI fallback, edit + copy |
+| Daily TG draft | Midnight UTC cron — bot drafts an HL ecosystem digest and sends it to Telegram for review before posting |
+| `/hl [style]` | On-demand draft via Telegram: `digest` (default), `post`, `thread` |
+| `/draft-hl` | POST endpoint (Workers AI, CORS) used by the dashboard fallback |
+
+### Files
+- `hlpulse.js` — new tab module (fetchers, stats, render, content generator)
+- `cloudflare/bot-worker.js` — `getHLNews`, `getHLStats`, `draftHL`, `hlDailyDigest`, `/hl` command, `/draft-hl` + `/run-hl-digest` routes, daily cron wiring
+- `index.html`, `app.js`, `sw.js` — nav/page/script registration, cache bump to v11
+
+### Notes
+- AI prompts are constrained to facts in the fetched context (no invented numbers); drafts are always human-reviewed before posting.
+- All sources keyless; redeploy the bot with `wrangler deploy -c wrangler-bot.toml` to activate the digest.
+
+---
+
 ## 2026-05-31 — Telegram Bot + Cloudflare Worker
 
 ### What we built

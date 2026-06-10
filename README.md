@@ -28,6 +28,7 @@ A personal trading dashboard for [Hyperliquid](https://hyperliquid.xyz) — live
 | **KB** | Knowledge base / trading notes |
 | **Signals** | Multi-factor confluence scanner (funding + CVD + OI + momentum) |
 | **News** | Crypto news from 9 sources (CryptoCompare, Messari, Reddit, 6 RSS feeds) with Fear & Greed |
+| **HL Pulse** | Hyperliquid ecosystem intel — HL-filtered news, HYPE stats, HyperEVM TVL, top protocols, AI content studio (X threads / posts / digests) |
 | **Fundamentals** | Top 100 coins — price, 24h/7d/30d%, market cap, volume, ATH drawdown |
 | **DeFi** | DeFiLlama macro dashboard — total TVL, chain dominance, protocol rankings, stablecoin supply |
 
@@ -57,6 +58,7 @@ Hype/
 ├── ai.js               Trade staging (Supabase) + Claude AI chat (Edge Function)
 ├── fundamentals.js     CoinGecko top 100 market data
 ├── news.js             Multi-source crypto news aggregator (progressive loading)
+├── hlpulse.js          HL Pulse — Hyperliquid ecosystem news, stats, AI content studio
 ├── ta-signal.js        TA engine: confluence scanner, CVD, OI, signal scoring
 ├── mvrv-ai.js          MVRV Z-Score + Supabase client + AI commentary
 ├── analytics.js        PnL analytics, equity curve
@@ -190,6 +192,7 @@ npx wrangler deploy --config wrangler-bot.toml
 | `/signals` | Run signal scan instantly |
 | `/snapshot` | Portfolio snapshot now |
 | `/arb` | Funding arb check now |
+| `/hl [digest\|post\|thread]` | AI draft of a Hyperliquid ecosystem update |
 | `/status` | Bot health + BTC funding |
 | `/help` | Show command menu |
 
