@@ -349,6 +349,47 @@ function parseAccountSummary(state) {
 function parseFills(fills) {
   return (fills||[]).map(f=>({time:f.time,coin:f.coin,side:f.side,dir:f.dir||'',price:parseFloat(f.px||0),size:parseFloat(f.sz||0),fee:parseFloat(f.fee||0),closed_pnl:parseFloat(f.closedPnl||0)})).sort((a,b)=>b.time-a.time);
 }
+
+// Group raw Hyperliquid fills into trade spans (entry → exit).
+// A trade is "closed" when the position netSize returns to zero.
+function buildTrades(rawFills) {
+  if (!Array.isArray(rawFills)) return [];
+  const fills = rawFills.map(f => ({
+    time: f.time, coin: f.coin, dir: f.dir || '',
+    size: parseFloat(f.sz || 0), fee: parseFloat(f.fee || 0),
+    closed_pnl: parseFloat(f.closedPnl || 0),
+  })).sort((a, b) => a.time - b.time);
+
+  const byCoin = {};
+  for (const f of fills) { if (!byCoin[f.coin]) byCoin[f.coin] = []; byCoin[f.coin].push(f); }
+
+  const trades = [];
+  for (const [coin, coinFills] of Object.entries(byCoin)) {
+    let cur = null;
+    const save = () => {
+      if (!cur) return;
+      const exit_time = cur.closes.length ? cur.closes.at(-1).time : null;
+      const fees = [...cur.opens, ...cur.closes].reduce((s, f) => s + f.fee, 0);
+      const pnl  = cur.closes.reduce((s, f) => s + f.closed_pnl, 0);
+      trades.push({ coin, side: cur.side, entry_time: cur.entry_time, exit_time,
+        pnl, fees, net_pnl: pnl - fees,
+        hold_ms: exit_time ? exit_time - cur.entry_time : null,
+        closed: Math.abs(cur.netSize) < 0.0001 && cur.closes.length > 0 });
+      cur = null;
+    };
+    for (const f of coinFills) {
+      if (f.dir.startsWith('Open')) {
+        if (!cur) cur = { side: f.dir.includes('Long') ? 'long' : 'short', entry_time: f.time, opens: [], closes: [], netSize: 0 };
+        cur.opens.push(f); cur.netSize += f.size;
+      } else if (f.dir.startsWith('Close') && cur) {
+        cur.closes.push(f); cur.netSize -= f.size;
+        if (Math.abs(cur.netSize) < 0.0001) save();
+      }
+    }
+    save(); // flush any remaining open trade
+  }
+  return trades;
+}
 function parseFunding(funding) {
   return (funding||[]).map(f=>({time:f.time,coin:(f.delta||{}).coin,funding_rate:parseFloat((f.delta||{}).fundingRate||0),usdc:parseFloat((f.delta||{}).usdc||0)})).sort((a,b)=>b.time-a.time);
 }
