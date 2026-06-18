@@ -45,7 +45,7 @@ from hyperliquid.info     import Info
 from hyperliquid.exchange import Exchange
 from hyperliquid.utils    import constants
 
-from config          import (PRIVATE_KEY, WALLET_ADDRESS, WATCH_COINS,
+from config          import (PRIVATE_KEY, WALLET_ADDRESS, WATCH_COINS, USE_TESTNET,
                               PHASE_SCAN_INTERVAL, WALLET_SCAN_INTERVAL,
                               POSITION_POLL_INTERVAL, MIN_PHASE_CONFIDENCE,
                               MIN_VOLUME_RATIO, MAX_OPEN_BOT_POSITIONS,
@@ -119,9 +119,11 @@ def setup_hl():
     if not PRIVATE_KEY or not WALLET_ADDRESS:
         logger.error("HL_PRIVATE_KEY and HL_WALLET_ADDRESS must be set in .env")
         sys.exit(1)
+    api_url = constants.TESTNET_API_URL if USE_TESTNET else constants.MAINNET_API_URL
+    logger.info("Connecting to Hyperliquid %s (%s)", "TESTNET" if USE_TESTNET else "MAINNET", api_url)
     account: LocalAccount = eth_account.Account.from_key(PRIVATE_KEY)
-    info     = Info(constants.MAINNET_API_URL, skip_ws=True)
-    exchange = Exchange(account, constants.MAINNET_API_URL)
+    info     = Info(api_url, skip_ws=True)
+    exchange = Exchange(account, api_url)
     return info, exchange, account
 
 
@@ -532,23 +534,21 @@ def run_scan(info: Info, exchange: Exchange, state: dict) -> None:
             logger.info("%s: 1h TA failed — %s", coin, ta_1h["reason"])
             continue
 
-        # ── 15m TA
+        # ── 15m TA (scoring input only — not a hard gate, aggressive preset)
         raw_15m = fetch_candles(info, coin, "15m", 5)
         ta_15m  = check_ta_signals(raw_15m, "15m")
         if not ta_15m["ok"]:
-            logger.info("%s: 15m TA failed — %s", coin, ta_15m["reason"])
-            continue
+            logger.info("%s: 15m TA weak (%s) — proceeding anyway, scored not gated", coin, ta_15m["reason"])
 
         # ── Volume check (from 1h candles)
         if not ta_1h["vol_ok"]:
             logger.info("%s: volume too low (%.2f×) — skip", coin, ta_1h["vol_ratio"])
             continue
 
-        # ── Smart wallet check
+        # ── Smart wallet signal (optional — scoring bonus only, not a gate)
         longs = get_wallet_longs(coin)
-        if len(longs) < 1:
-            logger.info("%s: no smart wallet longs — skip", coin)
-            continue
+        if not longs:
+            logger.info("%s: no smart wallet longs (optional signal) — continuing", coin)
 
         # ── Confluence score (0-10)
         score = compute_confluence_score(phase["confidence"], ta_1h, ta_15m, len(longs))

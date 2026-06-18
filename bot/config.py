@@ -14,10 +14,13 @@ TG_CHAT_ID = os.getenv("TG_CHAT_ID", "")
 # ── Hyperliquid API
 HL_API_URL = "https://api.hyperliquid.xyz"
 
-# ── Risk parameters
-MARGIN_PCT   = 0.10   # use 10% of account value per trade
-MAX_LEVERAGE = 10     # at SL_PCT=8%, liquidation at ~-10% → 10x is safe
-SL_PCT       = 0.08   # 8% SL — tight enough for 10x (liq at -10%)
+# ── Network — set HL_TESTNET=1 in .env to run against Hyperliquid testnet
+USE_TESTNET = os.getenv("HL_TESTNET", "0") == "1"
+
+# ── Risk parameters (high-aggressive preset)
+MARGIN_PCT   = 0.20   # use 20% of account value per trade
+MAX_LEVERAGE = 15     # ceiling; safe_leverage() still caps to keep SL ahead of liquidation
+SL_PCT       = 0.08   # 8% SL — at this SL, safe_leverage() caps effective max to ~11x
 TP_PCT_FIXED = 0.75   # fallback fixed TP if phase never changes
 MAX_OPEN_BOT_POSITIONS = 3
 
@@ -37,11 +40,13 @@ DSL_TIERS = [
     (0.35, 0.70),
 ]
 
-# ── Entry conditions
-MIN_PHASE_CONFIDENCE  = 0.40   # accumulation confidence threshold
+# ── Entry conditions (high-aggressive preset)
+MIN_PHASE_CONFIDENCE  = 0.25   # accumulation confidence threshold
 MIN_VOLUME_RATIO      = 1.20   # recent vol must be 1.2× average
-MIN_WALLET_SIGNALS    = 1      # at least 1 smart wallet must be long
-MIN_CONFLUENCE_SCORE  = 5      # minimum score (0-10) to allow entry
+MIN_CONFLUENCE_SCORE  = 3      # minimum score (0-10) to allow entry
+MIN_WALLET_SIGNALS    = 1      # used by wallet_monitor.has_wallet_signal() (unused by main.py's
+                                # entry logic — smart-wallet confirmation there is an optional
+                                # confluence score bonus only, not a required gate)
 
 # ── Funding rate filter (8h rate from metaAndAssetCtxs)
 # Skip long entry if funding is extremely positive (crowded longs paying too much)
@@ -56,7 +61,7 @@ HALT_HOURS             = 24     # cool-down period in hours after guardrail trip
 ASSET_COOLDOWN_MINUTES = 120    # per-asset cool-down (minutes) after a loss on that asset
 
 # ── BTC macro gate: skip entries if BTC 4h move is hostile (blocks trades into momentum)
-BTC_MACRO_GATE_PCT  = 0.03   # block long if BTC 4h dropped >3%; short if BTC 4h gained >3%
+BTC_MACRO_GATE_PCT  = 0.05   # block long if BTC 4h dropped >5%; short if BTC 4h gained >5%
 
 # ── LLM veto layer: route through Supabase llm-router Edge Function
 # Set LLM_ROUTER_URL=https://xxx.supabase.co/functions/v1/llm-router in .env to enable.
@@ -64,8 +69,8 @@ LLM_ROUTER_URL        = os.getenv("LLM_ROUTER_URL", "")
 LLM_VETO_ENABLED      = bool(LLM_ROUTER_URL) or bool(os.getenv("ANTHROPIC_API_KEY", ""))
 LLM_VETO_MIN_SCORE    = 6       # only run LLM veto when confluence score >= this
 
-# ── Coins the bot can trade
-WATCH_COINS = ["BTC", "ETH", "SOL", "HYPE", "SUI", "AVAX"]
+# ── Coins the bot can trade (priority order)
+WATCH_COINS = ["BTC", "HYPE", "SOL", "ETH"]
 
 # ── Scan intervals (seconds)
 PHASE_SCAN_INTERVAL    = 300    # 5 min
