@@ -266,10 +266,12 @@ function _capRenderTradesSection() {
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <div>${windowBtns}</div>
         <input id="cap-coin-filter" type="text" placeholder="Filter coin…" value="${_capEsc(_capCoinFilter)}"
-          oninput="_capCoinFilter=this.value;_capRenderTradesTables()"
+          oninput="_capCoinFilter=this.value;_capRefreshFilteredViews()"
           style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:5px 10px;font-size:12px;outline:none;width:120px">
       </div>
     </div>
+
+    <div id="cap-stats-section" style="margin-bottom:18px"></div>
 
     <div class="card-title">Closed Trades</div>
     <div id="cap-trades-table" class="table-wrap" style="margin-bottom:18px"></div>
@@ -277,7 +279,100 @@ function _capRenderTradesSection() {
     <div class="card-title">Recent Fills &amp; Fees</div>
     <div id="cap-fills-table" class="table-wrap"></div>`;
 
+  _capRefreshFilteredViews();
+}
+
+function _capRefreshFilteredViews() {
   _capRenderTradesTables();
+  _capRenderStats();
+}
+
+// ── Journal stats (win rate, profit factor, R:R, max drawdown, equity curve) ──
+
+function _capMaxDrawdown(cumSeries) {
+  let peak = 0, maxDD = 0;
+  for (const pt of cumSeries) {
+    if (pt.v > peak) peak = pt.v;
+    maxDD = Math.max(maxDD, peak - pt.v);
+  }
+  return maxDD;
+}
+
+function _capRenderStats() {
+  const wrap = document.getElementById('cap-stats-section');
+  if (!wrap || !_capData) return;
+  const q = (_capCoinFilter || '').toUpperCase().trim();
+  const match = t => !q || t.coin.toUpperCase().includes(q);
+  const trades = _capWindowFilter(_capData.perpTrades, 'exit_time').filter(match);
+
+  if (typeof buildAnalytics !== 'function' || trades.length === 0) {
+    wrap.innerHTML = '';
+    return;
+  }
+  const an = buildAnalytics(trades);
+  if (!an) { wrap.innerHTML = ''; return; }
+
+  const o = an.overall;
+  const rr = o.avgLoss !== 0 ? Math.abs(o.avgWin / o.avgLoss) : null;
+  const maxDD = _capMaxDrawdown(an.cumSeries);
+
+  wrap.innerHTML = `
+    <div class="card-title">Journal Stats</div>
+    <div class="grid-4" style="margin-bottom:10px">
+      <div class="stat-card">
+        <div class="stat-label">Win Rate</div>
+        <div class="stat-value ${o.winRate>=0.5?'pos':'neg'}">${(o.winRate*100).toFixed(1)}%</div>
+        <div class="stat-sub muted" style="font-size:10px;margin-top:2px">${o.winCount}W / ${o.lossCount}L</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Profit Factor</div>
+        <div class="stat-value ${o.profitFactor>1?'pos':'neg'}">${o.profitFactor ? o.profitFactor.toFixed(2) : '—'}</div>
+        <div class="stat-sub muted" style="font-size:10px;margin-top:2px">R:R ${rr ? rr.toFixed(2) : '—'}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Avg Win / Loss</div>
+        <div class="stat-value" style="font-size:16px"><span class="pos">${fmt$(o.avgWin)}</span> / <span class="neg">${fmt$(o.avgLoss)}</span></div>
+        <div class="stat-sub muted" style="font-size:10px;margin-top:2px">Avg hold ${_capFmtHold(o.avgHoldMs)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Max Drawdown</div>
+        <div class="stat-value neg">−${fmt$(maxDD)}</div>
+        <div class="stat-sub muted" style="font-size:10px;margin-top:2px">Peak-to-trough, closed-trade PnL</div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:0">
+      <div style="height:120px;position:relative"><canvas id="cap-equity-chart"></canvas></div>
+    </div>`;
+
+  try { _capRenderEquityChart(an.cumSeries); } catch (e) { console.warn('[Capital] equity chart failed:', e.message); }
+}
+
+function _capRenderEquityChart(cumSeries) {
+  const ctx = document.getElementById('cap-equity-chart');
+  if (!ctx || typeof Chart === 'undefined') return;
+  if (ctx._chart) ctx._chart.destroy();
+  if (!cumSeries || cumSeries.length === 0) return;
+
+  ctx._chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: cumSeries.map(p => fmtTime(p.t)),
+      datasets: [{
+        data: cumSeries.map(p => p.v),
+        borderColor: 'rgba(74,222,128,0.9)',
+        backgroundColor: 'rgba(74,222,128,0.12)',
+        borderWidth: 1.5, pointRadius: 0, fill: true, tension: 0.15,
+      }],
+    },
+    options: {
+      animation: false, responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => `Cumulative: ${fmt$(c.raw)}` } } },
+      scales: {
+        x: { display: false },
+        y: { ticks: { color: 'var(--text-muted)', font: { size: 9 }, callback: v => fmt$(v) }, grid: { color: 'var(--border)' } },
+      },
+    },
+  });
 }
 
 function _capRenderTradesTables() {
