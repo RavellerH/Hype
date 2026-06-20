@@ -33,3 +33,7 @@ FG_GREED_GATE = "80"
 OI_SPIKE_PCT = "0.08"
 # Liquidation cascade threshold — total 24h liq in USD to trigger alert
 LIQ_CASCADE_USD = "150000000"
+# Capital drawdown-from-peak alert threshold (10 = 10%)
+DRAWDOWN_ALERT_PCT = "10"
+# Spot/perps allocation drift alert threshold (80 = 80% of total capital in one side)
+ALLOC_DRIFT_PCT = "80"

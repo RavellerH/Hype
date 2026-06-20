@@ -7,11 +7,13 @@
  *   every 4h         — reversal pattern scan (4h candle close)
  *   every 4h         — multi-TF trend alignment check
  *   midnight UTC     — daily snapshot → Supabase + Telegram
+ *                      (also checks capital drawdown-from-peak + spot/perps allocation drift)
  *   Sunday midnight  — weekly performance review
  *
  * Secrets: WALLET, TG_TOKEN, TG_CHAT, SUPABASE_URL, SUPABASE_KEY, COINGLASS_KEY
  * KV namespace: ALERT_STATE
- * Env vars: SIGNAL_COINS, ARB_THRESHOLD, MAX_FUNDING, FG_GREED_GATE
+ * Env vars: SIGNAL_COINS, ARB_THRESHOLD, MAX_FUNDING, FG_GREED_GATE,
+ *           DRAWDOWN_ALERT_PCT (default 10), ALLOC_DRIFT_PCT (default 80)
  */
 
 // ── TA Helpers ────────────────────────────────────────────────────────────────
@@ -241,6 +243,26 @@ async function getPortfolioState(wallet) {
   return { positions, accountValue };
 }
 
+async function getSpotValue(wallet) {
+  const [state, spotMeta] = await Promise.all([
+    hlPost({ type: 'spotClearinghouseState', user: wallet }),
+    hlPost({ type: 'spotMetaAndAssetCtxs' }),
+  ]);
+  const [meta, assetCtxs = []] = spotMeta || [];
+  const universe = meta?.universe || [];
+  const priceMap = {};
+  universe.forEach((u, i) => {
+    const px = parseFloat(assetCtxs[i]?.midPx || assetCtxs[i]?.markPx || 0);
+    if (px) priceMap[u.name.split('/')[0]] = px;
+  });
+  const balances = state?.balances || [];
+  const usdcBalance = parseFloat(balances.find(b => b.coin === 'USDC')?.total || 0);
+  const holdingsValue = balances
+    .filter(b => b.coin !== 'USDC')
+    .reduce((sum, b) => sum + (priceMap[b.coin] || 0) * parseFloat(b.total || 0), 0);
+  return usdcBalance + holdingsValue;
+}
+
 async function getRecentFills(wallet, days = 7) {
   const since = Date.now() - days * 86400000;
   const fills = await hlPost({ type: 'userFills', user: wallet, startTime: since });
@@ -356,7 +378,7 @@ const _oiT   = v => Math.abs(v) > 0.08 ? (v > 0 ? '[SPIKE!]' : '[FLUSH!]') : (v 
 
 // ── KV Dedup ──────────────────────────────────────────────────────────────────
 
-const COOLDOWNS = { signal: 4 * 3600000, reversal: 12 * 3600000, arb: 4 * 3600000 };
+const COOLDOWNS = { signal: 4 * 3600000, reversal: 12 * 3600000, arb: 4 * 3600000, drawdown: 12 * 3600000, alloc: 24 * 3600000 };
 
 async function isOnCooldown(kv, key, type = 'signal') {
   const val = await kv.get(key);
@@ -817,24 +839,69 @@ async function checkFundingArb(env) {
 
 // ── Daily Snapshot ────────────────────────────────────────────────────────────
 
+async function checkCapitalAlerts(env, accountValue, spotValue, totalValue) {
+  if (!env.ALERT_STATE || totalValue <= 0) return;
+
+  // Drawdown from peak total capital
+  const peakStr = await env.ALERT_STATE.get('cap:peak');
+  const peak = peakStr ? parseFloat(peakStr) : totalValue;
+  if (totalValue >= peak) {
+    await env.ALERT_STATE.put('cap:peak', String(totalValue));
+  } else {
+    const ddThreshold = parseFloat(env.DRAWDOWN_ALERT_PCT || '10') / 100;
+    const drawdownPct = (peak - totalValue) / peak;
+    if (drawdownPct >= ddThreshold && !(await isOnCooldown(env.ALERT_STATE, 'cap:dd', 'drawdown'))) {
+      await tgSend(env.TG_TOKEN, env.TG_CHAT, `${_hdr('CAPITAL DRAWDOWN')}\n${_blk([
+        _row('Peak', `$${peak.toFixed(2)}`),
+        _row('Now',  `$${totalValue.toFixed(2)}`),
+        _row('Drop', `-${(drawdownPct * 100).toFixed(1)}%`),
+      ])}`);
+      await setCooldown(env.ALERT_STATE, 'cap:dd');
+    }
+  }
+
+  // Allocation drift between spot and perps
+  const driftThreshold = parseFloat(env.ALLOC_DRIFT_PCT || '80') / 100;
+  const spotPct = spotValue / totalValue;
+  const perpPct = accountValue / totalValue;
+  const skewed = spotPct >= driftThreshold ? 'SPOT' : perpPct >= driftThreshold ? 'PERPS' : null;
+  if (skewed && !(await isOnCooldown(env.ALERT_STATE, 'cap:alloc', 'alloc'))) {
+    await tgSend(env.TG_TOKEN, env.TG_CHAT, `${_hdr('ALLOCATION DRIFT')}\n${_blk([
+      _row('Spot',  `${(spotPct * 100).toFixed(1)}%`),
+      _row('Perps', `${(perpPct * 100).toFixed(1)}%`),
+      _row('Skew',  skewed),
+    ])}`);
+    await setCooldown(env.ALERT_STATE, 'cap:alloc');
+  }
+}
+
 async function dailySnapshot(env) {
   if (!env.WALLET) return;
-  const { positions, accountValue } = await getPortfolioState(env.WALLET);
+  const [{ positions, accountValue }, spotValue] = await Promise.all([
+    getPortfolioState(env.WALLET),
+    getSpotValue(env.WALLET).catch(() => 0),
+  ]);
+  const totalValue = accountValue + spotValue;
   const now = Date.now();
 
   if (env.SUPABASE_URL && env.SUPABASE_KEY) {
     await sbUpsert(env.SUPABASE_URL, env.SUPABASE_KEY, 'hype_snapshots', [{
       id: `snap-${now}`, wallet: env.WALLET, ts: now,
-      account_value: accountValue, position_count: positions.length,
+      account_value: accountValue, spot_value: spotValue, total_value: totalValue,
+      position_count: positions.length,
       positions_json: JSON.stringify(positions),
     }]);
   }
+
+  await checkCapitalAlerts(env, accountValue, spotValue, totalValue);
 
   const totalPnl = positions.reduce((a, p) => a + p.unrealizedPnl, 0);
   const pnlSign = totalPnl >= 0 ? '+' : '';
   const header = _hdr(`SNAP ${new Date(now).toISOString().slice(0,10)}`);
   const summary = _blk([
-    _row('NAV',   `$${accountValue.toFixed(2)}`),
+    _row('Total', `$${totalValue.toFixed(2)}`),
+    _row('Perps', `$${accountValue.toFixed(2)}`),
+    _row('Spot',  `$${spotValue.toFixed(2)}`),
     _row('uPNL',  `${pnlSign}$${totalPnl.toFixed(2)}`, _pnlT(totalPnl)),
     _row('OPEN',  positions.length),
   ]);

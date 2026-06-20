@@ -89,7 +89,7 @@ async function loadCapital() {
     _capRenderShell();
     _capRenderLiveCards();
     _capRenderTradesSection();
-    try { _capRenderHistoryChart(); } catch (chartErr) { console.warn('[Capital] chart render failed:', chartErr.message); }
+    try { await _capRenderHistoryChart(); } catch (chartErr) { console.warn('[Capital] chart render failed:', chartErr.message); }
     _capSetUpdatedNow();
     setRefreshTime();
     startCapitalPolling();
@@ -189,10 +189,41 @@ function _capRenderLiveCards() {
 
 // ── History chart (capital allocation over time) ──────────────────────────────
 
-function _capRenderHistoryChart() {
+// Snapshots persisted by the Cloudflare bot (cloudflare/bot-worker.js → hype_snapshots table)
+// survive localStorage clears / new devices. Local daily snaps win on date overlap since they
+// carry more detail; remote rows only fill in dates missing from local history.
+async function _capFetchRemoteSnaps() {
+  const url = localStorage.getItem('hype_sb_url') || '';
+  const key = localStorage.getItem('hype_sb_anon') || '';
+  if (!url || !key || !currentWallet) return [];
+  const endpoint = `${url.replace(/\/$/, '')}/rest/v1/hype_snapshots?wallet=eq.${encodeURIComponent(currentWallet)}&order=ts.asc&limit=400`;
+  const resp = await fetch(endpoint, { headers: { apikey: key, Authorization: `Bearer ${key}` } });
+  if (!resp.ok) return [];
+  const rows = await resp.json();
+  return rows.map(r => ({
+    type: 'daily',
+    date: new Date(r.ts).toISOString().slice(0, 10),
+    ts: r.ts,
+    account_value: r.account_value,
+    spot_value: r.spot_value ?? 0,
+    total_value: r.total_value ?? null,
+  }));
+}
+
+function _capMergeSnaps(local, remote) {
+  const byDate = new Map();
+  remote.forEach(s => byDate.set(s.date, s));
+  local.forEach(s => byDate.set(s.date, s));
+  return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
+}
+
+async function _capRenderHistoryChart() {
   const ctx = document.getElementById('cap-history-chart');
   if (!ctx || typeof _ajLoadSnaps !== 'function' || typeof Chart === 'undefined') return;
-  const snaps = _ajLoadSnaps().filter(s => s.type === 'daily').slice(-60);
+  const local = _ajLoadSnaps().filter(s => s.type === 'daily');
+  let remote = [];
+  try { remote = await _capFetchRemoteSnaps(); } catch (e) { console.warn('[Capital] remote snapshot fetch failed:', e.message); }
+  const snaps = _capMergeSnaps(local, remote).slice(-60);
   if (ctx._chart) ctx._chart.destroy();
   if (snaps.length === 0) return;
 

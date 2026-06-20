@@ -166,7 +166,7 @@ A separate cron Worker (`cloudflare/bot-worker.js`) runs autonomously on Cloudfl
 |---|---|
 | Every 15 min | Signal check: EMA20/50 + MACD cross + RSI + funding gate → Telegram alert per coin (4h cooldown) |
 | Every 15 min | Funding arb check: HL vs Binance/Bybit spread > threshold → Telegram alert |
-| Midnight UTC | Daily snapshot → Supabase `hype_snapshots` + Telegram portfolio summary |
+| Midnight UTC | Daily snapshot → Supabase `hype_snapshots` + Telegram portfolio summary, plus capital drawdown-from-peak and spot/perps allocation-drift alerts |
 
 **One-time setup:**
 ```bash
@@ -218,13 +218,21 @@ CREATE TABLE hype_snapshots (
   wallet TEXT,
   ts BIGINT,
   account_value NUMERIC,
+  spot_value NUMERIC,
+  total_value NUMERIC,
   position_count INTEGER,
   positions_json TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 ```
 
-Env vars in `wrangler-bot.toml [vars]`: `SIGNAL_COINS`, `ARB_THRESHOLD`, `MAX_FUNDING`.
+If the table already exists from before spot/total tracking was added, run instead:
+```sql
+ALTER TABLE hype_snapshots ADD COLUMN IF NOT EXISTS spot_value NUMERIC;
+ALTER TABLE hype_snapshots ADD COLUMN IF NOT EXISTS total_value NUMERIC;
+```
+
+Env vars in `wrangler-bot.toml [vars]`: `SIGNAL_COINS`, `ARB_THRESHOLD`, `MAX_FUNDING`, `DRAWDOWN_ALERT_PCT` (default 10), `ALLOC_DRIFT_PCT` (default 80).
 
 ---
 

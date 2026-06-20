@@ -67,9 +67,12 @@ The 15-min cron alternates between signal/flip and arb every 15 minutes using `n
 
 ### `dailySnapshot`
 - Requires `WALLET` secret
-- Fetches portfolio positions + account value
-- Upserts to Supabase `hype_snapshots` table (if Supabase configured)
-- Sends Telegram summary: NAV, position count, position list
+- Fetches portfolio positions + perps account value + spot value (`getSpotValue`)
+- Upserts to Supabase `hype_snapshots` table — `account_value`, `spot_value`, `total_value` (if Supabase configured)
+- Runs `checkCapitalAlerts`:
+  - **Drawdown from peak** — tracks running peak `total_value` in KV (`cap:peak`); fires if current value is down ≥ `DRAWDOWN_ALERT_PCT` (10% default) from that peak. 12h cooldown.
+  - **Allocation drift** — fires if spot or perps share of total capital crosses `ALLOC_DRIFT_PCT` (80% default). 24h cooldown.
+- Sends Telegram summary: total/perps/spot value, uPNL, position count, position list
 
 ### `weeklyReview`
 - Requires `WALLET` secret
@@ -225,10 +228,16 @@ CREATE TABLE hype_snapshots (
   wallet TEXT,
   ts BIGINT,
   account_value NUMERIC,
+  spot_value NUMERIC,
+  total_value NUMERIC,
   position_count INTEGER,
   positions_json TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- If hype_snapshots already exists from before spot/total tracking was added, run:
+-- ALTER TABLE hype_snapshots ADD COLUMN IF NOT EXISTS spot_value NUMERIC;
+-- ALTER TABLE hype_snapshots ADD COLUMN IF NOT EXISTS total_value NUMERIC;
 
 -- Auto-journal table (closed trades from autojournal.js)
 CREATE TABLE hype_journal (
