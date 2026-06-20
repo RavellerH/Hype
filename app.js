@@ -10,7 +10,7 @@ let activeNarrative = 'all';
 let autoRefreshTimer = null;
 let _silentRefresh = false;
 let _lastRefreshTs = 0;
-const _SKIP_SILENT = new Set(['phases','monitor','journal','analytics','kb','mvrv','ai']);
+const _SKIP_SILENT = new Set(['phases','monitor','journal','analytics','kb','mvrv','ai','capital']);
 let marketSortKey = 'volume';
 let allMarketData = [];
 let _recentPnlHours = 24;
@@ -356,7 +356,7 @@ function buildTrades(rawFills) {
   if (!Array.isArray(rawFills)) return [];
   const fills = rawFills.map(f => ({
     time: f.time, coin: f.coin, dir: f.dir || '',
-    size: parseFloat(f.sz || 0), fee: parseFloat(f.fee || 0),
+    size: parseFloat(f.sz || 0), price: parseFloat(f.px || 0), fee: parseFloat(f.fee || 0),
     closed_pnl: parseFloat(f.closedPnl || 0),
   })).sort((a, b) => a.time - b.time);
 
@@ -371,7 +371,12 @@ function buildTrades(rawFills) {
       const exit_time = cur.closes.length ? cur.closes.at(-1).time : null;
       const fees = [...cur.opens, ...cur.closes].reduce((s, f) => s + f.fee, 0);
       const pnl  = cur.closes.reduce((s, f) => s + f.closed_pnl, 0);
+      const entrySize = cur.opens.reduce((s, f) => s + f.size, 0);
+      const exitSize  = cur.closes.reduce((s, f) => s + f.size, 0);
+      const avgEntry  = entrySize > 0 ? cur.opens.reduce((s, f) => s + f.size * f.price, 0) / entrySize : 0;
+      const avgExit   = exitSize  > 0 ? cur.closes.reduce((s, f) => s + f.size * f.price, 0) / exitSize  : 0;
       trades.push({ coin, side: cur.side, entry_time: cur.entry_time, exit_time,
+        avg_entry: avgEntry, avg_exit: avgExit, size: entrySize, fill_count: cur.opens.length + cur.closes.length,
         pnl, fees, net_pnl: pnl - fees,
         hold_ms: exit_time ? exit_time - cur.entry_time : null,
         closed: Math.abs(cur.netSize) < 0.0001 && cur.closes.length > 0 });
@@ -613,6 +618,7 @@ function navigate(page) {
   try {
     closeDrawer();
     if (currentPage === 'monitor' && page !== 'monitor') disconnectWS();
+    if (currentPage === 'capital' && page !== 'capital' && typeof stopCapitalPolling === 'function') stopCapitalPolling();
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
     document.querySelectorAll('.nav-item,.bottom-nav-item,.topbar-tab,.drawer-item').forEach(n=>n.classList.remove('active'));
     const pageEl = document.getElementById(`page-${page}`);
@@ -620,7 +626,7 @@ function navigate(page) {
     pageEl.classList.add('active');
     document.querySelectorAll(`[data-page="${page}"]`).forEach(el=>el.classList.add('active'));
     currentPage = page;
-    const loaders={overview:loadOverview,trades:loadTrades,funding:loadFunding,flows:loadFlows,monitor:loadMonitor,markets:loadMarkets,phases:loadPhases,intel:typeof loadIntel!=='undefined'?loadIntel:null,watchlist:loadWatchlist,journal:typeof loadJournal!=='undefined'?loadJournal:null,indicators:typeof loadIndicators!=='undefined'?loadIndicators:null,smartmoney:typeof loadNansen!=='undefined'?loadNansen:null,analytics:typeof loadAnalytics!=='undefined'?loadAnalytics:null,signals:typeof loadSignals!=='undefined'?loadSignals:null,news:typeof loadNews!=='undefined'?loadNews:null,hlpulse:typeof loadHLPulse!=='undefined'?loadHLPulse:null,fundamentals:typeof loadFundamentals!=='undefined'?loadFundamentals:null,ai:typeof loadAI!=='undefined'?loadAI:null,arb:typeof loadArb!=='undefined'?loadArb:null,defi:typeof loadDefi!=='undefined'?loadDefi:null,kb:typeof loadKB!=='undefined'?loadKB:null,trend:typeof loadTrend!=='undefined'?loadTrend:null,onchain:typeof loadOnchain!=='undefined'?loadOnchain:null,heatmap:typeof loadHeatmap!=='undefined'?loadHeatmap:null};
+    const loaders={overview:loadOverview,capital:typeof loadCapital!=='undefined'?loadCapital:null,trades:loadTrades,funding:loadFunding,flows:loadFlows,monitor:loadMonitor,markets:loadMarkets,phases:loadPhases,intel:typeof loadIntel!=='undefined'?loadIntel:null,watchlist:loadWatchlist,journal:typeof loadJournal!=='undefined'?loadJournal:null,indicators:typeof loadIndicators!=='undefined'?loadIndicators:null,smartmoney:typeof loadNansen!=='undefined'?loadNansen:null,analytics:typeof loadAnalytics!=='undefined'?loadAnalytics:null,signals:typeof loadSignals!=='undefined'?loadSignals:null,news:typeof loadNews!=='undefined'?loadNews:null,hlpulse:typeof loadHLPulse!=='undefined'?loadHLPulse:null,fundamentals:typeof loadFundamentals!=='undefined'?loadFundamentals:null,ai:typeof loadAI!=='undefined'?loadAI:null,arb:typeof loadArb!=='undefined'?loadArb:null,defi:typeof loadDefi!=='undefined'?loadDefi:null,kb:typeof loadKB!=='undefined'?loadKB:null,trend:typeof loadTrend!=='undefined'?loadTrend:null,onchain:typeof loadOnchain!=='undefined'?loadOnchain:null,heatmap:typeof loadHeatmap!=='undefined'?loadHeatmap:null};
     if(loaders[page]) loaders[page]();
   } catch(e) { console.error('navigate error:', e); }
 }

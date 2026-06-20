@@ -104,16 +104,24 @@ async function journalDailySnapshot() {
   if (snaps.some(s => s.date === today && s.type === 'daily')) return;
 
   try {
-    const [state] = await Promise.all([getClearinghouseState(currentWallet)]);
+    const [state, spotStateRaw, spotMetaRaw] = await Promise.all([
+      getClearinghouseState(currentWallet),
+      getSpotState(currentWallet).catch(() => null),
+      getSpotMeta().catch(() => null),
+    ]);
     const positions    = parsePositions(state);
     const accountValue = parseFloat(state.marginSummary?.accountValue || 0);
     const unrealPnl    = positions.reduce((s, p) => s + (p.unrealizedPnl || 0), 0);
+    const { balances: spotBals, usdcBalance } = parseSpotBalances(spotStateRaw, spotMetaRaw);
+    const spotValue = spotBals.reduce((s, b) => s + b.value, 0) + usdcBalance;
 
     snaps.push({
       type:           'daily',
       date:           today,
       ts:             Date.now(),
       account_value:  accountValue,
+      spot_value:     spotValue,
+      total_value:    accountValue + spotValue,
       unrealized_pnl: unrealPnl,
       open_positions: positions.length,
       positions:      positions.slice(0, 10).map(p => ({

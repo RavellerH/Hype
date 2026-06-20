@@ -11,6 +11,7 @@ A personal trading dashboard for [Hyperliquid](https://hyperliquid.xyz) — live
 | Tab | What it does |
 |---|---|
 | **Portfolio** | Live positions, spot balances, unrealized PnL, health score, portfolio growth chart |
+| **Capital** | Real-time spot vs. perps capital breakdown, allocation bar, historical allocation chart, detailed closed-trade & fee journal (perps) |
 | **Trades** | Full fill history (perp + spot), win rate, realized PnL, fee totals |
 | **Funding** | Funding payments by coin, daily bar chart, annualized rate per position |
 | **Flows** | Deposit/withdrawal ledger with historical IDR exchange rates |
@@ -65,6 +66,7 @@ Hype/
 ├── indicators.js       Fear & Greed, BMSB, Pi Cycle
 ├── nansen.js           Smart Money wallet tracking
 ├── journal.js          Trade journal (localStorage)
+├── capital.js          Capital — live spot/perps breakdown, allocation history, trade & fee journal
 ├── kb.js               Knowledge base
 ├── position-meta.js    Per-position intent / thesis modal
 ├── logger.js           Data logger & portfolio snapshots
@@ -228,7 +230,13 @@ Env vars in `wrangler-bot.toml [vars]`: `SIGNAL_COINS`, `ARB_THRESHOLD`, `MAX_FU
 
 ## Changelog
 
-### 2026-05-31 (latest — telegram bot + webhook)
+### 2026-06-20 (latest — Capital tab)
+- **New Capital tab** — live spot vs. perps capital breakdown with allocation bar, polled every ~12s (`capital.js`).
+- **Capital history chart** — stacked spot/perps allocation over time, built from daily snapshots.
+- **Detailed perps trade & fee journal** — closed trades with avg entry/exit, hold time, gross/fee/net PnL, plus a recent fills & fees table, filterable by coin and time window.
+- **Daily snapshots now include spot value** (`autojournal.js`) — `spot_value` / `total_value` alongside existing perps `account_value`, powering the new history chart going forward.
+
+### 2026-05-31 (telegram bot + webhook)
 - **Telegram command bot** — bot now responds to `/signals`, `/snapshot`, `/arb`, `/status`, `/help` commands interactively via Telegram webhook. Commands execute instantly on demand without waiting for the next cron.
 - **Webhook registration endpoint** — `/register-webhook` auto-registers the Cloudflare Worker URL with Telegram. One-time setup.
 - **BotFather config** — command menu, description, and about text registered via BotFather for clean UX.

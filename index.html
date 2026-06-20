@@ -28,6 +28,7 @@
 
     <nav class="topbar-nav">
       <button class="topbar-tab active" data-page="overview"  onclick="navigate('overview')">Portfolio</button>
+      <button class="topbar-tab"        data-page="capital"   onclick="navigate('capital')">Capital</button>
       <button class="topbar-tab"        data-page="trades"    onclick="navigate('trades')">Trades</button>
       <button class="topbar-tab"        data-page="funding"   onclick="navigate('funding')">Funding</button>
       <button class="topbar-tab"        data-page="flows"     onclick="navigate('flows')">Flows</button>
@@ -69,6 +70,7 @@
   <nav class="sidebar">
     <div class="nav-section">Portfolio</div>
     <a class="nav-item active" data-page="overview"      onclick="navigate('overview')"><span class="icon">📊</span>Overview</a>
+    <a class="nav-item"        data-page="capital"        onclick="navigate('capital')"><span class="icon">💼</span>Capital</a>
     <a class="nav-item"        data-page="trades"         onclick="navigate('trades')"><span class="icon">🔄</span>Trades</a>
     <a class="nav-item"        data-page="funding"        onclick="navigate('funding')"><span class="icon">💹</span>Funding</a>
     <a class="nav-item"        data-page="flows"          onclick="navigate('flows')"><span class="icon">💰</span>Flows</a>
@@ -128,6 +130,9 @@
     <button class="bottom-nav-item" data-page="trades" onclick="navigate('trades')">
       <span class="bnav-icon">🔄</span><span>Trades</span>
     </button>
+    <button class="bottom-nav-item" data-page="capital" onclick="navigate('capital')">
+      <span class="bnav-icon">💼</span><span>Capital</span>
+    </button>
     <button class="bottom-nav-item" data-page="phases" onclick="navigate('phases')">
       <span class="bnav-icon">🔵</span><span>Phase</span>
     </button>
@@ -151,6 +156,7 @@
     <div class="nav-drawer-body">
       <div class="nav-drawer-section">Main</div>
       <button class="drawer-item active" data-page="overview"  onclick="navigate('overview')"><span class="drawer-item-icon">📊</span>Portfolio</button>
+      <button class="drawer-item"        data-page="capital"   onclick="navigate('capital')"><span class="drawer-item-icon">💼</span>Capital</button>
       <button class="drawer-item"        data-page="trades"    onclick="navigate('trades')"><span class="drawer-item-icon">🔄</span>Trades</button>
       <button class="drawer-item"        data-page="funding"   onclick="navigate('funding')"><span class="drawer-item-icon">💹</span>Funding</button>
       <button class="drawer-item"        data-page="flows"     onclick="navigate('flows')"><span class="drawer-item-icon">💰</span>Flows</button>
@@ -181,6 +187,7 @@
 
   <main class="main">
     <div class="page active"  id="page-overview"><div id="overview-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
+    <div class="page"         id="page-capital"><div id="capital-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page"         id="page-trades"><div id="trades-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page"         id="page-funding"><div id="funding-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page"         id="page-flows"><div id="flows-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
@@ -220,6 +227,7 @@
 <script src="position-meta.js"></script>
 <script src="autojournal.js"></script>
 <script src="journal.js"></script>
+<script src="capital.js"></script>
 <script src="indicators.js"></script>
 <script src="nansen.js"></script>
 <script src="analytics.js"></script>
