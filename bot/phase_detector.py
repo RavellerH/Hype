@@ -3,7 +3,16 @@ Wyckoff phase detector — ported from app.js detectPhase().
 Returns {"phase": str, "confidence": float, "score": float, "signals": list}
 """
 
+import math
+
 from indicators import ema, macd, rsi, atr, volume_ratio, parse_candles
+
+# Logistic calibration of confidence = P(direction implied by score is correct),
+# fitted via calibrate_confidence.py against forward returns on synthetic
+# Wyckoff cycles (12 seeds x 365d, 10-candle horizon). Replaces the previous
+# arbitrary `abs(score) + length bonus` heuristic with an actual probability.
+CONFIDENCE_A = 2.2704
+CONFIDENCE_B = -0.0846
 
 
 PHASES = {
@@ -177,8 +186,8 @@ def detect_phase(raw_candles: list[dict]) -> dict:
     elif bear_sigs >= 3:
         score -= 0.04
 
-    # ── Confidence (absolute score boosted by data length)
-    confidence = min(abs(score) + 0.04 * min(n / 60, 1.0), 1.0)
+    # ── Confidence: calibrated P(direction is correct | |score|)
+    confidence = 1.0 / (1.0 + math.exp(-(CONFIDENCE_A * abs(score) + CONFIDENCE_B)))
 
     # ── Phase classification
     phase = "NEUTRAL"

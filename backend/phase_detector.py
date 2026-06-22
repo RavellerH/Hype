@@ -8,10 +8,18 @@ Logic:
   - Combines signals into a phase score
 """
 
+import math
 from dataclasses import dataclass
 from typing import Literal
 
 Phase = Literal["ACCUMULATION", "MARKUP", "DISTRIBUTION", "MARKDOWN", "NEUTRAL"]
+
+# Logistic calibration of confidence = P(direction implied by score is correct),
+# fitted via bot/calibrate_confidence.py against forward returns on synthetic
+# Wyckoff cycles (12 seeds x 365d, 10-candle horizon). Replaces the previous
+# arbitrary `abs(score) + length bonus` heuristic with an actual probability.
+CONFIDENCE_A = 3.4847
+CONFIDENCE_B = -1.1124
 
 
 @dataclass
@@ -135,7 +143,7 @@ def detect_phase(candles: list[dict]) -> PhaseResult:
     else:
         phase = "NEUTRAL"
 
-    confidence = min(abs(score) + 0.1 * min(len(candles) / 50, 1.0), 1.0)
+    confidence = 1.0 / (1.0 + math.exp(-(CONFIDENCE_A * abs(score) + CONFIDENCE_B)))
 
     return PhaseResult(
         phase=phase,
