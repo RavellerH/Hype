@@ -32,7 +32,7 @@ PHASE_TYPICAL_CANDLES = {
 }
 
 
-def detect_phase(raw_candles: list[dict]) -> dict:
+def detect_phase(raw_candles: list[dict], orderbook_score: float = 0.0) -> dict:
     if len(raw_candles) < 60:
         return {"phase": "NEUTRAL", "confidence": 0.0, "score": 0.0, "signals": []}
 
@@ -171,6 +171,16 @@ def detect_phase(raw_candles: list[dict]) -> dict:
     elif consec <= -4:
         score -= 0.08
         signals.append(f"CONSEC_DOWN({abs(consec)})")
+
+    # ── Orderbook pressure (optional, from orderbook_analyzer.get_orderbook_signal)
+    # Capped contribution so a thin/stale book snapshot can't dominate the candle-based read.
+    if orderbook_score:
+        ob_contrib = max(-0.15, min(0.15, orderbook_score * 0.15))
+        score += ob_contrib
+        if orderbook_score > 0.25:
+            signals.append(f"OB_BID_HEAVY({orderbook_score:.2f})")
+        elif orderbook_score < -0.25:
+            signals.append(f"OB_ASK_HEAVY({orderbook_score:.2f})")
 
     # ── Signal alignment bonus
     bull_sigs = sum(1 for s in signals if any(k in s for k in ("BULL", "UP", "ABOVE", "OVERSOLD", "HIGH")))

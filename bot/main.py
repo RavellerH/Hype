@@ -56,6 +56,7 @@ from config          import (PRIVATE_KEY, WALLET_ADDRESS, WATCH_COINS,
                               LLM_VETO_ENABLED, LLM_VETO_MIN_SCORE, LLM_ROUTER_URL)
 from indicators      import parse_candles, ema, macd, rsi, volume_ratio
 from phase_detector  import detect_phase, estimate_phase_duration
+from orderbook_analyzer import get_orderbook_signal
 from wallet_monitor  import scan_all_wallets, has_wallet_signal, wallet_summary, get_wallet_longs
 from risk_manager    import risk_summary, sl_price, tp_price, breakeven_sl
 from dsl_engine      import compute_ratchet_sl
@@ -502,9 +503,15 @@ def run_scan(info: Info, exchange: Exchange, state: dict) -> None:
                         coin, funding_rate * 100, MAX_LONG_FUNDING_RATE * 100)
             continue
 
+        # ── Orderbook pressure (whale/wall detection) — blended into phase score below
+        ob = get_orderbook_signal(coin)
+        if ob["label"] != "NEUTRAL":
+            logger.info("%s: orderbook %s (score=%.2f obi=%.2f, %d walls)",
+                        coin, ob["label"], ob["score"], ob["obi"], len(ob["walls"]))
+
         # ── Phase check (4h)
         raw_4h = fetch_candles(info, coin, "4h", 60)
-        phase  = detect_phase(raw_4h)
+        phase  = detect_phase(raw_4h, orderbook_score=ob["score"])
         if phase["phase"] != "ACCUMULATION" or phase["confidence"] < MIN_PHASE_CONFIDENCE:
             logger.debug("%s: phase=%s conf=%.0f%% — skip",
                          coin, phase["phase"], phase["confidence"] * 100)
@@ -685,7 +692,8 @@ def run_position_monitor(info: Info, exchange: Exchange, state: dict) -> None:
             continue  # already handled above
 
         raw_4h = fetch_candles(info, coin, "4h", 60)
-        phase  = detect_phase(raw_4h)
+        ob     = get_orderbook_signal(coin)
+        phase  = detect_phase(raw_4h, orderbook_score=ob["score"])
         dur    = estimate_phase_duration(raw_4h, phase["phase"], "4h")
         cur    = phase["phase"]
         prev   = pos.get("current_phase", "ACCUMULATION")

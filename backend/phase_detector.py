@@ -33,10 +33,12 @@ class PhaseResult:
     score: float               # raw score -1 to +1 (positive = bullish accumulation)
 
 
-def detect_phase(candles: list[dict]) -> PhaseResult:
+def detect_phase(candles: list[dict], orderbook_score: float = 0.0) -> PhaseResult:
     """
     candles: list of dicts with keys t, o, h, l, c, v
     Expects at least 20 candles for meaningful detection.
+    orderbook_score: optional [-1, 1] signal from orderbook_analyzer.get_orderbook_signal(),
+    positive = bid-side pressure. Blended into the directional score at low weight.
     """
     if len(candles) < 10:
         return PhaseResult(
@@ -127,6 +129,15 @@ def detect_phase(candles: list[dict]) -> PhaseResult:
             score += 0.1
         else:
             score -= 0.1
+
+    # Orderbook pressure (optional) — capped so a thin/stale snapshot can't dominate
+    if orderbook_score:
+        ob_contrib = max(-0.15, min(0.15, orderbook_score * 0.15))
+        score += ob_contrib
+        if orderbook_score > 0.25:
+            signals.append(f"Orderbook bid-heavy ({orderbook_score:+.2f})")
+        elif orderbook_score < -0.25:
+            signals.append(f"Orderbook ask-heavy ({orderbook_score:+.2f})")
 
     # Clamp score
     score = max(-1.0, min(1.0, score))
