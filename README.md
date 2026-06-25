@@ -73,7 +73,7 @@ Hype/
 ├── signals.js          Confluence scanner UI (+ Binance L/S ratio)
 ├── defillama.js        DeFiLlama macro dashboard (TVL, stablecoins, chains)
 ├── arb.js              Funding arb scanner (HL + Binance + Bybit + OKX)
-├── cloudflare/         Cloudflare Worker RSS proxy (deploy with wrangler)
+├── cloudflare/         Cloudflare Worker RSS proxy + APIU macro proxy + bot worker (deploy with wrangler)
 ├── styles.css          All styles (single file, CSS variables)
 ├── sw.js               Service worker (PWA caching)
 └── docs.html           Documentation
@@ -155,6 +155,24 @@ Your Anthropic API key stays in Supabase — never exposed in the browser.
 ## Telegram Notifications
 
 Configure in Settings tab. Paste your bot token (from [@BotFather](https://t.me/BotFather)), click "Auto-detect Chat ID", set a PnL threshold. Notifications fire when unrealized PnL moves beyond the threshold.
+
+---
+
+## APIU Macro Proxy (optional)
+
+Surfaces [apiu.ai](https://apiu.ai)'s BTC daily verdict + regime state as a second-opinion card in the Intel tab. APIU is MCP-only, so a thin Cloudflare Worker (`cloudflare/apiu-worker.js`) speaks the MCP handshake server-side and exposes plain JSON — the API key never touches the browser.
+
+**One-time setup:**
+```bash
+# Get a free APIU API key
+curl -X POST https://apiu.ai/api/public/v1/keys
+
+cd cloudflare
+npx wrangler deploy --config wrangler-apiu.toml
+npx wrangler secret put APIU_API_KEY --config wrangler-apiu.toml
+```
+
+Paste the deployed worker URL into Settings → "APIU Macro Proxy (Cloudflare Worker)". Leave it blank to skip — the card simply doesn't render.
 
 ---
 

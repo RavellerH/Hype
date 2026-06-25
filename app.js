@@ -2366,6 +2366,17 @@ async function loadMonitor() {
     </div>
 
     <div class="card" style="margin-top:14px">
+      <div class="card-title">🔮 APIU Macro Proxy (Cloudflare Worker)</div>
+      <div class="muted" style="font-size:11px;margin-bottom:12px">Optional: deploy <code>cloudflare/apiu-worker.js</code> to surface apiu.ai's BTC daily verdict + regime state as a second-opinion card in the Intel tab. The APIU key stays server-side as a Worker secret — paste only the worker URL here.</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <input class="input" id="apiu-proxy-url-input" placeholder="https://hype-apiu-proxy.your-user.workers.dev" value="${localStorage.getItem('hype_apiu_proxy_url')||''}" style="flex:1;font-family:var(--mono);font-size:11px">
+        <button class="btn btn-primary btn-sm" onclick="saveApiuProxyUrl()">Save</button>
+        <button class="btn btn-ghost btn-sm" onclick="clearApiuProxyUrl()">Clear</button>
+      </div>
+      <div id="apiu-proxy-status" style="font-size:11px;color:var(--text-muted);margin-top:6px">${localStorage.getItem('hype_apiu_proxy_url') ? '✓ APIU proxy active — card appears in Intel tab' : 'Not configured — no card shown in Intel tab'}</div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
       <div class="card-title">📲 Telegram Notifications</div>
       <div class="muted" style="font-size:11px;margin-bottom:12px">Token stored in your browser only — never committed to code or sent anywhere except Telegram.</div>
       <div style="display:flex;flex-direction:column;gap:10px">
@@ -2656,6 +2667,24 @@ function clearProxyUrl() {
   localStorage.removeItem('hype_proxy_url');
   if (document.getElementById('proxy-url-input')) document.getElementById('proxy-url-input').value = '';
   document.getElementById('proxy-status').textContent = 'Cleared — using direct Hyperliquid API (reload to apply)';
+}
+
+function saveApiuProxyUrl() {
+  const url = (document.getElementById('apiu-proxy-url-input')?.value || '').trim();
+  if (url) {
+    localStorage.setItem('hype_apiu_proxy_url', url);
+    if (typeof _apiuData !== 'undefined') _apiuData = null; // force refetch on next Intel load
+    document.getElementById('apiu-proxy-status').textContent = '✓ APIU proxy saved — card appears in Intel tab';
+  } else {
+    clearApiuProxyUrl();
+  }
+}
+
+function clearApiuProxyUrl() {
+  localStorage.removeItem('hype_apiu_proxy_url');
+  if (typeof _apiuData !== 'undefined') _apiuData = null;
+  if (document.getElementById('apiu-proxy-url-input')) document.getElementById('apiu-proxy-url-input').value = '';
+  document.getElementById('apiu-proxy-status').textContent = 'Cleared — no card shown in Intel tab';
 }
 
 function saveCGKey() {

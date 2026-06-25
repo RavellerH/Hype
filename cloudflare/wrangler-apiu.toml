@@ -1,0 +1,9 @@
+name = "hype-apiu-proxy"
+main = "apiu-worker.js"
+compatibility_date = "2024-09-23"
+
+[placement]
+mode = "smart"
+
+# Set after first deploy:
+#   npx wrangler secret put APIU_API_KEY --config wrangler-apiu.toml
