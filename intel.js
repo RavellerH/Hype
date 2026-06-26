@@ -670,30 +670,50 @@ function _renderApiuCard() {
 
   if (!_apiuData) return '';
 
-  const verdict = _apiuData.daily_verdict;
-  const regime  = _apiuData.regime_state;
+  const verdictRaw = _apiuData.daily_verdict;
+  const regime     = _apiuData.regime_state;
 
-  // Defensive field extraction — APIU's exact schema isn't fully documented,
-  // so try several plausible field names before falling back to raw JSON.
-  const verdictText =
-    _apiuPick(verdict, ['verdict', 'brief', 'summary', 'text']) ?? null;
-  const regimeLabel =
-    _apiuPick(regime, ['regime', 'state', 'label']) ?? null;
-  const gates = regime && Array.isArray(regime.gates) ? regime.gates : null;
+  // apiu.daily_verdict occasionally fails server-side (upstream dependency
+  // error) — detect that distinctly so we surface it instead of a blank card.
+  const verdictFailed = typeof verdictRaw === 'string' && /^Error executing tool/i.test(verdictRaw);
+  const verdictText = verdictFailed
+    ? null
+    : typeof verdictRaw === 'string'
+      ? verdictRaw
+      : _apiuPick(verdictRaw, ['verdict', 'brief', 'summary', 'text']);
+
+  // Defensive field extraction — fall back to alternate key names / raw JSON
+  // in case APIU changes the regime_state schema.
+  const regimeLabel = _apiuPick(regime, ['regime', 'state', 'label']);
+  const regimeNote  = regime && typeof regime.note === 'string' ? regime.note : null;
+  const keyLevels   = regime && regime.key_levels && typeof regime.key_levels === 'object' ? regime.key_levels : null;
+  const confidence  = regime && regime.confidence != null ? regime.confidence : null;
+  const durable     = regime && typeof regime.durable === 'boolean' ? regime.durable : null;
+  const asOf        = regime && regime.as_of ? regime.as_of : null;
+
+  const narrative   = verdictText || regimeNote;
+  const regimeColor = /bull|buy/i.test(regimeLabel || '') ? 'var(--green)'
+    : /bear|sell/i.test(regimeLabel || '') ? 'var(--red)'
+    : regimeLabel ? 'var(--yellow)' : 'var(--text-muted)';
 
   const age = _apiuData.ts ? Math.round((Date.now() - _apiuData.ts) / 60000) : null;
 
   return `<div class="card" style="padding:12px 14px">
     <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
-      <span>🔮 APIU Macro Verdict <span class="muted" style="font-size:10px;font-weight:400">— second opinion, ${_apiuData.asset || 'BTC'}</span></span>
+      <span>🔮 APIU Macro Verdict <span class="muted" style="font-size:10px;font-weight:400">— second opinion, ${_apiuData.asset || 'BTC'}${asOf ? ` · as of ${asOf}` : ''}</span></span>
       <button class="btn btn-ghost btn-sm" onclick="_apiuData=null;_loadApiuCard()" style="padding:2px 8px;font-size:10px">↺</button>
     </div>
-    ${regimeLabel ? `<div class="regime-pill" style="margin:6px 0;display:inline-block">${regimeLabel}</div>` : ''}
-    ${gates ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
-      ${gates.map(g => `<span class="muted" style="font-size:10px;background:var(--surface2);padding:2px 6px;border-radius:4px">${typeof g === 'string' ? g : JSON.stringify(g)}</span>`).join('')}
+    ${regimeLabel ? `<div style="display:flex;align-items:center;gap:8px;margin:6px 0;flex-wrap:wrap">
+      <span class="regime-pill" style="display:inline-block;background:var(--surface2);color:${regimeColor};border:1px solid ${regimeColor}">${regimeLabel}</span>
+      ${confidence != null ? `<span class="muted" style="font-size:10px">confidence ${confidence}</span>` : ''}
+      ${durable != null ? `<span class="muted" style="font-size:10px">${durable ? 'durable' : 'transient'}</span>` : ''}
     </div>` : ''}
-    ${verdictText ? `<div style="font-size:12px;color:var(--text-muted);line-height:1.6;white-space:pre-wrap">${String(verdictText)}</div>` : ''}
-    ${!verdictText && !regimeLabel ? `<details style="margin-top:4px">
+    ${keyLevels ? `<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:6px;font-size:11px">
+      ${Object.entries(keyLevels).map(([k, v]) => `<div><span class="muted" style="font-size:9px;text-transform:uppercase;letter-spacing:.03em;display:block">${k.replace(/_/g, ' ')}</span><span style="font-family:var(--mono)">${typeof v === 'number' ? _ilFmtPrice(v) : v}</span></div>`).join('')}
+    </div>` : ''}
+    ${narrative ? `<div style="font-size:12px;color:var(--text-muted);line-height:1.6;white-space:pre-wrap">${String(narrative)}</div>` : ''}
+    ${verdictFailed ? `<div class="muted" style="font-size:10px;margin-top:6px">⚠ daily_verdict tool unavailable upstream (apiu.ai-side error)</div>` : ''}
+    ${!narrative && !regimeLabel ? `<details style="margin-top:4px">
       <summary class="muted" style="font-size:10px;cursor:pointer">Raw response (unrecognized schema)</summary>
       <pre style="font-size:10px;white-space:pre-wrap;color:var(--text-muted);margin-top:4px">${JSON.stringify(_apiuData, null, 2)}</pre>
     </details>` : ''}
