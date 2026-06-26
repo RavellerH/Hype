@@ -98,25 +98,26 @@ async function mcpInitialize(key) {
     throw mcpErr(`MCP initialize failed: ${initRes.status}`, initRes.status, await safeText(initRes));
   }
 
-  const sessionId = initRes.headers.get('Mcp-Session-Id') || initRes.headers.get('mcp-session-id');
+  // APIU's MCP server is stateless (auth is per-request via X-API-Key) and
+  // doesn't return Mcp-Session-Id — treat the session id as optional.
+  const sessionId = initRes.headers.get('Mcp-Session-Id') || initRes.headers.get('mcp-session-id') || null;
   await readJsonRpc(initRes); // drain/parse the initialize result (unused)
 
-  if (!sessionId) {
-    throw mcpErr('MCP initialize did not return a session id', 502);
-  }
-
-  const ackRes = await fetch(APIU_MCP_URL, {
-    method: 'POST',
-    headers: mcpHeaders(key, sessionId),
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      method: 'notifications/initialized',
-      params: {},
-    }),
-  });
-
-  if (!ackRes.ok) {
-    throw mcpErr(`MCP initialized-ack failed: ${ackRes.status}`, ackRes.status, await safeText(ackRes));
+  // notifications/initialized is a fire-and-forget notification per the MCP
+  // spec (no response expected) — don't fail the whole request if a
+  // stateless server handles it differently.
+  try {
+    await fetch(APIU_MCP_URL, {
+      method: 'POST',
+      headers: mcpHeaders(key, sessionId),
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'notifications/initialized',
+        params: {},
+      }),
+    });
+  } catch {
+    // ignore — non-critical for a stateless server
   }
 
   return sessionId;
