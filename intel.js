@@ -31,6 +31,9 @@ let _intelSynth    = null;      // Claude synthesis text
 let _intelTimer    = null;
 let _intelGenState = { setups: false, synth: false }; // loading flags
 
+let _apiuData  = null;   // { asset, daily_verdict, regime_state, fetched_at, ts }
+let _apiuState = 'idle';  // idle | loading | error | unconfigured
+
 // ── Fetchers ──────────────────────────────────────────────────────────────────
 
 async function _ilFetchHL() {
@@ -322,6 +325,7 @@ async function loadIntel() {
   // If we have data < 3 min old, just re-render
   if (_intelData && Date.now() - _intelData.ts < 3 * 60 * 1000) {
     _renderIntel(el, _intelData, _intelRegime);
+    _loadApiuCard();
     return;
   }
 
@@ -336,12 +340,14 @@ async function loadIntel() {
   }
 
   _renderIntel(el, _intelData, _intelRegime);
+  _loadApiuCard();
 
   clearInterval(_intelTimer);
   _intelTimer = setInterval(async () => {
     _intelData   = await _fetchIntelData().catch(() => _intelData);
     _intelRegime = _scoreIntel(_intelData);
     _renderIntel(document.getElementById('intel-content'), _intelData, _intelRegime);
+    _loadApiuCard();
   }, 3 * 60 * 1000);
 }
 
@@ -390,6 +396,9 @@ function _renderIntel(el, d, r) {
       <button class="btn btn-ghost btn-sm" onclick="intelGenSetups()" id="intel-setups-btn">✦ Generate Setups</button>
     </div>
   </div>
+
+  <!-- ── APIU Macro Card (optional, requires proxy URL in Settings) ──────────── -->
+  <div id="apiu-card-wrap">${_renderApiuCard()}</div>
 
   <!-- ── Key Metrics Strip ────────────────────────────────────────────────── -->
   <div class="stat-strip">
@@ -602,6 +611,102 @@ function _renderTopMovers(cgCoins) {
 
 function _intelEdgeUrl() {
   return localStorage.getItem('hype_edge_fn_url') || '';
+}
+
+// ── APIU Macro Card (apiu.ai second-opinion verdict + regime) ───────────────
+
+let _apiuError = '';
+
+function _apiuProxyUrl() {
+  return localStorage.getItem('hype_apiu_proxy_url') || '';
+}
+
+async function _loadApiuCard() {
+  const proxyUrl = _apiuProxyUrl();
+  if (!proxyUrl) { _apiuState = 'unconfigured'; return; } // no card update — render() already shows nothing
+
+  // 15 min cache, same as the worker's edge cache
+  if (_apiuData && Date.now() - _apiuData.ts < 15 * 60 * 1000) return;
+
+  _apiuState = 'loading';
+  const wrap = document.getElementById('apiu-card-wrap');
+  if (wrap && !_apiuData) wrap.innerHTML = _renderApiuCard();
+
+  try {
+    const r = await fetch(`${proxyUrl}${proxyUrl.includes('?') ? '&' : '?'}asset=BTC`);
+    if (!r.ok) throw new Error(`proxy ${r.status}`);
+    const data = await r.json();
+    if (data.error) throw new Error(data.error);
+    _apiuData  = { ...data, ts: Date.now() };
+    _apiuState = 'ok';
+  } catch (e) {
+    _apiuState = 'error';
+    _apiuError = e.message;
+  }
+
+  const wrap2 = document.getElementById('apiu-card-wrap');
+  if (wrap2) wrap2.innerHTML = _renderApiuCard();
+}
+
+function _renderApiuCard() {
+  const proxyUrl = _apiuProxyUrl();
+  if (!proxyUrl) return ''; // not configured — card simply doesn't appear
+
+  if (_apiuState === 'loading' && !_apiuData) {
+    return `<div class="card" style="padding:12px 14px">
+      <div class="card-title">🔮 APIU Macro Verdict</div>
+      <div class="loading" style="padding:8px 0"><div class="spinner"></div> Fetching second opinion…</div>
+    </div>`;
+  }
+
+  if (_apiuState === 'error' && !_apiuData) {
+    return `<div class="card" style="padding:12px 14px">
+      <div class="card-title">🔮 APIU Macro Verdict</div>
+      <div class="news-empty" style="padding:8px 0">Failed to load: ${_apiuError || 'unknown error'}<br>
+        <button class="btn btn-ghost btn-sm" onclick="_loadApiuCard()" style="margin-top:6px">Retry</button>
+      </div>
+    </div>`;
+  }
+
+  if (!_apiuData) return '';
+
+  const verdict = _apiuData.daily_verdict;
+  const regime  = _apiuData.regime_state;
+
+  // Defensive field extraction — APIU's exact schema isn't fully documented,
+  // so try several plausible field names before falling back to raw JSON.
+  const verdictText =
+    _apiuPick(verdict, ['verdict', 'brief', 'summary', 'text']) ?? null;
+  const regimeLabel =
+    _apiuPick(regime, ['regime', 'state', 'label']) ?? null;
+  const gates = regime && Array.isArray(regime.gates) ? regime.gates : null;
+
+  const age = _apiuData.ts ? Math.round((Date.now() - _apiuData.ts) / 60000) : null;
+
+  return `<div class="card" style="padding:12px 14px">
+    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
+      <span>🔮 APIU Macro Verdict <span class="muted" style="font-size:10px;font-weight:400">— second opinion, ${_apiuData.asset || 'BTC'}</span></span>
+      <button class="btn btn-ghost btn-sm" onclick="_apiuData=null;_loadApiuCard()" style="padding:2px 8px;font-size:10px">↺</button>
+    </div>
+    ${regimeLabel ? `<div class="regime-pill" style="margin:6px 0;display:inline-block">${regimeLabel}</div>` : ''}
+    ${gates ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+      ${gates.map(g => `<span class="muted" style="font-size:10px;background:var(--surface2);padding:2px 6px;border-radius:4px">${typeof g === 'string' ? g : JSON.stringify(g)}</span>`).join('')}
+    </div>` : ''}
+    ${verdictText ? `<div style="font-size:12px;color:var(--text-muted);line-height:1.6;white-space:pre-wrap">${String(verdictText)}</div>` : ''}
+    ${!verdictText && !regimeLabel ? `<details style="margin-top:4px">
+      <summary class="muted" style="font-size:10px;cursor:pointer">Raw response (unrecognized schema)</summary>
+      <pre style="font-size:10px;white-space:pre-wrap;color:var(--text-muted);margin-top:4px">${JSON.stringify(_apiuData, null, 2)}</pre>
+    </details>` : ''}
+    ${age != null ? `<div class="muted" style="font-size:9px;margin-top:6px">via apiu.ai · ${age}m ago</div>` : ''}
+  </div>`;
+}
+
+function _apiuPick(obj, keys) {
+  if (!obj || typeof obj !== 'object') return null;
+  for (const k of keys) {
+    if (obj[k] != null) return obj[k];
+  }
+  return null;
 }
 
 function _renderStagedInIntel() {
