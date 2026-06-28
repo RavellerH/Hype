@@ -1,7 +1,7 @@
 /* ============================================================
    research.js — Weekly Hyperliquid Research reports, aggregated
-   from a week of daily briefs and generated server-side by the
-   Cloudflare bot worker every Sunday. Meant to be publishable.
+   from a week of daily briefs and generated server-side every
+   Sunday by a GitHub Actions workflow. Meant to be publishable.
    ============================================================ */
 
 'use strict';
@@ -11,6 +11,12 @@ const _WRS_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 const _wrsDb   = (window.supabase && window.supabase.createClient)
   ? window.supabase.createClient(_WRS_URL, _WRS_KEY)
   : null;
+
+const WRS_GH_OWNER    = 'RavellerH';
+const WRS_GH_REPO     = 'Hype';
+const WRS_GH_WORKFLOW = 'weekly-research.yml';
+const WRS_PAT_KEY     = 'hype_gh_actions_pat';
+const WRS_REF_KEY     = 'hype_gh_actions_ref';
 
 let _wrsReports = [];
 let _wrsLoaded  = false;
@@ -44,17 +50,28 @@ async function _wrsLoadData() {
 function wrsRefresh() { loadResearch(); }
 
 async function wrsGenerateNow() {
-  const botUrl = (localStorage.getItem('hype_bot_url') || '').replace(/\/$/, '');
   const status = document.getElementById('wrs-gen-status');
-  if (!botUrl) {
-    if (status) status.textContent = 'Set bot worker URL in the Brief tab first';
+  const pat = localStorage.getItem(WRS_PAT_KEY)?.trim();
+  if (!pat) {
+    if (status) status.textContent = 'Set GitHub PAT in the Brief tab first';
     return;
   }
-  if (status) status.textContent = 'generating…';
+  const ref = localStorage.getItem(WRS_REF_KEY)?.trim() || 'main';
+  if (status) status.textContent = 'triggering…';
   try {
-    await fetch(`${botUrl}/run-weekly-research`, { method: 'GET' });
-    if (status) status.textContent = 'triggered — fetching in 12s…';
-    setTimeout(loadResearch, 12000);
+    const r = await fetch(`https://api.github.com/repos/${WRS_GH_OWNER}/${WRS_GH_REPO}/actions/workflows/${WRS_GH_WORKFLOW}/dispatches`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${pat}`,
+        Accept: 'application/vnd.github+json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ref }),
+    });
+    if (r.status === 401 || r.status === 403) { localStorage.removeItem(WRS_PAT_KEY); throw new Error('Token invalid/unauthorized — cleared, try again'); }
+    if (!r.ok) throw new Error(`GitHub ${r.status}: ${await r.text()}`);
+    if (status) status.textContent = 'triggered — fetching in 30s…';
+    setTimeout(loadResearch, 30000);
   } catch (e) {
     if (status) status.textContent = `error: ${e.message}`;
   }

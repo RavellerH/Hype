@@ -336,18 +336,6 @@ async function sbUpsert(url, key, table, rows) {
   return r.ok;
 }
 
-async function sbSelect(url, key, table, query) {
-  try {
-    const r = await fetch(`${url}/rest/v1/${table}?${query}`, {
-      headers: { 'apikey': key, 'Authorization': `Bearer ${key}` },
-    });
-    if (!r.ok) return [];
-    return await r.json();
-  } catch {
-    return [];
-  }
-}
-
 // ── Formatting ────────────────────────────────────────────────────────────────
 const _px   = (coin, p) => coin === 'BTC' ? (+p).toFixed(0) : +p >= 100 ? (+p).toFixed(2) : (+p).toFixed(4);
 const _f8   = r => `${r >= 0 ? '+' : ''}${(r * 100).toFixed(4)}%`;
@@ -1488,142 +1476,10 @@ async function hlDailyDigest(env) {
   }
 }
 
-// ── Daily Brief / Weekly Research ─────────────────────────────────────────────
-
-const BRIEF_SYSTEM = 'You are a Hyperliquid (HYPE) market analyst. Use ONLY the facts and numbers given in the context — never invent data. Write neutral, analytical English. No financial advice, no hype-speak, no "DYOR" boilerplate.';
-
-function _isoWeek(d) {
-  const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-  date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));
-  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
-  const weekNo = Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
-  return `${date.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
-}
-
-function _extractJSON(text) {
-  const match = (text || '').match(/\{[\s\S]*\}/);
-  if (!match) throw new Error(`No JSON object in model response: ${(text || '').slice(0, 80)}`);
-  return JSON.parse(match[0]);
-}
-
-async function draftDailyBrief(env, context) {
-  if (!env.AI) throw new Error('AI binding not enabled');
-  const result = await env.AI.run('@cf/meta/llama-3.1-8b-instruct-fast', {
-    messages: [
-      { role: 'system', content: BRIEF_SYSTEM },
-      { role: 'user', content: `Based on the context below, return ONLY a JSON object with this exact shape:\n` +
-        `{"headline":"<one line>","onchain_summary":"<2-3 sentences on price/funding/OI/TVL>",` +
-        `"risks":["<short risk>","<short risk>","<short risk>"],"opportunities":["<short opportunity>","<short opportunity>"],` +
-        `"news_summary":"<2-3 sentences synthesizing the headlines>","takeaway":"<one neutral, non-advice sentence>"}\n` +
-        `No text outside the JSON object.\n\nCONTEXT:\n${context}` },
-    ],
-    max_tokens: 1000,
-  });
-  return _extractJSON((result.response || '').trim());
-}
-
-async function dailyBrief(env) {
-  try {
-    const [news, stats, fng, funding] = await Promise.all([
-      getHLNews(), getHLStats(), getFearGreed(), getFundingRates(),
-    ]);
-    const coins = (env.SIGNAL_COINS || 'BTC,ETH,SOL,HYPE,SUI').split(',').map(c => c.trim());
-    const fundingLines = coins
-      .filter(c => funding[c])
-      .map(c => `${c} funding(8h): ${_f8(funding[c].fundingRate)}  OI: $${_fmtM(funding[c].openInterest * funding[c].markPx)}`);
-
-    const today = new Date().toISOString().slice(0, 10);
-    const lines = [`HYPERLIQUID DAILY BRIEF DATA — ${today}`];
-    if (stats.hypePx != null)      lines.push(`HYPE price: $${stats.hypePx.toFixed(2)}${stats.hype24h != null ? ` (${stats.hype24h >= 0 ? '+' : ''}${stats.hype24h.toFixed(2)}% 24h)` : ''}`);
-    if (stats.hypeFunding != null) lines.push(`HYPE funding (8h): ${_f8(stats.hypeFunding)}`);
-    if (stats.hypeOI)              lines.push(`HYPE open interest: $${_fmtM(stats.hypeOI)}`);
-    if (stats.hlVolume24h)         lines.push(`Hyperliquid total perp volume 24h: $${_fmtM(stats.hlVolume24h)}`);
-    if (stats.evmTvl)              lines.push(`HyperEVM TVL: $${_fmtM(stats.evmTvl)}`);
-    if (fng)                       lines.push(`Fear & Greed Index: ${fng.value} (${fng.label})`);
-    if (fundingLines.length)       lines.push('', 'FUNDING / OI BY COIN:', ...fundingLines);
-    if (news.length)               lines.push('', 'RECENT HEADLINES:', ...news.map(n => `- [${n.age} ago] ${n.title}`));
-    const context = lines.join('\n');
-
-    if (!stats.hypePx && !news.length) return; // nothing to report
-
-    const brief = await draftDailyBrief(env, context);
-    const now = Date.now();
-
-    if (env.SUPABASE_URL && env.SUPABASE_KEY) {
-      await sbUpsert(env.SUPABASE_URL, env.SUPABASE_KEY, 'daily_briefs', [{
-        id: `brief-${today}`, date: today, headline: brief.headline,
-        onchain_summary: brief.onchain_summary, risks: brief.risks || [],
-        opportunities: brief.opportunities || [], news_summary: brief.news_summary,
-        takeaway: brief.takeaway, raw_context: context, created_at: now,
-      }]);
-      // Auto-feed the KB wiki so daily briefs accumulate into the knowledge base
-      const tags = coins.filter(c => context.includes(c));
-      await sbUpsert(env.SUPABASE_URL, env.SUPABASE_KEY, 'kb_wiki', [{
-        id: `kbw-brief-${today}`, category: 'brief', title: brief.headline, summary: brief.takeaway,
-        content: `${brief.onchain_summary || ''}\n\nRISKS:\n${(brief.risks || []).map(r => '- ' + r).join('\n')}` +
-          `\n\nOPPORTUNITIES:\n${(brief.opportunities || []).map(o => '- ' + o).join('\n')}\n\nNEWS:\n${brief.news_summary || ''}`,
-        coins: tags, tags: ['daily-brief'], source: 'daily-brief', created_at: now,
-      }]);
-    }
-
-    const esc = s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    await tgSend(env.TG_TOKEN, env.TG_CHAT,
-      _hdr('DAILY BRIEF') + `\n<b>${esc(brief.headline)}</b>\n<pre>${esc(brief.takeaway)}</pre>\n<i>full brief in dashboard → Brief tab</i>`);
-  } catch (e) {
-    await tgSend(env.TG_TOKEN, env.TG_CHAT, `<b>daily brief error</b>\n<code>${e.message}</code>`).catch(() => {});
-  }
-}
-
-async function draftWeeklyResearch(env, context) {
-  if (!env.AI) throw new Error('AI binding not enabled');
-  const result = await env.AI.run('@cf/meta/llama-3.1-8b-instruct-fast', {
-    messages: [
-      { role: 'system', content: BRIEF_SYSTEM },
-      { role: 'user', content: `Based on a week of daily Hyperliquid briefs below, write a weekly research report. Return ONLY a JSON object with this exact shape:\n` +
-        `{"title":"<one line>","summary":"<3-4 sentence executive summary>","market_structure":"<2-4 sentences>",` +
-        `"onchain_trends":"<2-4 sentences>","risks":["<risk>","<risk>","<risk>"],"opportunities":["<opportunity>","<opportunity>"],` +
-        `"outlook":"<2-3 sentence forward-looking, non-financial-advice outlook>"}\n` +
-        `No text outside the JSON object.\n\nWEEK CONTEXT:\n${context}` },
-    ],
-    max_tokens: 1400,
-  });
-  return _extractJSON((result.response || '').trim());
-}
-
-async function weeklyResearch(env) {
-  try {
-    if (!env.SUPABASE_URL || !env.SUPABASE_KEY) return;
-    const since = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
-    const rows = await sbSelect(env.SUPABASE_URL, env.SUPABASE_KEY, 'daily_briefs',
-      `select=*&date=gte.${since}&order=date.asc`);
-    if (!rows.length) return;
-
-    const context = rows.map(r =>
-      `### ${r.date} — ${r.headline}\n${r.onchain_summary || ''}\n` +
-      `Risks: ${(r.risks || []).join('; ')}\nOpportunities: ${(r.opportunities || []).join('; ')}\nTakeaway: ${r.takeaway || ''}`
-    ).join('\n\n');
-
-    const report = await draftWeeklyResearch(env, context);
-    const now = Date.now();
-    const weekId = _isoWeek(new Date());
-
-    await sbUpsert(env.SUPABASE_URL, env.SUPABASE_KEY, 'weekly_research', [{
-      id: `wr-${weekId}`, week_start: rows[0].date, week_end: rows[rows.length - 1].date,
-      title: report.title, summary: report.summary,
-      market_structure: report.market_structure, onchain_trends: report.onchain_trends,
-      risks: report.risks || [], opportunities: report.opportunities || [],
-      outlook: report.outlook, created_at: now,
-    }]);
-
-    const esc = s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    await tgSend(env.TG_TOKEN, env.TG_CHAT,
-      _hdr('WEEKLY RESEARCH') + `\n<b>${esc(report.title)}</b>\n<pre>${esc(report.summary)}</pre>\n<i>full report in dashboard → Research tab</i>`);
-  } catch (e) {
-    await tgSend(env.TG_TOKEN, env.TG_CHAT, `<b>weekly research error</b>\n<code>${e.message}</code>`).catch(() => {});
-  }
-}
-
 // ── Request Handler ───────────────────────────────────────────────────────────
+// Note: Daily Brief / Weekly Research generation moved to GitHub Actions
+// (.github/workflows/daily-brief.yml, weekly-research.yml + scripts/) so it
+// doesn't depend on this worker being deployed. See scripts/lib.mjs.
 
 export default {
   async scheduled(event, env, ctx) {
@@ -1647,11 +1503,9 @@ export default {
     } else if (cron === '0 0 * * *') {
       ctx.waitUntil(dailySnapshot(env));
       ctx.waitUntil(hlDailyDigest(env));
-      ctx.waitUntil(dailyBrief(env));
-      // Sunday (getDay() === 0) → also run weekly review + weekly research
+      // Sunday (getDay() === 0) → also run weekly review
       if (new Date().getDay() === 0) {
         ctx.waitUntil(weeklyReview(env));
-        ctx.waitUntil(weeklyResearch(env));
       }
     }
   },
@@ -1701,8 +1555,6 @@ export default {
     if (url.pathname === '/run-trend')    { ctx.waitUntil(checkTrendAlignment(env)); return new Response('Trend alignment check triggered', { status: 202 }); }
     if (url.pathname === '/run-weekly')   { ctx.waitUntil(weeklyReview(env));        return new Response('Weekly review triggered', { status: 202 }); }
     if (url.pathname === '/run-hl-digest'){ ctx.waitUntil(hlDailyDigest(env));       return new Response('HL digest triggered', { status: 202 }); }
-    if (url.pathname === '/run-daily-brief')     { ctx.waitUntil(dailyBrief(env));      return new Response('Daily brief triggered', { status: 202 }); }
-    if (url.pathname === '/run-weekly-research') { ctx.waitUntil(weeklyResearch(env));  return new Response('Weekly research triggered', { status: 202 }); }
     if (url.pathname === '/health') {
       return new Response(JSON.stringify({ ok: true, ts: Date.now() }), {
         headers: { 'Content-Type': 'application/json' },
@@ -1794,7 +1646,7 @@ coins=up to 4 most impacted tickers. Return ONLY the JSON array, no other text.`
     }
 
     return new Response(
-      'Hype Bot Worker\n\nEndpoints:\n  /run-signals\n  /run-arb\n  /run-snapshot\n  /run-reversals\n  /run-trend\n  /run-weekly\n  /run-hl-digest\n  /run-daily-brief\n  /run-weekly-research\n  /register-webhook\n  /analyze-news\n  /draft-hl\n  /health',
+      'Hype Bot Worker\n\nEndpoints:\n  /run-signals\n  /run-arb\n  /run-snapshot\n  /run-reversals\n  /run-trend\n  /run-weekly\n  /run-hl-digest\n  /register-webhook\n  /analyze-news\n  /draft-hl\n  /health',
       { status: 200 }
     );
   },

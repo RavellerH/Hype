@@ -1,7 +1,8 @@
 /* ============================================================
    dailybrief.js — Daily Hyperliquid Brief (on-chain · risks ·
-   opportunities · news), auto-generated server-side every day
-   by the Cloudflare bot worker and read here from Supabase.
+   opportunities · news). Generated server-side every day by a
+   GitHub Actions workflow (.github/workflows/daily-brief.yml,
+   scripts/daily-brief.mjs) and read here from Supabase.
    ============================================================ */
 
 'use strict';
@@ -11,6 +12,12 @@ const _DBR_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 const _dbrDb   = (window.supabase && window.supabase.createClient)
   ? window.supabase.createClient(_DBR_URL, _DBR_KEY)
   : null;
+
+const DBR_GH_OWNER    = 'RavellerH';
+const DBR_GH_REPO     = 'Hype';
+const DBR_GH_WORKFLOW = 'daily-brief.yml';
+const DBR_PAT_KEY     = 'hype_gh_actions_pat';
+const DBR_REF_KEY     = 'hype_gh_actions_ref';
 
 let _dbrBriefs   = [];
 let _dbrLoaded   = false;
@@ -43,25 +50,38 @@ async function _dbrLoadData() {
 function dbrRefresh() { loadDailyBrief(); }
 
 async function dbrGenerateNow() {
-  const botUrl = (localStorage.getItem('hype_bot_url') || '').replace(/\/$/, '');
   const status = document.getElementById('dbr-gen-status');
-  if (!botUrl) {
-    if (status) status.textContent = 'Set bot worker URL below first';
+  const pat = localStorage.getItem(DBR_PAT_KEY)?.trim();
+  if (!pat) {
+    if (status) status.textContent = 'Set GitHub PAT below first';
     return;
   }
-  if (status) status.textContent = 'generating…';
+  const ref = localStorage.getItem(DBR_REF_KEY)?.trim() || 'main';
+  if (status) status.textContent = 'triggering…';
   try {
-    await fetch(`${botUrl}/run-daily-brief`, { method: 'GET' });
-    if (status) status.textContent = 'triggered — fetching in 10s…';
-    setTimeout(loadDailyBrief, 10000);
+    const r = await fetch(`https://api.github.com/repos/${DBR_GH_OWNER}/${DBR_GH_REPO}/actions/workflows/${DBR_GH_WORKFLOW}/dispatches`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${pat}`,
+        Accept: 'application/vnd.github+json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ref }),
+    });
+    if (r.status === 401 || r.status === 403) { localStorage.removeItem(DBR_PAT_KEY); throw new Error('Token invalid/unauthorized — cleared, try again'); }
+    if (!r.ok) throw new Error(`GitHub ${r.status}: ${await r.text()}`);
+    if (status) status.textContent = 'triggered — fetching in 30s…';
+    setTimeout(loadDailyBrief, 30000);
   } catch (e) {
     if (status) status.textContent = `error: ${e.message}`;
   }
 }
 
-function dbrSaveBotUrl() {
-  const v = document.getElementById('dbr-bot-url')?.value.trim();
-  if (v) localStorage.setItem('hype_bot_url', v.replace(/\/$/, ''));
+function dbrSavePat() {
+  const pat = document.getElementById('dbr-gh-pat')?.value.trim();
+  if (pat) localStorage.setItem(DBR_PAT_KEY, pat);
+  const ref = document.getElementById('dbr-gh-ref')?.value.trim();
+  if (ref) localStorage.setItem(DBR_REF_KEY, ref);
   _dbrRender();
 }
 
@@ -117,7 +137,8 @@ function _dbrRender() {
   }
 
   const [latest, ...history] = _dbrBriefs;
-  const botUrl = localStorage.getItem('hype_bot_url') || '';
+  const pat = localStorage.getItem(DBR_PAT_KEY) || '';
+  const ref = localStorage.getItem(DBR_REF_KEY) || '';
 
   const genBar = `
   <div class="filter-bar" style="margin:0 0 12px;justify-content:space-between;">
@@ -130,15 +151,16 @@ function _dbrRender() {
 
   const settingsBar = `
   <div class="note-card" style="margin-bottom:12px;background:var(--surface2);">
-    <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">Bot worker URL (runs the daily cron + manual generation)</div>
-    <div style="display:flex;gap:8px;">
-      <input class="input" id="dbr-bot-url" placeholder="https://hype-bot.yourname.workers.dev" value="${_dbrEsc(botUrl)}" style="flex:1;" />
-      <button class="btn btn-ghost btn-sm" onclick="dbrSaveBotUrl()">Save</button>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">GitHub PAT to trigger the Daily Brief workflow (needs "repo" + "workflow" scope — <a href="https://github.com/settings/tokens/new?scopes=repo,workflow" target="_blank" rel="noopener">create one</a>). Generation runs as a GitHub Actions workflow daily at UTC midnight.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <input class="input" id="dbr-gh-pat" type="password" placeholder="ghp_…" value="${_dbrEsc(pat)}" style="flex:1;min-width:160px;" />
+      <input class="input" id="dbr-gh-ref" placeholder="branch (default: main)" value="${_dbrEsc(ref)}" style="width:160px;" />
+      <button class="btn btn-ghost btn-sm" onclick="dbrSavePat()">Save</button>
     </div>
   </div>`;
 
   if (!latest) {
-    el.innerHTML = genBar + settingsBar + `<div class="chat-empty" style="margin-top:30px;">No daily briefs yet. The bot worker generates one automatically at UTC midnight — or click "Generate Now".</div>`;
+    el.innerHTML = genBar + settingsBar + `<div class="chat-empty" style="margin-top:30px;">No daily briefs yet. A GitHub Actions workflow generates one automatically at UTC midnight — or click "Generate Now".</div>`;
     return;
   }
 
