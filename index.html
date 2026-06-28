@@ -47,6 +47,8 @@
       <button class="topbar-tab"        data-page="signals"        onclick="navigate('signals')">Signals</button>
       <button class="topbar-tab"        data-page="news"           onclick="navigate('news')">News</button>
       <button class="topbar-tab"        data-page="hlpulse"        onclick="navigate('hlpulse')">HL Pulse</button>
+      <button class="topbar-tab"        data-page="brief"          onclick="navigate('brief')">Brief</button>
+      <button class="topbar-tab"        data-page="research"       onclick="navigate('research')">Research</button>
       <button class="topbar-tab"        data-page="fundamentals"   onclick="navigate('fundamentals')">Fundamentals</button>
       <button class="topbar-tab"        data-page="arb"            onclick="navigate('arb')">Arb</button>
     </nav>
@@ -98,6 +100,8 @@
     <div class="nav-section">Content</div>
     <a class="nav-item"        data-page="news"           onclick="navigate('news')"><span class="icon">📰</span>News</a>
     <a class="nav-item"        data-page="hlpulse"        onclick="navigate('hlpulse')"><span class="icon">🛰️</span>HL Pulse</a>
+    <a class="nav-item"        data-page="brief"          onclick="navigate('brief')"><span class="icon">🗞️</span>Daily Brief</a>
+    <a class="nav-item"        data-page="research"       onclick="navigate('research')"><span class="icon">📜</span>Weekly Research</a>
     <a class="nav-item"        data-page="fundamentals"   onclick="navigate('fundamentals')"><span class="icon">🏦</span>Fundamentals</a>
     <a class="nav-item"        data-page="kb"             onclick="navigate('kb')"><span class="icon">📚</span>KB</a>
 
@@ -177,6 +181,8 @@
       <button class="drawer-item"        data-page="signals"    onclick="navigate('signals')"><span class="drawer-item-icon">🎯</span>Signals</button>
       <button class="drawer-item"        data-page="news"           onclick="navigate('news')"><span class="drawer-item-icon">📰</span>News</button>
       <button class="drawer-item"        data-page="hlpulse"        onclick="navigate('hlpulse')"><span class="drawer-item-icon">🛰️</span>HL Pulse</button>
+      <button class="drawer-item"        data-page="brief"          onclick="navigate('brief')"><span class="drawer-item-icon">🗞️</span>Daily Brief</button>
+      <button class="drawer-item"        data-page="research"       onclick="navigate('research')"><span class="drawer-item-icon">📜</span>Weekly Research</button>
       <button class="drawer-item"        data-page="fundamentals"   onclick="navigate('fundamentals')"><span class="drawer-item-icon">🏦</span>Fundamentals</button>
       <button class="drawer-item"        data-page="arb"            onclick="navigate('arb')"><span class="drawer-item-icon">⚖️</span>Funding Arb</button>
       <button class="drawer-item"        data-page="defi"           onclick="navigate('defi')"><span class="drawer-item-icon">🏛️</span>DeFi Macro</button>
@@ -206,6 +212,8 @@
     <div class="page"         id="page-signals"></div>
     <div class="page"         id="page-news"><div id="news-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page"         id="page-hlpulse"><div id="hlpulse-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
+    <div class="page"         id="page-brief"><div id="brief-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
+    <div class="page"         id="page-research"><div id="research-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page"         id="page-fundamentals"><div id="fundamentals-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page"         id="page-arb"><div id="arb-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page"         id="page-defi"><div id="defi-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
@@ -239,6 +247,8 @@
 <script src="signals.js"></script>
 <script src="news.js"></script>
 <script src="hlpulse.js"></script>
+<script src="dailybrief.js"></script>
+<script src="research.js"></script>
 <script src="fundamentals.js"></script>
 <script src="arb.js"></script>
 <script src="defillama.js"></script>
