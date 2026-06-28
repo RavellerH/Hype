@@ -2,16 +2,14 @@
    dailybrief.js — Daily Hyperliquid Brief (on-chain · risks ·
    opportunities · news). Generated server-side every day by a
    GitHub Actions workflow (.github/workflows/daily-brief.yml,
-   scripts/daily-brief.mjs) and read here from Supabase.
+   scripts/daily-brief.mjs via the llm-router Edge Function) and
+   committed straight into the repo as briefs/<date>.md +
+   briefs/index.json — no database, read here as a plain JSON file.
    ============================================================ */
 
 'use strict';
 
-const _DBR_URL = 'https://eiqlvbylkcmgvksrxqld.supabase.co';
-const _DBR_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpcWx2Ynlsa2NtZ3Zrc3J4cWxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5NTI4NjgsImV4cCI6MjA5NDUyODg2OH0.PcGDHYlajqwnZ7c3ZPtssG534kd3sKwE8aT1ROlFpo8';
-const _dbrDb   = (window.supabase && window.supabase.createClient)
-  ? window.supabase.createClient(_DBR_URL, _DBR_KEY)
-  : null;
+const _DBR_INDEX_URL = 'https://raw.githubusercontent.com/RavellerH/Hype/gh-pages/briefs/index.json';
 
 let _dbrBriefs   = [];
 let _dbrLoaded   = false;
@@ -32,10 +30,9 @@ async function loadDailyBrief() {
 }
 
 async function _dbrLoadData() {
-  if (!_dbrDb) return;
   try {
-    const { data } = await _dbrDb.from('daily_briefs').select('*').order('date', { ascending: false }).limit(30);
-    if (data) _dbrBriefs = data;
+    const r = await fetch(`${_DBR_INDEX_URL}?t=${Date.now()}`);
+    if (r.ok) _dbrBriefs = await r.json();
   } catch (e) {
     console.warn('[Brief] load error', e);
   }
@@ -60,8 +57,8 @@ async function dbrGenerateNow() {
   }
 }
 
-function dbrToggleHistory(id) {
-  if (_dbrExpanded.has(id)) _dbrExpanded.delete(id); else _dbrExpanded.add(id);
+function dbrToggleHistory(date) {
+  if (_dbrExpanded.has(date)) _dbrExpanded.delete(date); else _dbrExpanded.add(date);
   _dbrRender();
 }
 
@@ -70,12 +67,19 @@ function _dbrList(arr, cls) {
   return `<ul style="margin:4px 0 0;padding-left:18px;">${arr.map(x => `<li class="${cls}" style="margin-bottom:3px;">${_dbrEsc(x)}</li>`).join('')}</ul>`;
 }
 
+const _DBR_CONF_COLOR = { high: 'var(--green)', medium: 'var(--accent)', low: 'var(--red)' };
+
+function _dbrConfBadge(c) {
+  if (!c) return '';
+  return `<span style="font-size:10px;font-weight:700;text-transform:uppercase;color:${_DBR_CONF_COLOR[c] || 'var(--text-muted)'};border:1px solid currentColor;border-radius:4px;padding:1px 5px;">${_dbrEsc(c)} confidence</span>`;
+}
+
 function _dbrCardHTML(b, isLatest) {
   const dateStr = b.date ? new Date(b.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) : '';
-  const expanded = isLatest || _dbrExpanded.has(b.id);
+  const expanded = isLatest || _dbrExpanded.has(b.date);
 
   const body = `
-    ${b.onchain_summary ? `<div style="margin:8px 0;font-size:13px;color:var(--text-muted);">${_dbrEsc(b.onchain_summary)}</div>` : ''}
+    ${b.market_analysis ? `<div style="margin:8px 0;font-size:13px;color:var(--text-muted);line-height:1.5;">${_dbrEsc(b.market_analysis)}</div>` : ''}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0;">
       <div>
         <div style="font-size:11px;font-weight:700;color:var(--red);text-transform:uppercase;">⚠ Risks</div>
@@ -86,15 +90,17 @@ function _dbrCardHTML(b, isLatest) {
         ${_dbrList(b.opportunities, 'pos') || '<div style="font-size:12px;color:var(--text-faint);">none flagged</div>'}
       </div>
     </div>
-    ${b.news_summary ? `<div style="font-size:13px;color:var(--text-muted);margin:8px 0;"><b style="color:var(--text);">News:</b> ${_dbrEsc(b.news_summary)}</div>` : ''}
+    ${b.news_summary ? `<div style="font-size:13px;color:var(--text-muted);margin:8px 0;line-height:1.5;"><b style="color:var(--text);">News:</b> ${_dbrEsc(b.news_summary)}</div>` : ''}
     ${b.takeaway ? `<div style="font-style:italic;font-size:13px;color:var(--accent);margin-top:8px;border-top:1px solid var(--border);padding-top:8px;">${_dbrEsc(b.takeaway)}</div>` : ''}
+    <div style="margin-top:8px;"><a href="https://github.com/RavellerH/Hype/blob/gh-pages/briefs/${_dbrEsc(b.file)}" target="_blank" rel="noopener" style="font-size:11px;color:var(--text-faint);">view source markdown ↗</a></div>
   `;
 
   return `
   <div class="note-card" style="margin-bottom:10px;">
-    <div class="note-header" style="cursor:${isLatest ? 'default' : 'pointer'};" ${isLatest ? '' : `onclick="dbrToggleHistory('${_dbrEsc(b.id)}')"`}>
+    <div class="note-header" style="cursor:${isLatest ? 'default' : 'pointer'};" ${isLatest ? '' : `onclick="dbrToggleHistory('${_dbrEsc(b.date)}')"`}>
       ${isLatest ? '<span class="mvrv-zone-badge" style="background:var(--accent-subtle);color:var(--accent);">TODAY</span>' : ''}
       <span style="font-weight:700;color:var(--text);flex:1;min-width:120px;">${_dbrEsc(b.headline) || '(untitled)'}</span>
+      ${_dbrConfBadge(b.confidence)}
       <span style="font-size:11px;color:var(--text-faint);">${dateStr}</span>
       ${!isLatest ? `<span style="color:var(--text-muted);font-size:12px;">${expanded ? '▲' : '▼'}</span>` : ''}
     </div>
@@ -106,13 +112,6 @@ function _dbrRender() {
   const el = document.getElementById('brief-content');
   if (!el) return;
 
-  if (!_dbrDb) {
-    el.innerHTML = '<div class="chat-empty" style="margin-top:60px;">⚠️ Supabase not connected.</div>';
-    return;
-  }
-
-  const [latest, ...history] = _dbrBriefs;
-
   const genBar = `
   <div class="filter-bar" style="margin:0 0 12px;justify-content:space-between;">
     <div style="display:flex;gap:8px;align-items:center;">
@@ -121,6 +120,8 @@ function _dbrRender() {
       <span id="dbr-gen-status" style="font-size:11px;color:var(--text-muted);"></span>
     </div>
   </div>`;
+
+  const [latest, ...history] = _dbrBriefs;
 
   if (!latest) {
     el.innerHTML = genBar + `<div class="chat-empty" style="margin-top:30px;">No daily briefs yet. A GitHub Actions workflow generates one automatically at UTC midnight — or click "Generate Now".</div>`;

@@ -1,16 +1,14 @@
 /* ============================================================
    research.js — Weekly Hyperliquid Research reports, aggregated
    from a week of daily briefs and generated server-side every
-   Sunday by a GitHub Actions workflow. Meant to be publishable.
+   Sunday by a GitHub Actions workflow (via the llm-router Edge
+   Function) and committed into the repo as research/<week>.md +
+   research/index.json — no database, read here as a plain JSON file.
    ============================================================ */
 
 'use strict';
 
-const _WRS_URL = 'https://eiqlvbylkcmgvksrxqld.supabase.co';
-const _WRS_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpcWx2Ynlsa2NtZ3Zrc3J4cWxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5NTI4NjgsImV4cCI6MjA5NDUyODg2OH0.PcGDHYlajqwnZ7c3ZPtssG534kd3sKwE8aT1ROlFpo8';
-const _wrsDb   = (window.supabase && window.supabase.createClient)
-  ? window.supabase.createClient(_WRS_URL, _WRS_KEY)
-  : null;
+const _WRS_INDEX_URL = 'https://raw.githubusercontent.com/RavellerH/Hype/gh-pages/research/index.json';
 
 let _wrsReports = [];
 let _wrsLoaded  = false;
@@ -27,15 +25,14 @@ async function loadResearch() {
   el.innerHTML = '<div class="loading"><div class="spinner"></div> Loading…</div>';
   await _wrsLoadData();
   _wrsLoaded = true;
-  if (!_wrsOpenId && _wrsReports.length) _wrsOpenId = _wrsReports[0].id;
+  if (!_wrsOpenId && _wrsReports.length) _wrsOpenId = _wrsReports[0].week;
   _wrsRender();
 }
 
 async function _wrsLoadData() {
-  if (!_wrsDb) return;
   try {
-    const { data } = await _wrsDb.from('weekly_research').select('*').order('week_start', { ascending: false }).limit(26);
-    if (data) _wrsReports = data;
+    const r = await fetch(`${_WRS_INDEX_URL}?t=${Date.now()}`);
+    if (r.ok) _wrsReports = await r.json();
   } catch (e) {
     console.warn('[Research] load error', e);
   }
@@ -60,14 +57,21 @@ async function wrsGenerateNow() {
   }
 }
 
-function wrsOpen(id) {
-  _wrsOpenId = id;
+function wrsOpen(week) {
+  _wrsOpenId = week;
   _wrsRender();
 }
 
 function _wrsList(arr, cls) {
   if (!Array.isArray(arr) || !arr.length) return '';
   return `<ul style="margin:4px 0 0;padding-left:18px;">${arr.map(x => `<li class="${cls}" style="margin-bottom:3px;">${_wrsEsc(x)}</li>`).join('')}</ul>`;
+}
+
+const _WRS_CONF_COLOR = { high: 'var(--green)', medium: 'var(--accent)', low: 'var(--red)' };
+
+function _wrsConfBadge(c) {
+  if (!c) return '';
+  return `<span style="font-size:10px;font-weight:700;text-transform:uppercase;color:${_WRS_CONF_COLOR[c] || 'var(--text-muted)'};border:1px solid currentColor;border-radius:4px;padding:1px 5px;">${_wrsEsc(c)} confidence</span>`;
 }
 
 function _wrsDetailHTML(r) {
@@ -79,10 +83,11 @@ function _wrsDetailHTML(r) {
     <div class="note-header">
       <span class="mvrv-zone-badge" style="background:var(--accent-subtle);color:var(--accent);">${_wrsEsc(range)}</span>
       <span style="font-weight:700;color:var(--text);flex:1;min-width:120px;font-size:15px;">${_wrsEsc(r.title) || '(untitled)'}</span>
+      ${_wrsConfBadge(r.confidence)}
     </div>
-    ${r.summary ? `<div style="font-style:italic;color:var(--text-muted);font-size:13px;margin:6px 0;">${_wrsEsc(r.summary)}</div>` : ''}
-    ${r.market_structure ? `<div style="margin-top:10px;"><div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;">Market Structure</div><div style="font-size:13px;color:var(--text-muted);margin-top:2px;">${_wrsEsc(r.market_structure)}</div></div>` : ''}
-    ${r.onchain_trends ? `<div style="margin-top:10px;"><div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;">On-Chain Trends</div><div style="font-size:13px;color:var(--text-muted);margin-top:2px;">${_wrsEsc(r.onchain_trends)}</div></div>` : ''}
+    ${r.summary ? `<div style="font-style:italic;color:var(--text-muted);font-size:13px;margin:6px 0;line-height:1.5;">${_wrsEsc(r.summary)}</div>` : ''}
+    ${r.market_structure ? `<div style="margin-top:10px;"><div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;">Market Structure</div><div style="font-size:13px;color:var(--text-muted);margin-top:2px;line-height:1.5;">${_wrsEsc(r.market_structure)}</div></div>` : ''}
+    ${r.onchain_trends ? `<div style="margin-top:10px;"><div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;">On-Chain Trends</div><div style="font-size:13px;color:var(--text-muted);margin-top:2px;line-height:1.5;">${_wrsEsc(r.onchain_trends)}</div></div>` : ''}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
       <div>
         <div style="font-size:11px;font-weight:700;color:var(--red);text-transform:uppercase;">⚠ Risks</div>
@@ -94,17 +99,13 @@ function _wrsDetailHTML(r) {
       </div>
     </div>
     ${r.outlook ? `<div style="font-style:italic;font-size:13px;color:var(--accent);margin-top:10px;border-top:1px solid var(--border);padding-top:8px;">${_wrsEsc(r.outlook)}</div>` : ''}
+    <div style="margin-top:8px;"><a href="https://github.com/RavellerH/Hype/blob/gh-pages/research/${_wrsEsc(r.file)}" target="_blank" rel="noopener" style="font-size:11px;color:var(--text-faint);">view source markdown ↗</a></div>
   </div>`;
 }
 
 function _wrsRender() {
   const el = document.getElementById('research-content');
   if (!el) return;
-
-  if (!_wrsDb) {
-    el.innerHTML = '<div class="chat-empty" style="margin-top:60px;">⚠️ Supabase not connected.</div>';
-    return;
-  }
 
   const genBar = `
   <div class="filter-bar" style="margin:0 0 12px;justify-content:space-between;">
@@ -121,12 +122,12 @@ function _wrsRender() {
   }
 
   const listHTML = _wrsReports.map(r => {
-    const active = r.id === _wrsOpenId;
+    const active = r.week === _wrsOpenId;
     const range = r.week_start ? new Date(r.week_start).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
-    return `<button class="chip${active ? ' chip-active' : ''}" onclick="wrsOpen('${_wrsEsc(r.id)}')">${_wrsEsc(range)} — ${_wrsEsc((r.title || '').slice(0, 28))}</button>`;
+    return `<button class="chip${active ? ' chip-active' : ''}" onclick="wrsOpen('${_wrsEsc(r.week)}')">${_wrsEsc(range)} — ${_wrsEsc((r.title || '').slice(0, 28))}</button>`;
   }).join('');
 
-  const current = _wrsReports.find(r => r.id === _wrsOpenId) || _wrsReports[0];
+  const current = _wrsReports.find(r => r.week === _wrsOpenId) || _wrsReports[0];
 
   el.innerHTML = genBar +
     `<div class="filter-bar" style="margin-bottom:12px;flex-wrap:wrap;">${listHTML}</div>` +

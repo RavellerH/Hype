@@ -92,28 +92,6 @@ export const _f8 = r => `${r >= 0 ? '+' : ''}${(r * 100).toFixed(4)}%`;
 export const _fmtM = n =>
   n >= 1e9 ? `${(n / 1e9).toFixed(2)}B` : n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(0)}K` : `${(+n).toFixed(0)}`;
 
-export async function sbUpsert(url, key, table, rows) {
-  const r = await fetch(`${url}/rest/v1/${table}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      apikey: key,
-      Authorization: `Bearer ${key}`,
-      Prefer: 'resolution=merge-duplicates',
-    },
-    body: JSON.stringify(rows),
-  });
-  if (!r.ok) throw new Error(`Supabase upsert ${table} failed: ${r.status} ${await r.text()}`);
-}
-
-export async function sbSelect(url, key, table, query) {
-  const r = await fetch(`${url}/rest/v1/${table}?${query}`, {
-    headers: { apikey: key, Authorization: `Bearer ${key}` },
-  });
-  if (!r.ok) return [];
-  return r.json();
-}
-
 export async function tgSend(token, chatId, text) {
   if (!token || !chatId) return;
   await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
@@ -137,24 +115,39 @@ export function extractJSON(text) {
   return JSON.parse(match[0]);
 }
 
-export async function claudeDraft(apiKey, system, user, maxTokens = 1200) {
-  const r = await fetch('https://api.anthropic.com/v1/messages', {
+// Calls the Supabase llm-router Edge Function (supabase/functions/llm-router) —
+// the same multi-provider gateway the dashboard's AI tabs use. Tier-2 tasks
+// ('debrief', 'weekly_review') route through Gemini Pro → Claude Sonnet →
+// OpenRouter → Groq 70B, in that order, for the highest-quality draft available.
+export async function routedDraft(routerUrl, task, system, user, maxTokens = 1200) {
+  const r = await fetch(routerUrl, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: maxTokens,
-      system,
-      messages: [{ role: 'user', content: user }],
-    }),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ task, system, max_tokens: maxTokens, messages: [{ role: 'user', content: user }] }),
   });
-  if (!r.ok) throw new Error(`Anthropic API ${r.status}: ${await r.text()}`);
-  const data = await r.json();
-  return (data.content || []).map(c => c.text || '').join('').trim();
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok || !d.text) throw new Error(`llm-router (${task}) failed: ${d.error || r.status} ${(d.details || []).join('; ')}`);
+  console.log(`[llm-router] ${task} -> ${d.provider}/${d.model}`);
+  return d.text.trim();
+}
+
+// Writes one markdown entry to disk and prepends it to a capped JSON index —
+// both get committed straight into the repo by the workflow, so there's no
+// database for Daily Brief / Weekly Research at all.
+export async function writeEntry({ dir, file, md, indexPath, indexEntry, maxEntries = 120 }) {
+  const fs = await import('node:fs/promises');
+  await fs.mkdir(dir, { recursive: true });
+  await fs.writeFile(`${dir}/${file}`, md, 'utf8');
+  let index = [];
+  try { index = JSON.parse(await fs.readFile(indexPath, 'utf8')); } catch {}
+  index = [indexEntry, ...index.filter(e => e.file !== indexEntry.file)].slice(0, maxEntries);
+  await fs.writeFile(indexPath, JSON.stringify(index, null, 2) + '\n', 'utf8');
+  return index;
+}
+
+export async function readIndex(indexPath) {
+  const fs = await import('node:fs/promises');
+  try { return JSON.parse(await fs.readFile(indexPath, 'utf8')); } catch { return []; }
 }
 
 export function esc(s) {
