@@ -1,0 +1,23 @@
+[
+  {
+    "week": "2026-W26",
+    "file": "2026-W26.md",
+    "week_start": "2026-06-28",
+    "week_end": "2026-06-28",
+    "title": "HYPE slides 2.9% amid extreme market fear despite marginally positive funding",
+    "summary": "On June 28 HYPE fell 2.94% to $62.31 while the 8‑hour funding rate turned slightly positive at +0.0013%. Open interest stayed high at $1.29 B and 24‑hour perpetual volume reached $1.94 B, indicating active trading. The broader market registered an Extreme Fear reading (18), and both BTC and ETH posted negative funding, highlighting HYPE's anomalous funding stance. The limited positive funding may offer short‑term support, but the prevailing fear suggests downside risk.",
+    "market_structure": "The price decline on June 28 was the most pronounced signal of weakness, contrasting with a marginally positive funding rate that failed to offset the bearish sentiment. Open interest remained sizable and unchanged, while volume stayed robust, suggesting liquidity but not added directional conviction. The divergence between HYPE's funding (+0.0013%) and the negative funding of BTC and ETH underscores a relative strength that could be temporary. The Fear & Greed Index at 18 (Extreme Fear) aligns with the price slide, reinforcing bearish pressure. Overall, the week's snapshot points to a market in retreat with a fleeting funding‑driven tailwind for longs.",
+    "onchain_trends": "On the single day reported, perpetual volume surged to $1.94 B and open interest held at $1.29 B, indicating high on‑chain activity despite price weakness. No TVL data were provided, limiting insight into broader capital allocation trends. The steady OI combined with robust volume suggests speculative turnover rather than new capital inflows, a pattern consistent with heightened fear environments.",
+    "risks": [
+      "Further downside pressure as the 2.94% price drop coincides with an extreme fear reading (June 28), potentially triggering additional selling.",
+      "Funding could flip negative if the price decline continues, removing the modest long‑side incentive currently present (June 28).",
+      "Stagnant open interest despite high volume may signal speculative flow without durable commitment, raising the risk of a rapid pull‑back (June 28)."
+    ],
+    "opportunities": [
+      "The marginally positive funding (+0.0013%) may attract short‑term longs seeking a contract not yet penalized for holding positions.",
+      "Relative outperformance versus BTC and ETH, both with negative funding, could be exploited via a tactical long HYPE / short BTC‑ETH hedge."
+    ],
+    "confidence": "medium",
+    "outlook": "If funding remains positive or reverts to neutral while fear eases, HYPE could recover modestly. However, sustained extreme fear and a shift to negative funding would likely deepen the decline. Monitoring funding dynamics and open‑interest trends will be essential for short‑term directional assessment."
+  }
+]
