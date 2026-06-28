@@ -4,7 +4,7 @@ Complete audit of all dashboard tabs and modules as of 2026-05-31.
 
 ---
 
-## Navigation Tabs (24 pages)
+## Navigation Tabs (26 pages)
 
 | Page ID | Label | Loader | Source File |
 |---|---|---|---|
@@ -26,6 +26,8 @@ Complete audit of all dashboard tabs and modules as of 2026-05-31.
 | `kb` | KB | `loadKB` | kb.js |
 | `signals` | Signals | `loadSignals` | signals.js + ta-signal.js |
 | `news` | News | `loadNews` | news.js |
+| `brief` | Brief | `loadDailyBrief` | dailybrief.js |
+| `research` | Research | `loadResearch` | research.js |
 | `fundamentals` | Fundamentals | `loadFundamentals` | fundamentals.js |
 | `defi` | DeFi | `loadDefi` | defillama.js |
 | `arb` | Arb | `loadArb` | arb.js |
@@ -171,6 +173,20 @@ Two implementations coexist:
   - Per-article badges: BULL / BEAR / NEUTRAL + timeframe + coin chips + reasoning
   - Settings: enter bot worker URL in ⚙ panel → stored in `hype_bot_url` localStorage
   - Cache TTL: 30 minutes
+
+### Daily Brief (`brief`)
+- Auto-generated every day at UTC midnight by the bot worker cron (`dailyBrief()`)
+- Pulls HYPE price/funding/OI/volume, HyperEVM TVL, Fear & Greed, per-coin funding/OI, and Hyperliquid-tagged news
+- Cloudflare Workers AI (`llama-3.1-8b-instruct-fast`) drafts a structured JSON brief: headline, on-chain summary, risks, opportunities, news summary, takeaway
+- Stored in Supabase `daily_briefs`; auto-mirrored into `kb_wiki` (category `brief`) so it feeds the knowledge base
+- "Generate Now" button calls `/run-daily-brief` on the bot worker (same `hype_bot_url` setting as News/HL Pulse)
+- History list of past briefs below the latest card
+
+### Weekly Research (`research`)
+- Auto-generated every Sunday by the bot worker cron (`weeklyResearch()`), aggregating the last 7 `daily_briefs` rows
+- AI drafts: title, executive summary, market structure, on-chain trends, risks, opportunities, outlook
+- Stored in Supabase `weekly_research` — meant to be the publishable artifact (read access is public via anon key)
+- "Generate This Week" button calls `/run-weekly-research` on the bot worker
 
 ### Fundamentals
 - CoinGecko top 100 coins

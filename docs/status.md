@@ -30,10 +30,12 @@ Legend: ✅ Working · ⚠️ Needs config / partial · ❌ Broken / blocked · 
 | Smart Money | ⚠️ | Requires Nansen API key or Vercel proxy |
 | Analytics | ✅ | Equity curve, Kelly criterion, PnL distribution |
 | Analytics → AI Debrief | ⚠️ | Requires Claude API key in settings |
-| KB (Knowledge Base) | ⚠️ | Requires Supabase (kb_wiki, kb_trades tables) |
+| KB (Knowledge Base) | ✅ | `kb_wiki` table created 2026-06-28 — was previously missing entirely, so every wiki save/update/delete silently failed; now fixed. Requires Supabase URL + anon key in Settings |
 | Signals | ✅ | Confluence scanner, L/S ratio, Binance OI |
 | News | ✅ | 9 sources, progressive load, source filter, F&G widget |
 | News → AI Analysis | ⚠️ | Requires bot worker URL set in News tab settings |
+| Daily Brief | ⚠️ | `daily_briefs` table + Supabase project restored 2026-06-28. Bot worker code written but **not yet deployed** — needs `npx wrangler deploy --config wrangler-bot.toml` |
+| Weekly Research | ⚠️ | `weekly_research` table ready, same blocker as Daily Brief — needs bot worker redeploy |
 | Fundamentals | ✅ | CoinGecko top 100, sortable, 5min auto-refresh |
 | DeFi | ✅ | DeFiLlama TVL, stablecoins, protocols, chains |
 | Arb | ✅ | HL / Binance / Bybit / OKX funding arb scanner |
@@ -103,6 +105,8 @@ try { state = JSON.parse(localStorage.getItem('hype_autojournal_v1')) || {}; } c
 | Daily snapshot (midnight) | ⚠️ | Requires `WALLET` secret |
 | Weekly review (Sunday midnight) | ✅ | Runs inside daily midnight cron on Sundays |
 | Funding flip alerts (15min) | ✅ | Detects positive↔negative sign change |
+| Daily brief (midnight) | ⚠️ | `daily_briefs` table + `[ai]` binding ready. Needs `SUPABASE_URL`/`SUPABASE_KEY` secrets set + redeploy |
+| Weekly research (Sunday midnight) | ⚠️ | Same as above + `weekly_research` table; reads last 7 days of `daily_briefs`. Needs redeploy |
 | /help, /signals, /arb | ✅ | |
 | /snapshot | ⚠️ | Requires `WALLET` secret |
 | /positions | ⚠️ | Requires `WALLET` secret |
@@ -145,7 +149,8 @@ try { state = JSON.parse(localStorage.getItem('hype_autojournal_v1')) || {}; } c
 | Priority | Item | How |
 |---|---|---|
 | 🔴 1 | Set `WALLET` secret in bot worker | `npx wrangler secret put WALLET --config wrangler-bot.toml` |
-| 🔴 2 | Redeploy bot worker | `npx wrangler deploy --config wrangler-bot.toml` |
+| 🔴 2 | Redeploy bot worker | `npx wrangler deploy --config wrangler-bot.toml` — required to activate Daily Brief / Weekly Research cron + endpoints (no Cloudflare credentials available in this sandbox, must be run from a machine with `wrangler login` or `CLOUDFLARE_API_TOKEN`) |
+| 🟡 4b | Set bot worker URL in Brief tab → Bot URL field | Unlocks: "Generate Now" / "Generate This Week" manual triggers |
 | 🟡 3 | Replace 6 placeholder smart wallet addresses in `bot/config.py` | Source from Hyperliquid leaderboard / Lookonchain |
 | 🟡 4 | Set Supabase URL + anon key in dashboard Settings | Unlocks: journal, AI staging, KB, logger |
 | 🟡 5 | Set bot worker URL in News tab → ⚙ Bot URL | Unlocks: AI news analysis |

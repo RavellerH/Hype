@@ -149,13 +149,14 @@ function _kbRenderActiveTab() {
 //  WIKI TAB
 // ══════════════════════════════════════════════════════════════
 
-const _WIKI_CATS = ['concept','pattern','rule','playbook','lesson'];
+const _WIKI_CATS = ['concept','pattern','rule','playbook','lesson','brief'];
 const _WIKI_CAT_COLORS = {
   concept:  '#3b82f6',
   pattern:  '#8b5cf6',
   rule:     '#f97316',
   playbook: '#22c55e',
-  lesson:   '#eab308'
+  lesson:   '#eab308',
+  brief:    '#38bdf8'
 };
 
 function renderWikiTab() {
