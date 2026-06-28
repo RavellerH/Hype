@@ -1,7 +1,8 @@
 /* ============================================================
    dailybrief.js — Daily Hyperliquid Brief (on-chain · risks ·
-   opportunities · news), auto-generated server-side every day
-   by the Cloudflare bot worker and read here from Supabase.
+   opportunities · news). Generated server-side every day by a
+   GitHub Actions workflow (.github/workflows/daily-brief.yml,
+   scripts/daily-brief.mjs) and read here from Supabase.
    ============================================================ */
 
 'use strict';
@@ -43,26 +44,20 @@ async function _dbrLoadData() {
 function dbrRefresh() { loadDailyBrief(); }
 
 async function dbrGenerateNow() {
-  const botUrl = (localStorage.getItem('hype_bot_url') || '').replace(/\/$/, '');
   const status = document.getElementById('dbr-gen-status');
-  if (!botUrl) {
-    if (status) status.textContent = 'Set bot worker URL below first';
-    return;
-  }
-  if (status) status.textContent = 'generating…';
+  if (status) status.textContent = 'triggering…';
   try {
-    await fetch(`${botUrl}/run-daily-brief`, { method: 'GET' });
-    if (status) status.textContent = 'triggered — fetching in 10s…';
-    setTimeout(loadDailyBrief, 10000);
+    const r = await fetch('/api/trigger-workflow', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ workflow: 'daily-brief.yml' }),
+    });
+    if (!r.ok) throw new Error((await r.json().catch(() => ({})))?.error || `${r.status}`);
+    if (status) status.textContent = 'triggered — fetching in 30s…';
+    setTimeout(loadDailyBrief, 30000);
   } catch (e) {
     if (status) status.textContent = `error: ${e.message}`;
   }
-}
-
-function dbrSaveBotUrl() {
-  const v = document.getElementById('dbr-bot-url')?.value.trim();
-  if (v) localStorage.setItem('hype_bot_url', v.replace(/\/$/, ''));
-  _dbrRender();
 }
 
 function dbrToggleHistory(id) {
@@ -117,7 +112,6 @@ function _dbrRender() {
   }
 
   const [latest, ...history] = _dbrBriefs;
-  const botUrl = localStorage.getItem('hype_bot_url') || '';
 
   const genBar = `
   <div class="filter-bar" style="margin:0 0 12px;justify-content:space-between;">
@@ -128,17 +122,8 @@ function _dbrRender() {
     </div>
   </div>`;
 
-  const settingsBar = `
-  <div class="note-card" style="margin-bottom:12px;background:var(--surface2);">
-    <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">Bot worker URL (runs the daily cron + manual generation)</div>
-    <div style="display:flex;gap:8px;">
-      <input class="input" id="dbr-bot-url" placeholder="https://hype-bot.yourname.workers.dev" value="${_dbrEsc(botUrl)}" style="flex:1;" />
-      <button class="btn btn-ghost btn-sm" onclick="dbrSaveBotUrl()">Save</button>
-    </div>
-  </div>`;
-
   if (!latest) {
-    el.innerHTML = genBar + settingsBar + `<div class="chat-empty" style="margin-top:30px;">No daily briefs yet. The bot worker generates one automatically at UTC midnight — or click "Generate Now".</div>`;
+    el.innerHTML = genBar + `<div class="chat-empty" style="margin-top:30px;">No daily briefs yet. A GitHub Actions workflow generates one automatically at UTC midnight — or click "Generate Now".</div>`;
     return;
   }
 
@@ -146,5 +131,5 @@ function _dbrRender() {
     ? `<div style="font-size:11px;color:var(--text-faint);text-transform:uppercase;margin:16px 0 8px;">History</div>${history.map(b => _dbrCardHTML(b, false)).join('')}`
     : '';
 
-  el.innerHTML = genBar + _dbrCardHTML(latest, true) + historyHTML + settingsBar;
+  el.innerHTML = genBar + _dbrCardHTML(latest, true) + historyHTML;
 }

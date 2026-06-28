@@ -1,7 +1,7 @@
 /* ============================================================
    research.js — Weekly Hyperliquid Research reports, aggregated
-   from a week of daily briefs and generated server-side by the
-   Cloudflare bot worker every Sunday. Meant to be publishable.
+   from a week of daily briefs and generated server-side every
+   Sunday by a GitHub Actions workflow. Meant to be publishable.
    ============================================================ */
 
 'use strict';
@@ -44,17 +44,17 @@ async function _wrsLoadData() {
 function wrsRefresh() { loadResearch(); }
 
 async function wrsGenerateNow() {
-  const botUrl = (localStorage.getItem('hype_bot_url') || '').replace(/\/$/, '');
   const status = document.getElementById('wrs-gen-status');
-  if (!botUrl) {
-    if (status) status.textContent = 'Set bot worker URL in the Brief tab first';
-    return;
-  }
-  if (status) status.textContent = 'generating…';
+  if (status) status.textContent = 'triggering…';
   try {
-    await fetch(`${botUrl}/run-weekly-research`, { method: 'GET' });
-    if (status) status.textContent = 'triggered — fetching in 12s…';
-    setTimeout(loadResearch, 12000);
+    const r = await fetch('/api/trigger-workflow', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ workflow: 'weekly-research.yml' }),
+    });
+    if (!r.ok) throw new Error((await r.json().catch(() => ({})))?.error || `${r.status}`);
+    if (status) status.textContent = 'triggered — fetching in 30s…';
+    setTimeout(loadResearch, 30000);
   } catch (e) {
     if (status) status.textContent = `error: ${e.message}`;
   }
