@@ -179,15 +179,15 @@ Two implementations coexist:
 - Pulls HYPE price/funding/OI/volume, HyperEVM TVL, Fear & Greed, per-coin funding/OI, and Hyperliquid-tagged news
 - Anthropic Claude Haiku drafts a structured JSON brief: headline, on-chain summary, risks, opportunities, news summary, takeaway
 - Stored in Supabase `daily_briefs`; auto-mirrored into `kb_wiki` (category `brief`) so it feeds the knowledge base
-- "Generate Now" button triggers the workflow via GitHub's `workflow_dispatch` REST API, using a GitHub PAT (`repo`+`workflow` scope) saved in the Brief tab settings card (`hype_gh_actions_pat` / `hype_gh_actions_ref` localStorage)
+- "Generate Now" button POSTs to `/api/trigger-workflow` (Vercel serverless function), which calls GitHub's `workflow_dispatch` REST API server-side using a `GH_PAT` Vercel environment variable — the PAT never reaches the browser
 - History list of past briefs below the latest card
-- Requires GitHub repo secrets: `SUPABASE_URL`, `SUPABASE_KEY`, `ANTHROPIC_API_KEY` (optional: `TG_TOKEN`/`TG_CHAT` for Telegram push)
+- Requires GitHub repo secrets: `SUPABASE_URL`, `SUPABASE_KEY`, `ANTHROPIC_API_KEY` (optional: `TG_TOKEN`/`TG_CHAT` for Telegram push); requires Vercel env var `GH_PAT` (token with `repo`+`workflow` scope) for the "Generate Now" button
 
 ### Weekly Research (`research`)
 - Auto-generated every Sunday (1h after the daily brief) by a GitHub Actions workflow (`.github/workflows/weekly-research.yml` → `scripts/weekly-research.mjs`), aggregating the last 7 `daily_briefs` rows
 - AI drafts: title, executive summary, market structure, on-chain trends, risks, opportunities, outlook
 - Stored in Supabase `weekly_research` — meant to be the publishable artifact (read access is public via anon key)
-- "Generate This Week" button triggers the workflow via `workflow_dispatch`, same GitHub PAT as the Daily Brief tab
+- "Generate This Week" button uses the same `/api/trigger-workflow` proxy as the Daily Brief tab
 
 ### Fundamentals
 - CoinGecko top 100 coins

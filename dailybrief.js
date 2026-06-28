@@ -13,12 +13,6 @@ const _dbrDb   = (window.supabase && window.supabase.createClient)
   ? window.supabase.createClient(_DBR_URL, _DBR_KEY)
   : null;
 
-const DBR_GH_OWNER    = 'RavellerH';
-const DBR_GH_REPO     = 'Hype';
-const DBR_GH_WORKFLOW = 'daily-brief.yml';
-const DBR_PAT_KEY     = 'hype_gh_actions_pat';
-const DBR_REF_KEY     = 'hype_gh_actions_ref';
-
 let _dbrBriefs   = [];
 let _dbrLoaded   = false;
 let _dbrExpanded = new Set();
@@ -51,38 +45,19 @@ function dbrRefresh() { loadDailyBrief(); }
 
 async function dbrGenerateNow() {
   const status = document.getElementById('dbr-gen-status');
-  const pat = localStorage.getItem(DBR_PAT_KEY)?.trim();
-  if (!pat) {
-    if (status) status.textContent = 'Set GitHub PAT below first';
-    return;
-  }
-  const ref = localStorage.getItem(DBR_REF_KEY)?.trim() || 'main';
   if (status) status.textContent = 'triggering…';
   try {
-    const r = await fetch(`https://api.github.com/repos/${DBR_GH_OWNER}/${DBR_GH_REPO}/actions/workflows/${DBR_GH_WORKFLOW}/dispatches`, {
+    const r = await fetch('/api/trigger-workflow', {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${pat}`,
-        Accept: 'application/vnd.github+json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ ref }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ workflow: 'daily-brief.yml' }),
     });
-    if (r.status === 401 || r.status === 403) { localStorage.removeItem(DBR_PAT_KEY); throw new Error('Token invalid/unauthorized — cleared, try again'); }
-    if (!r.ok) throw new Error(`GitHub ${r.status}: ${await r.text()}`);
+    if (!r.ok) throw new Error((await r.json().catch(() => ({})))?.error || `${r.status}`);
     if (status) status.textContent = 'triggered — fetching in 30s…';
     setTimeout(loadDailyBrief, 30000);
   } catch (e) {
     if (status) status.textContent = `error: ${e.message}`;
   }
-}
-
-function dbrSavePat() {
-  const pat = document.getElementById('dbr-gh-pat')?.value.trim();
-  if (pat) localStorage.setItem(DBR_PAT_KEY, pat);
-  const ref = document.getElementById('dbr-gh-ref')?.value.trim();
-  if (ref) localStorage.setItem(DBR_REF_KEY, ref);
-  _dbrRender();
 }
 
 function dbrToggleHistory(id) {
@@ -137,8 +112,6 @@ function _dbrRender() {
   }
 
   const [latest, ...history] = _dbrBriefs;
-  const pat = localStorage.getItem(DBR_PAT_KEY) || '';
-  const ref = localStorage.getItem(DBR_REF_KEY) || '';
 
   const genBar = `
   <div class="filter-bar" style="margin:0 0 12px;justify-content:space-between;">
@@ -149,18 +122,8 @@ function _dbrRender() {
     </div>
   </div>`;
 
-  const settingsBar = `
-  <div class="note-card" style="margin-bottom:12px;background:var(--surface2);">
-    <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">GitHub PAT to trigger the Daily Brief workflow (needs "repo" + "workflow" scope — <a href="https://github.com/settings/tokens/new?scopes=repo,workflow" target="_blank" rel="noopener">create one</a>). Generation runs as a GitHub Actions workflow daily at UTC midnight.</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;">
-      <input class="input" id="dbr-gh-pat" type="password" placeholder="ghp_…" value="${_dbrEsc(pat)}" style="flex:1;min-width:160px;" />
-      <input class="input" id="dbr-gh-ref" placeholder="branch (default: main)" value="${_dbrEsc(ref)}" style="width:160px;" />
-      <button class="btn btn-ghost btn-sm" onclick="dbrSavePat()">Save</button>
-    </div>
-  </div>`;
-
   if (!latest) {
-    el.innerHTML = genBar + settingsBar + `<div class="chat-empty" style="margin-top:30px;">No daily briefs yet. A GitHub Actions workflow generates one automatically at UTC midnight — or click "Generate Now".</div>`;
+    el.innerHTML = genBar + `<div class="chat-empty" style="margin-top:30px;">No daily briefs yet. A GitHub Actions workflow generates one automatically at UTC midnight — or click "Generate Now".</div>`;
     return;
   }
 
@@ -168,5 +131,5 @@ function _dbrRender() {
     ? `<div style="font-size:11px;color:var(--text-faint);text-transform:uppercase;margin:16px 0 8px;">History</div>${history.map(b => _dbrCardHTML(b, false)).join('')}`
     : '';
 
-  el.innerHTML = genBar + _dbrCardHTML(latest, true) + historyHTML + settingsBar;
+  el.innerHTML = genBar + _dbrCardHTML(latest, true) + historyHTML;
 }

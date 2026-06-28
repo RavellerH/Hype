@@ -12,12 +12,6 @@ const _wrsDb   = (window.supabase && window.supabase.createClient)
   ? window.supabase.createClient(_WRS_URL, _WRS_KEY)
   : null;
 
-const WRS_GH_OWNER    = 'RavellerH';
-const WRS_GH_REPO     = 'Hype';
-const WRS_GH_WORKFLOW = 'weekly-research.yml';
-const WRS_PAT_KEY     = 'hype_gh_actions_pat';
-const WRS_REF_KEY     = 'hype_gh_actions_ref';
-
 let _wrsReports = [];
 let _wrsLoaded  = false;
 let _wrsOpenId  = null;
@@ -51,25 +45,14 @@ function wrsRefresh() { loadResearch(); }
 
 async function wrsGenerateNow() {
   const status = document.getElementById('wrs-gen-status');
-  const pat = localStorage.getItem(WRS_PAT_KEY)?.trim();
-  if (!pat) {
-    if (status) status.textContent = 'Set GitHub PAT in the Brief tab first';
-    return;
-  }
-  const ref = localStorage.getItem(WRS_REF_KEY)?.trim() || 'main';
   if (status) status.textContent = 'triggering…';
   try {
-    const r = await fetch(`https://api.github.com/repos/${WRS_GH_OWNER}/${WRS_GH_REPO}/actions/workflows/${WRS_GH_WORKFLOW}/dispatches`, {
+    const r = await fetch('/api/trigger-workflow', {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${pat}`,
-        Accept: 'application/vnd.github+json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ ref }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ workflow: 'weekly-research.yml' }),
     });
-    if (r.status === 401 || r.status === 403) { localStorage.removeItem(WRS_PAT_KEY); throw new Error('Token invalid/unauthorized — cleared, try again'); }
-    if (!r.ok) throw new Error(`GitHub ${r.status}: ${await r.text()}`);
+    if (!r.ok) throw new Error((await r.json().catch(() => ({})))?.error || `${r.status}`);
     if (status) status.textContent = 'triggered — fetching in 30s…';
     setTimeout(loadResearch, 30000);
   } catch (e) {
