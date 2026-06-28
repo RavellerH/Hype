@@ -1,4 +1,4 @@
-const CACHE = 'hype-v11';
+const CACHE = 'hype-v12';
 const STATIC = [
   './',
   './styles.css',
@@ -46,7 +46,7 @@ self.addEventListener('fetch', e => {
           caches.open(CACHE).then(c => c.put(e.request, clone));
         }
         return res;
-      });
+      }).catch(() => new Response(null, { status: 599, statusText: 'Network error (sw)' }));
     })
   );
 });
