@@ -40,16 +40,35 @@ async function _wrsLoadData() {
 
 function wrsRefresh() { loadResearch(); }
 
+// Shares the same backend-url override as dailybrief.js — both hit
+// /api/trigger-workflow, which only exists on the Vercel deployment.
+const _WRS_BACKEND_KEY = 'hype_trigger_backend_url';
+
+function _wrsBackendUrl() {
+  return (localStorage.getItem(_WRS_BACKEND_KEY) || '').replace(/\/$/, '');
+}
+
+function wrsSetBackend() {
+  const cur = localStorage.getItem(_WRS_BACKEND_KEY) || '';
+  const url = prompt('Vercel app URL (only needed if this page is NOT already served from it), e.g. https://your-app.vercel.app:', cur);
+  if (url === null) return;
+  if (url.trim()) localStorage.setItem(_WRS_BACKEND_KEY, url.trim());
+  else localStorage.removeItem(_WRS_BACKEND_KEY);
+}
+
 async function wrsGenerateNow() {
   const status = document.getElementById('wrs-gen-status');
   if (status) status.textContent = 'triggering…';
   try {
-    const r = await fetch('/api/trigger-workflow', {
+    const r = await fetch(`${_wrsBackendUrl()}/api/trigger-workflow`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ workflow: 'weekly-research.yml' }),
     });
-    if (!r.ok) throw new Error((await r.json().catch(() => ({})))?.error || `${r.status}`);
+    if (!r.ok) {
+      if (r.status === 405) throw new Error('405 — this page isn\'t served from your Vercel app. Click ⚙ and paste its URL.');
+      throw new Error((await r.json().catch(() => ({})))?.error || `${r.status}`);
+    }
     if (status) status.textContent = 'triggered — fetching in 30s…';
     setTimeout(loadResearch, 30000);
   } catch (e) {
@@ -112,6 +131,7 @@ function _wrsRender() {
     <div style="display:flex;gap:8px;align-items:center;">
       <button class="btn btn-ghost btn-sm" onclick="wrsRefresh()">↺ Refresh</button>
       <button class="btn btn-primary btn-sm" onclick="wrsGenerateNow()">⚡ Generate This Week</button>
+      <button class="btn btn-ghost btn-sm" onclick="wrsSetBackend()" title="Set Vercel app URL — needed if this page isn't served from Vercel">⚙</button>
       <span id="wrs-gen-status" style="font-size:11px;color:var(--text-muted);"></span>
     </div>
   </div>`;
