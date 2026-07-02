@@ -649,7 +649,7 @@ function renderIntelTab() {
     : _intelLog.map(entry => {
         const dt = new Date(entry.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
         const coinBadges = entry.coins.map(c =>
-          `<span style="background:rgba(56,189,248,0.10);color:var(--accent);border:1px solid rgba(56,189,248,0.2);border-radius:100px;font-size:10px;font-weight:700;padding:1px 7px">${c}</span>`
+          `<span style="background:rgba(80,210,193,0.10);color:var(--accent);border:1px solid rgba(80,210,193,0.2);border-radius:100px;font-size:10px;font-weight:700;padding:1px 7px">${c}</span>`
         ).join('');
         const phaseBadge = entry.phase
           ? `<span class="phase-badge phase-${entry.phase}" style="font-size:10px;padding:1px 7px">${entry.phase}</span>`
@@ -793,7 +793,7 @@ async function renderKGraph() {
   }
 
   // Phase nodes
-  const PHASE_COLORS = { ACCUMULATION: '#38bdf8', MARKUP: '#4ade80', DISTRIBUTION: '#fbbf24', MARKDOWN: '#f87171' };
+  const PHASE_COLORS = { ACCUMULATION: '#50d2c1', MARKUP: '#4ade80', DISTRIBUTION: '#fbbf24', MARKDOWN: '#f87171' };
   const phasesUsed = [...new Set(_intelLog.map(e => e.phase).filter(Boolean))];
   for (const phase of phasesUsed) {
     nodes.push({
@@ -932,7 +932,7 @@ async function renderKGraph() {
   }).join('');
 
   const legend = [
-    { c: '#38bdf8',                l: 'Coin (live)' },
+    { c: '#50d2c1',                l: 'Coin (live)' },
     { c: TYPE_COLOR.intel,         l: 'Intel entry' },
     { c: TYPE_COLOR.phase,         l: 'Phase' },
     { c: TYPE_COLOR.narrative,     l: 'Narrative' },

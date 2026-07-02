@@ -751,10 +751,10 @@ function _renderIntelRadar() {
       labels,
       datasets: [{
         data: values,
-        backgroundColor:      'rgba(56,189,248,0.08)',
-        borderColor:          '#38bdf8',
+        backgroundColor:      'rgba(80,210,193,0.08)',
+        borderColor:          '#50d2c1',
         borderWidth:          1.5,
-        pointBackgroundColor: '#38bdf8',
+        pointBackgroundColor: '#50d2c1',
         pointBorderColor:     '#0a0a0a',
         pointRadius:          3,
         pointHoverRadius:     4,

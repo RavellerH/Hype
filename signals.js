@@ -273,7 +273,7 @@ async function runSignalScan(coins) {
 
 // ── Rendering ─────────────────────────────────────────────────────────────────
 
-const _SIG_PHASE_COLOR = { ACCUMULATION: '#38bdf8', MARKUP: '#4ade80', DISTRIBUTION: '#facc15', MARKDOWN: '#f87171', NEUTRAL: '#888' };
+const _SIG_PHASE_COLOR = { ACCUMULATION: '#50d2c1', MARKUP: '#4ade80', DISTRIBUTION: '#facc15', MARKDOWN: '#f87171', NEUTRAL: '#888' };
 
 function _ck(ok) {
   return ok
@@ -514,7 +514,7 @@ function loadSignals() {
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
         <button id="sig-scan-btn" onclick="doSigScanAll()" style="
           padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer;border:none;border-radius:7px;
-          background:var(--accent,#38bdf8);color:#000;transition:opacity .15s">
+          background:var(--accent,#50d2c1);color:#000;transition:opacity .15s">
           ▶ Scan 6 Coins
         </button>
         <div style="display:flex;gap:6px;align-items:center">

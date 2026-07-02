@@ -1728,7 +1728,7 @@ function _mktPhase(candles) {
 
   const p = detectPhase(candles);
   const confPct = Math.round(p.confidence * 100);
-  const phaseColors = {ACCUMULATION:'#38bdf8',MARKUP:'#4ade80',DISTRIBUTION:'#facc15',MARKDOWN:'#f87171',NEUTRAL:'#666'};
+  const phaseColors = {ACCUMULATION:'#50d2c1',MARKUP:'#4ade80',DISTRIBUTION:'#facc15',MARKDOWN:'#f87171',NEUTRAL:'#666'};
   const col = phaseColors[p.phase] || '#666';
   return `<div class="mkt-section">
     <div class="mkt-section-title">Phase Analysis (Wyckoff · 1h · 7d)</div>
@@ -3202,7 +3202,7 @@ function fmtAge(ms) {
 function _fillMeta(dir) {
   const d = (dir||'').toLowerCase();
   if (d.includes('liq'))   return { label:'LIQ',   bg:'rgba(248,113,113,0.15)', color:'var(--red)',      dirCls:'neg'  };
-  if (d.startsWith('open'))return { label:'OPEN',  bg:'rgba(56,189,248,0.10)',  color:'var(--accent)',   dirCls:''     };
+  if (d.startsWith('open'))return { label:'OPEN',  bg:'rgba(80,210,193,0.10)',  color:'var(--accent)',   dirCls:''     };
   return                          { label:'CLOSE', bg:'var(--surface2)',         color:'var(--text-muted)', dirCls:'' };
 }
 function _fillDirLabel(dir) {
