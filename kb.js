@@ -156,7 +156,7 @@ const _WIKI_CAT_COLORS = {
   rule:     '#f97316',
   playbook: '#22c55e',
   lesson:   '#eab308',
-  brief:    '#38bdf8'
+  brief:    '#50d2c1'
 };
 
 function renderWikiTab() {

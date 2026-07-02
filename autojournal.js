@@ -10,7 +10,7 @@ const AJ_GIST_KEY  = 'hype_gh_gist_id';
 const AJ_TAGS = ['Textbook', 'Disciplined', 'FOMO', 'Tilted'];
 const AJ_TAG_STYLE = {
   Textbook:    { bg: 'rgba(74,222,128,0.15)',  fg: '#4ade80', border: 'rgba(74,222,128,0.35)' },
-  Disciplined: { bg: 'rgba(56,189,248,0.15)',  fg: '#38bdf8', border: 'rgba(56,189,248,0.35)' },
+  Disciplined: { bg: 'rgba(80,210,193,0.15)',  fg: '#50d2c1', border: 'rgba(80,210,193,0.35)' },
   FOMO:        { bg: 'rgba(251,191,36,0.15)',  fg: '#fbbf24', border: 'rgba(251,191,36,0.35)' },
   Tilted:      { bg: 'rgba(248,113,113,0.15)', fg: '#f87171', border: 'rgba(248,113,113,0.35)' },
 };

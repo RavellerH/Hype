@@ -204,8 +204,8 @@ function _capRenderHistoryChart() {
         {
           label: 'Spot',
           data: snaps.map(s => s.spot_value ?? 0),
-          backgroundColor: 'rgba(56,189,248,0.55)',
-          borderColor: 'rgba(56,189,248,0.9)', borderWidth: 1, stack: 'cap',
+          backgroundColor: 'rgba(80,210,193,0.55)',
+          borderColor: 'rgba(80,210,193,0.9)', borderWidth: 1, stack: 'cap',
         },
         {
           label: 'Perps',

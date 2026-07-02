@@ -3,67 +3,84 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
-  <meta name="theme-color" content="#38bdf8">
+  <meta name="theme-color" content="#0b0c0d">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Hype">
-  <title>Hype — Analyzer</title>
+  <title>Hype — Hyperliquid Terminal</title>
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="icon" href="icons/icon-192.png" type="image/png">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
+<!-- SVG icon sprite -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></symbol>
+  <symbol id="i-overview" viewBox="0 0 24 24"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></symbol>
+  <symbol id="i-capital" viewBox="0 0 24 24"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></symbol>
+  <symbol id="i-trades" viewBox="0 0 24 24"><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></symbol>
+  <symbol id="i-funding" viewBox="0 0 24 24"><line x1="19" x2="5" y1="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></symbol>
+  <symbol id="i-flows" viewBox="0 0 24 24"><path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/></symbol>
+  <symbol id="i-monitor" viewBox="0 0 24 24"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></symbol>
+  <symbol id="i-markets" viewBox="0 0 24 24"><path d="M9 5v4"/><rect width="4" height="6" x="7" y="9" rx="1"/><path d="M9 15v2"/><path d="M17 3v2"/><rect width="4" height="8" x="15" y="5" rx="1"/><path d="M17 13v3"/><path d="M3 3v16a2 2 0 0 0 2 2h16"/></symbol>
+  <symbol id="i-arb" viewBox="0 0 24 24"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></symbol>
+  <symbol id="i-phases" viewBox="0 0 24 24"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></symbol>
+  <symbol id="i-intel" viewBox="0 0 24 24"><path d="M19.07 4.93A10 10 0 0 0 6.99 3.34"/><path d="M4 6h.01"/><path d="M2.29 9.62a10 10 0 1 0 19.02-1.27"/><path d="M16.24 7.76a6 6 0 1 0-8.01 8.91"/><path d="M12 18h.01"/><circle cx="12" cy="12" r="2"/><path d="m13.41 10.59 5.66-5.66"/></symbol>
+  <symbol id="i-trend" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></symbol>
+  <symbol id="i-onchain" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+  <symbol id="i-heatmap" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/></symbol>
+  <symbol id="i-mvrv" viewBox="0 0 24 24"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/></symbol>
+  <symbol id="i-indicators" viewBox="0 0 24 24"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></symbol>
+  <symbol id="i-smartmoney" viewBox="0 0 24 24"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/></symbol>
+  <symbol id="i-defi" viewBox="0 0 24 24"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></symbol>
+  <symbol id="i-ai" viewBox="0 0 24 24"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/></symbol>
+  <symbol id="i-signals" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="22" x2="18" y1="12" y2="12"/><line x1="6" x2="2" y1="12" y2="12"/><line x1="12" x2="12" y1="6" y2="2"/><line x1="12" x2="12" y1="22" y2="18"/></symbol>
+  <symbol id="i-news" viewBox="0 0 24 24"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></symbol>
+  <symbol id="i-hlpulse" viewBox="0 0 24 24"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></symbol>
+  <symbol id="i-brief" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></symbol>
+  <symbol id="i-research" viewBox="0 0 24 24"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></symbol>
+  <symbol id="i-fundamentals" viewBox="0 0 24 24"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></symbol>
+  <symbol id="i-kb" viewBox="0 0 24 24"><path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/></symbol>
+  <symbol id="i-watchlist" viewBox="0 0 24 24"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-journal" viewBox="0 0 24 24"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.375 2.625a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4Z"/></symbol>
+  <symbol id="i-analytics" viewBox="0 0 24 24"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M7 16c1.5-3 3-8 5-8s2.5 4 4 4 2.5-3 4-5"/></symbol>
+  <symbol id="i-docs" viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 15V3"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></symbol>
+</svg>
+
   <!-- Topbar -->
   <header class="topbar">
-    <div class="topbar-logo">⚡</div>
     <button class="hamburger-btn" id="hamburger-btn" onclick="toggleDrawer()" aria-label="Open menu">
       <div class="hbars"><span></span><span></span><span></span></div>
     </button>
 
-    <nav class="topbar-nav">
-      <button class="topbar-tab active" data-page="overview"  onclick="navigate('overview')">Portfolio</button>
-      <button class="topbar-tab"        data-page="capital"   onclick="navigate('capital')">Capital</button>
-      <button class="topbar-tab"        data-page="trades"    onclick="navigate('trades')">Trades</button>
-      <button class="topbar-tab"        data-page="funding"   onclick="navigate('funding')">Funding</button>
-      <button class="topbar-tab"        data-page="flows"     onclick="navigate('flows')">Flows</button>
-      <button class="topbar-tab"        data-page="monitor"   onclick="navigate('monitor')">Live</button>
-      <button class="topbar-tab"        data-page="markets"   onclick="navigate('markets')">Markets</button>
-      <button class="topbar-tab"        data-page="phases"    onclick="navigate('phases')">Phases</button>
-      <button class="topbar-tab"        data-page="intel"     onclick="navigate('intel')">Intel</button>
-      <button class="topbar-tab"        data-page="mvrv"      onclick="navigate('mvrv')">MVRV</button>
-      <button class="topbar-tab"        data-page="ai"        onclick="navigate('ai')">AI</button>
-      <button class="topbar-tab"        data-page="watchlist" onclick="navigate('watchlist')">Watchlist</button>
-      <button class="topbar-tab"        data-page="journal"     onclick="navigate('journal')">Journal</button>
-      <button class="topbar-tab"        data-page="indicators"  onclick="navigate('indicators')">Indicators</button>
-      <button class="topbar-tab"        data-page="smartmoney"  onclick="navigate('smartmoney')">Smart Money</button>
-      <button class="topbar-tab"        data-page="analytics"   onclick="navigate('analytics')">Analytics</button>
-      <button class="topbar-tab"        data-page="kb"          onclick="navigate('kb')">KB</button>
-      <button class="topbar-tab"        data-page="signals"        onclick="navigate('signals')">Signals</button>
-      <button class="topbar-tab"        data-page="news"           onclick="navigate('news')">News</button>
-      <button class="topbar-tab"        data-page="hlpulse"        onclick="navigate('hlpulse')">HL Pulse</button>
-      <button class="topbar-tab"        data-page="brief"          onclick="navigate('brief')">Brief</button>
-      <button class="topbar-tab"        data-page="research"       onclick="navigate('research')">Research</button>
-      <button class="topbar-tab"        data-page="fundamentals"   onclick="navigate('fundamentals')">Fundamentals</button>
-      <button class="topbar-tab"        data-page="arb"            onclick="navigate('arb')">Arb</button>
-    </nav>
+    <div class="topbar-brand">
+      <svg class="brand-bolt"><use href="#i-bolt"/></svg>
+      <span class="brand-name">Hype</span>
+      <span class="brand-tag">TERMINAL</span>
+    </div>
 
     <div class="topbar-right">
-      <a href="docs.html" class="btn btn-ghost btn-sm" style="text-decoration:none;font-size:11px" title="Documentation">Docs</a>
       <span class="refresh-info" id="refresh-info"></span>
-      <button class="btn btn-ghost btn-sm" onclick="refreshAll()">↺</button>
-      <span id="logger-dot" class="logger-dot off" id="logger-dot" title="Data Logger"></span>
+      <a href="docs.html" class="btn btn-ghost btn-sm topbar-docs" title="Documentation">
+        <svg class="btn-ico"><use href="#i-docs"/></svg>Docs
+      </a>
+      <button class="btn btn-ghost btn-sm btn-icon" onclick="refreshAll()" title="Refresh" aria-label="Refresh">
+        <svg class="btn-ico"><use href="#i-refresh"/></svg>
+      </button>
+      <span id="logger-dot" class="logger-dot off" title="Data Logger"></span>
       <span id="logger-tip" class="logger-tip" style="display:none"></span>
       <span class="wallet-badge" id="wallet-display">0x6e4c…2015</span>
       <div id="ws-status" class="status-dot off" title="WebSocket"></div>
       <button class="btn btn-ghost btn-sm" id="install-btn" onclick="installPWA()" title="Install app">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v13m0 0l-4-4m4 4l4-4"/><path d="M2 17v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2"/></svg>
-        Install
+        <svg class="btn-ico"><use href="#i-download"/></svg>Install
       </button>
     </div>
   </header>
@@ -71,123 +88,90 @@
   <!-- Sidebar nav (desktop) -->
   <nav class="sidebar">
     <div class="nav-section">Portfolio</div>
-    <a class="nav-item active" data-page="overview"      onclick="navigate('overview')"><span class="icon">📊</span>Overview</a>
-    <a class="nav-item"        data-page="capital"        onclick="navigate('capital')"><span class="icon">💼</span>Capital</a>
-    <a class="nav-item"        data-page="trades"         onclick="navigate('trades')"><span class="icon">🔄</span>Trades</a>
-    <a class="nav-item"        data-page="funding"        onclick="navigate('funding')"><span class="icon">💹</span>Funding</a>
-    <a class="nav-item"        data-page="flows"          onclick="navigate('flows')"><span class="icon">💰</span>Flows</a>
+    <a class="nav-item active" data-page="overview"   onclick="navigate('overview')"><svg class="nav-ico"><use href="#i-overview"/></svg>Overview</a>
+    <a class="nav-item"        data-page="capital"    onclick="navigate('capital')"><svg class="nav-ico"><use href="#i-capital"/></svg>Capital</a>
+    <a class="nav-item"        data-page="trades"     onclick="navigate('trades')"><svg class="nav-ico"><use href="#i-trades"/></svg>Trades</a>
+    <a class="nav-item"        data-page="funding"    onclick="navigate('funding')"><svg class="nav-ico"><use href="#i-funding"/></svg>Funding</a>
+    <a class="nav-item"        data-page="flows"      onclick="navigate('flows')"><svg class="nav-ico"><use href="#i-flows"/></svg>Flows</a>
 
-    <div class="nav-section">Live</div>
-    <a class="nav-item"        data-page="monitor"        onclick="navigate('monitor')"><span class="icon">⚡</span>Monitor</a>
-    <a class="nav-item"        data-page="markets"        onclick="navigate('markets')"><span class="icon">🌊</span>Markets</a>
-    <a class="nav-item"        data-page="arb"            onclick="navigate('arb')"><span class="icon">⚖️</span>Funding Arb</a>
+    <div class="nav-section">Markets</div>
+    <a class="nav-item"        data-page="monitor"    onclick="navigate('monitor')"><svg class="nav-ico"><use href="#i-monitor"/></svg>Live Monitor</a>
+    <a class="nav-item"        data-page="markets"    onclick="navigate('markets')"><svg class="nav-ico"><use href="#i-markets"/></svg>Markets</a>
+    <a class="nav-item"        data-page="arb"        onclick="navigate('arb')"><svg class="nav-ico"><use href="#i-arb"/></svg>Funding Arb</a>
 
     <div class="nav-section">Analysis</div>
-    <a class="nav-item"        data-page="phases"         onclick="navigate('phases')"><span class="icon">🔵</span>Phases</a>
-    <a class="nav-item"        data-page="intel"          onclick="navigate('intel')"><span class="icon">📡</span>Intel</a>
-    <a class="nav-item"        data-page="trend"          onclick="navigate('trend')"><span class="icon">📐</span>Trend</a>
-    <a class="nav-item"        data-page="onchain"        onclick="navigate('onchain')"><span class="icon">⛓️</span>On-Chain</a>
-    <a class="nav-item"        data-page="heatmap"        onclick="navigate('heatmap')"><span class="icon">🔥</span>Heatmap</a>
-    <a class="nav-item"        data-page="mvrv"           onclick="navigate('mvrv')"><span class="icon">📈</span>MVRV</a>
-    <a class="nav-item"        data-page="indicators"     onclick="navigate('indicators')"><span class="icon">📊</span>Indicators</a>
-    <a class="nav-item"        data-page="smartmoney"     onclick="navigate('smartmoney')"><span class="icon">🧠</span>Smart Money</a>
-    <a class="nav-item"        data-page="defi"           onclick="navigate('defi')"><span class="icon">🏛️</span>DeFi</a>
+    <a class="nav-item"        data-page="phases"     onclick="navigate('phases')"><svg class="nav-ico"><use href="#i-phases"/></svg>Phases</a>
+    <a class="nav-item"        data-page="intel"      onclick="navigate('intel')"><svg class="nav-ico"><use href="#i-intel"/></svg>Intel</a>
+    <a class="nav-item"        data-page="trend"      onclick="navigate('trend')"><svg class="nav-ico"><use href="#i-trend"/></svg>Trend</a>
+    <a class="nav-item"        data-page="onchain"    onclick="navigate('onchain')"><svg class="nav-ico"><use href="#i-onchain"/></svg>On-Chain</a>
+    <a class="nav-item"        data-page="heatmap"    onclick="navigate('heatmap')"><svg class="nav-ico"><use href="#i-heatmap"/></svg>Heatmap</a>
+    <a class="nav-item"        data-page="mvrv"       onclick="navigate('mvrv')"><svg class="nav-ico"><use href="#i-mvrv"/></svg>MVRV</a>
+    <a class="nav-item"        data-page="indicators" onclick="navigate('indicators')"><svg class="nav-ico"><use href="#i-indicators"/></svg>Indicators</a>
+    <a class="nav-item"        data-page="smartmoney" onclick="navigate('smartmoney')"><svg class="nav-ico"><use href="#i-smartmoney"/></svg>Smart Money</a>
+    <a class="nav-item"        data-page="defi"       onclick="navigate('defi')"><svg class="nav-ico"><use href="#i-defi"/></svg>DeFi</a>
 
     <div class="nav-section">AI</div>
-    <a class="nav-item"        data-page="ai"             onclick="navigate('ai')"><span class="icon">🤖</span>AI</a>
-    <a class="nav-item"        data-page="signals"        onclick="navigate('signals')"><span class="icon">🎯</span>Signals</a>
+    <a class="nav-item"        data-page="ai"         onclick="navigate('ai')"><svg class="nav-ico"><use href="#i-ai"/></svg>AI Desk</a>
+    <a class="nav-item"        data-page="signals"    onclick="navigate('signals')"><svg class="nav-ico"><use href="#i-signals"/></svg>Signals</a>
 
-    <div class="nav-section">Content</div>
-    <a class="nav-item"        data-page="news"           onclick="navigate('news')"><span class="icon">📰</span>News</a>
-    <a class="nav-item"        data-page="hlpulse"        onclick="navigate('hlpulse')"><span class="icon">🛰️</span>HL Pulse</a>
-    <a class="nav-item"        data-page="brief"          onclick="navigate('brief')"><span class="icon">🗞️</span>Daily Brief</a>
-    <a class="nav-item"        data-page="research"       onclick="navigate('research')"><span class="icon">📜</span>Weekly Research</a>
-    <a class="nav-item"        data-page="fundamentals"   onclick="navigate('fundamentals')"><span class="icon">🏦</span>Fundamentals</a>
-    <a class="nav-item"        data-page="kb"             onclick="navigate('kb')"><span class="icon">📚</span>KB</a>
+    <div class="nav-section">Research</div>
+    <a class="nav-item"        data-page="news"         onclick="navigate('news')"><svg class="nav-ico"><use href="#i-news"/></svg>News</a>
+    <a class="nav-item"        data-page="hlpulse"      onclick="navigate('hlpulse')"><svg class="nav-ico"><use href="#i-hlpulse"/></svg>HL Pulse</a>
+    <a class="nav-item"        data-page="brief"        onclick="navigate('brief')"><svg class="nav-ico"><use href="#i-brief"/></svg>Daily Brief</a>
+    <a class="nav-item"        data-page="research"     onclick="navigate('research')"><svg class="nav-ico"><use href="#i-research"/></svg>Weekly Research</a>
+    <a class="nav-item"        data-page="fundamentals" onclick="navigate('fundamentals')"><svg class="nav-ico"><use href="#i-fundamentals"/></svg>Fundamentals</a>
+    <a class="nav-item"        data-page="kb"           onclick="navigate('kb')"><svg class="nav-ico"><use href="#i-kb"/></svg>Knowledge Base</a>
 
     <div class="nav-section">Tools</div>
-    <a class="nav-item"        data-page="watchlist"      onclick="navigate('watchlist')"><span class="icon">👛</span>Watchlist</a>
-    <a class="nav-item"        data-page="journal"        onclick="navigate('journal')"><span class="icon">📓</span>Journal</a>
-    <a class="nav-item"        data-page="analytics"      onclick="navigate('analytics')"><span class="icon">📊</span>Analytics</a>
-  </nav>
-
-  <!-- Mobile bottom nav -->
-  <nav class="bottom-nav">
-    <button class="bottom-nav-item active" data-page="overview" onclick="navigate('overview')">
-      <span class="bnav-icon">📊</span><span>Portfolio</span>
-    </button>
-    <button class="bottom-nav-item" data-page="monitor" onclick="navigate('monitor')">
-      <span class="bnav-icon">⚡</span><span>Live</span>
-    </button>
-    <button class="bottom-nav-item" data-page="intel" onclick="navigate('intel')">
-      <span class="bnav-icon">📡</span><span>Intel</span>
-    </button>
-    <button class="bottom-nav-item" data-page="mvrv" onclick="navigate('mvrv')">
-      <span class="bnav-icon">📈</span><span>MVRV</span>
-    </button>
-    <button class="bottom-nav-item" data-page="ai" onclick="navigate('ai')">
-      <span class="bnav-icon">🤖</span><span>AI</span>
-    </button>
-    <button class="bottom-nav-item" data-page="markets" onclick="navigate('markets')">
-      <span class="bnav-icon">🌊</span><span>Markets</span>
-    </button>
-    <button class="bottom-nav-item" data-page="trades" onclick="navigate('trades')">
-      <span class="bnav-icon">🔄</span><span>Trades</span>
-    </button>
-    <button class="bottom-nav-item" data-page="capital" onclick="navigate('capital')">
-      <span class="bnav-icon">💼</span><span>Capital</span>
-    </button>
-    <button class="bottom-nav-item" data-page="phases" onclick="navigate('phases')">
-      <span class="bnav-icon">🔵</span><span>Phase</span>
-    </button>
-    <button class="bottom-nav-item" data-page="watchlist" onclick="navigate('watchlist')">
-      <span class="bnav-icon">👛</span><span>Watch</span>
-    </button>
-    <button class="bottom-nav-item" data-page="kb" onclick="navigate('kb')">
-      <span class="bnav-icon">🧠</span><span>KB</span>
-    </button>
+    <a class="nav-item"        data-page="watchlist"  onclick="navigate('watchlist')"><svg class="nav-ico"><use href="#i-watchlist"/></svg>Watchlist</a>
+    <a class="nav-item"        data-page="journal"    onclick="navigate('journal')"><svg class="nav-ico"><use href="#i-journal"/></svg>Journal</a>
+    <a class="nav-item"        data-page="analytics"  onclick="navigate('analytics')"><svg class="nav-ico"><use href="#i-analytics"/></svg>Analytics</a>
   </nav>
 
   <!-- Nav drawer overlay -->
   <div id="nav-overlay" class="nav-overlay" onclick="closeDrawer()"></div>
 
-  <!-- Slide-in nav drawer -->
+  <!-- Slide-in nav drawer (mobile) -->
   <nav id="nav-drawer" class="nav-drawer">
     <div class="nav-drawer-header">
-      <span class="nav-drawer-logo">⚡ Hype</span>
+      <span class="nav-drawer-logo"><svg class="brand-bolt"><use href="#i-bolt"/></svg>Hype</span>
       <button class="nav-drawer-close" onclick="closeDrawer()" aria-label="Close menu">✕</button>
     </div>
     <div class="nav-drawer-body">
-      <div class="nav-drawer-section">Main</div>
-      <button class="drawer-item active" data-page="overview"  onclick="navigate('overview')"><span class="drawer-item-icon">📊</span>Portfolio</button>
-      <button class="drawer-item"        data-page="capital"   onclick="navigate('capital')"><span class="drawer-item-icon">💼</span>Capital</button>
-      <button class="drawer-item"        data-page="trades"    onclick="navigate('trades')"><span class="drawer-item-icon">🔄</span>Trades</button>
-      <button class="drawer-item"        data-page="funding"   onclick="navigate('funding')"><span class="drawer-item-icon">💹</span>Funding</button>
-      <button class="drawer-item"        data-page="flows"     onclick="navigate('flows')"><span class="drawer-item-icon">💰</span>Flows</button>
-      <button class="drawer-item"        data-page="monitor"   onclick="navigate('monitor')"><span class="drawer-item-icon">⚡</span>Live Monitor</button>
+      <div class="nav-drawer-section">Portfolio</div>
+      <button class="drawer-item active" data-page="overview"  onclick="navigate('overview')"><svg class="nav-ico"><use href="#i-overview"/></svg>Overview</button>
+      <button class="drawer-item"        data-page="capital"   onclick="navigate('capital')"><svg class="nav-ico"><use href="#i-capital"/></svg>Capital</button>
+      <button class="drawer-item"        data-page="trades"    onclick="navigate('trades')"><svg class="nav-ico"><use href="#i-trades"/></svg>Trades</button>
+      <button class="drawer-item"        data-page="funding"   onclick="navigate('funding')"><svg class="nav-ico"><use href="#i-funding"/></svg>Funding</button>
+      <button class="drawer-item"        data-page="flows"     onclick="navigate('flows')"><svg class="nav-ico"><use href="#i-flows"/></svg>Flows</button>
+      <div class="nav-drawer-section">Markets</div>
+      <button class="drawer-item"        data-page="monitor"   onclick="navigate('monitor')"><svg class="nav-ico"><use href="#i-monitor"/></svg>Live Monitor</button>
+      <button class="drawer-item"        data-page="markets"   onclick="navigate('markets')"><svg class="nav-ico"><use href="#i-markets"/></svg>Markets</button>
+      <button class="drawer-item"        data-page="arb"       onclick="navigate('arb')"><svg class="nav-ico"><use href="#i-arb"/></svg>Funding Arb</button>
       <div class="nav-drawer-section">Analysis</div>
-      <button class="drawer-item"        data-page="markets"   onclick="navigate('markets')"><span class="drawer-item-icon">🌊</span>Markets</button>
-      <button class="drawer-item"        data-page="phases"    onclick="navigate('phases')"><span class="drawer-item-icon">🔵</span>Phases</button>
-      <button class="drawer-item"        data-page="intel"     onclick="navigate('intel')"><span class="drawer-item-icon">📡</span>Intel</button>
-      <button class="drawer-item"        data-page="mvrv"      onclick="navigate('mvrv')"><span class="drawer-item-icon">📈</span>MVRV</button>
-      <button class="drawer-item"        data-page="ai"        onclick="navigate('ai')"><span class="drawer-item-icon">🤖</span>AI</button>
+      <button class="drawer-item"        data-page="phases"     onclick="navigate('phases')"><svg class="nav-ico"><use href="#i-phases"/></svg>Phases</button>
+      <button class="drawer-item"        data-page="intel"      onclick="navigate('intel')"><svg class="nav-ico"><use href="#i-intel"/></svg>Intel</button>
+      <button class="drawer-item"        data-page="trend"      onclick="navigate('trend')"><svg class="nav-ico"><use href="#i-trend"/></svg>Trend</button>
+      <button class="drawer-item"        data-page="onchain"    onclick="navigate('onchain')"><svg class="nav-ico"><use href="#i-onchain"/></svg>On-Chain</button>
+      <button class="drawer-item"        data-page="heatmap"    onclick="navigate('heatmap')"><svg class="nav-ico"><use href="#i-heatmap"/></svg>Heatmap</button>
+      <button class="drawer-item"        data-page="mvrv"       onclick="navigate('mvrv')"><svg class="nav-ico"><use href="#i-mvrv"/></svg>MVRV</button>
+      <button class="drawer-item"        data-page="indicators" onclick="navigate('indicators')"><svg class="nav-ico"><use href="#i-indicators"/></svg>Indicators</button>
+      <button class="drawer-item"        data-page="smartmoney" onclick="navigate('smartmoney')"><svg class="nav-ico"><use href="#i-smartmoney"/></svg>Smart Money</button>
+      <button class="drawer-item"        data-page="defi"       onclick="navigate('defi')"><svg class="nav-ico"><use href="#i-defi"/></svg>DeFi</button>
+      <div class="nav-drawer-section">AI</div>
+      <button class="drawer-item"        data-page="ai"         onclick="navigate('ai')"><svg class="nav-ico"><use href="#i-ai"/></svg>AI Desk</button>
+      <button class="drawer-item"        data-page="signals"    onclick="navigate('signals')"><svg class="nav-ico"><use href="#i-signals"/></svg>Signals</button>
+      <div class="nav-drawer-section">Research</div>
+      <button class="drawer-item"        data-page="news"         onclick="navigate('news')"><svg class="nav-ico"><use href="#i-news"/></svg>News</button>
+      <button class="drawer-item"        data-page="hlpulse"      onclick="navigate('hlpulse')"><svg class="nav-ico"><use href="#i-hlpulse"/></svg>HL Pulse</button>
+      <button class="drawer-item"        data-page="brief"        onclick="navigate('brief')"><svg class="nav-ico"><use href="#i-brief"/></svg>Daily Brief</button>
+      <button class="drawer-item"        data-page="research"     onclick="navigate('research')"><svg class="nav-ico"><use href="#i-research"/></svg>Weekly Research</button>
+      <button class="drawer-item"        data-page="fundamentals" onclick="navigate('fundamentals')"><svg class="nav-ico"><use href="#i-fundamentals"/></svg>Fundamentals</button>
+      <button class="drawer-item"        data-page="kb"           onclick="navigate('kb')"><svg class="nav-ico"><use href="#i-kb"/></svg>Knowledge Base</button>
       <div class="nav-drawer-section">Tools</div>
-      <button class="drawer-item"        data-page="watchlist"  onclick="navigate('watchlist')"><span class="drawer-item-icon">👛</span>Watchlist</button>
-      <button class="drawer-item"        data-page="journal"    onclick="navigate('journal')"><span class="drawer-item-icon">📓</span>Journal</button>
-      <button class="drawer-item"        data-page="indicators" onclick="navigate('indicators')"><span class="drawer-item-icon">📊</span>Indicators</button>
-      <button class="drawer-item"        data-page="smartmoney" onclick="navigate('smartmoney')"><span class="drawer-item-icon">🧠</span>Smart Money</button>
-      <button class="drawer-item"        data-page="analytics"  onclick="navigate('analytics')"><span class="drawer-item-icon">📊</span>Analytics</button>
-      <button class="drawer-item"        data-page="kb"         onclick="navigate('kb')"><span class="drawer-item-icon">📚</span>KB</button>
-      <button class="drawer-item"        data-page="signals"    onclick="navigate('signals')"><span class="drawer-item-icon">🎯</span>Signals</button>
-      <button class="drawer-item"        data-page="news"           onclick="navigate('news')"><span class="drawer-item-icon">📰</span>News</button>
-      <button class="drawer-item"        data-page="hlpulse"        onclick="navigate('hlpulse')"><span class="drawer-item-icon">🛰️</span>HL Pulse</button>
-      <button class="drawer-item"        data-page="brief"          onclick="navigate('brief')"><span class="drawer-item-icon">🗞️</span>Daily Brief</button>
-      <button class="drawer-item"        data-page="research"       onclick="navigate('research')"><span class="drawer-item-icon">📜</span>Weekly Research</button>
-      <button class="drawer-item"        data-page="fundamentals"   onclick="navigate('fundamentals')"><span class="drawer-item-icon">🏦</span>Fundamentals</button>
-      <button class="drawer-item"        data-page="arb"            onclick="navigate('arb')"><span class="drawer-item-icon">⚖️</span>Funding Arb</button>
-      <button class="drawer-item"        data-page="defi"           onclick="navigate('defi')"><span class="drawer-item-icon">🏛️</span>DeFi Macro</button>
-      <button class="drawer-item"        data-page="trend"          onclick="navigate('trend')"><span class="drawer-item-icon">📐</span>Trend Scanner</button>
-      <button class="drawer-item"        data-page="onchain"        onclick="navigate('onchain')"><span class="drawer-item-icon">⛓️</span>On-Chain</button>
+      <button class="drawer-item"        data-page="watchlist"  onclick="navigate('watchlist')"><svg class="nav-ico"><use href="#i-watchlist"/></svg>Watchlist</button>
+      <button class="drawer-item"        data-page="journal"    onclick="navigate('journal')"><svg class="nav-ico"><use href="#i-journal"/></svg>Journal</button>
+      <button class="drawer-item"        data-page="analytics"  onclick="navigate('analytics')"><svg class="nav-ico"><use href="#i-analytics"/></svg>Analytics</button>
     </div>
   </nav>
 
