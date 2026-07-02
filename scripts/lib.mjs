@@ -110,7 +110,9 @@ export function isoWeek(d) {
 }
 
 export function extractJSON(text) {
-  const match = (text || '').match(/\{[\s\S]*\}/);
+  // Strip markdown code fences (```json ... ```) if present
+  const stripped = (text || '').replace(/^```(?:json)?\s*/m, '').replace(/\s*```\s*$/m, '').trim();
+  const match = stripped.match(/\{[\s\S]*\}/);
   if (!match) throw new Error(`No JSON object in model response: ${(text || '').slice(0, 120)}`);
   return JSON.parse(match[0]);
 }

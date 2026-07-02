@@ -229,7 +229,7 @@ serve(async (req) => {
             text = await callGemini(model, messages, system, max_tokens);
             break;
           case "gemini-pro":
-            model = "gemini-2.5-flash";
+            model = "gemini-2.0-flash";
             text = await callGemini(model, messages, system, max_tokens);
             break;
           case "openrouter":
