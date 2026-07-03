@@ -5,8 +5,13 @@
 'use strict';
 
 // ── Supabase init ─────────────────────────────────────────────
-const _KB_URL  = 'https://eiqlvbylkcmgvksrxqld.supabase.co';
-const _KB_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpcWx2Ynlsa2NtZ3Zrc3J4cWxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5NTI4NjgsImV4cCI6MjA5NDUyODg2OH0.PcGDHYlajqwnZ7c3ZPtssG534kd3sKwE8aT1ROlFpo8';
+// Overridable via Settings → Knowledge Base Storage (hype_kb_supabase_url /
+// hype_kb_supabase_key); the built-in project is the fallback. The target
+// project must contain the kb_wiki and kb_trades tables.
+const _KB_DEFAULT_URL = 'https://eiqlvbylkcmgvksrxqld.supabase.co';
+const _KB_DEFAULT_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpcWx2Ynlsa2NtZ3Zrc3J4cWxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5NTI4NjgsImV4cCI6MjA5NDUyODg2OH0.PcGDHYlajqwnZ7c3ZPtssG534kd3sKwE8aT1ROlFpo8';
+const _KB_URL  = localStorage.getItem('hype_kb_supabase_url') || _KB_DEFAULT_URL;
+const _KB_KEY  = localStorage.getItem('hype_kb_supabase_key') || _KB_DEFAULT_KEY;
 const _kbDb    = (window.supabase && window.supabase.createClient)
   ? window.supabase.createClient(_KB_URL, _KB_KEY)
   : null;

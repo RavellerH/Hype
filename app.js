@@ -106,7 +106,7 @@ async function getCGGlobal() {
 }
 async function getCGMarkets() {
   if (_cgShared.markets && Date.now() - _cgShared.marketsTs < 3*60*1000) return _cgShared.markets;
-  const r = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false&price_change_percentage=24h,7d,30d', { headers: _cgHeaders() });
+  const r = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=true&price_change_percentage=24h,7d,30d', { headers: _cgHeaders() });
   if (!r.ok) throw new Error('CG markets ' + r.status);
   _cgShared.markets = await r.json();
   _cgShared.marketsTs = Date.now();
@@ -3419,6 +3419,25 @@ function saveSettingKey(key, inputId, statusId, okMsg) {
   if (s) s.textContent = v ? (okMsg || '✓ Saved') : 'Cleared';
 }
 
+function saveKbSupabase() {
+  const url = (document.getElementById('kb-sb-url')?.value || '').trim().replace(/\/$/, '');
+  const key = (document.getElementById('kb-sb-key')?.value || '').trim();
+  const s = document.getElementById('kb-sb-status');
+  if (url && !key) { if (s) s.textContent = 'Enter the anon key too.'; return; }
+  if (url) { localStorage.setItem('hype_kb_supabase_url', url); localStorage.setItem('hype_kb_supabase_key', key); }
+  else { localStorage.removeItem('hype_kb_supabase_url'); localStorage.removeItem('hype_kb_supabase_key'); }
+  if (s) s.textContent = url ? '✓ Saved — reload page to apply' : 'Cleared — using built-in project (reload to apply)';
+}
+
+function clearKbSupabase() {
+  localStorage.removeItem('hype_kb_supabase_url');
+  localStorage.removeItem('hype_kb_supabase_key');
+  const u = document.getElementById('kb-sb-url'), k = document.getElementById('kb-sb-key');
+  if (u) u.value = ''; if (k) k.value = '';
+  const s = document.getElementById('kb-sb-status');
+  if (s) s.textContent = 'Cleared — using built-in project (reload to apply)';
+}
+
 function clearSettingKey(key, inputId, statusId) {
   localStorage.removeItem(key);
   const el = document.getElementById(inputId);
@@ -3530,6 +3549,21 @@ function loadSettings() {
         <button class="btn btn-ghost btn-sm" onclick="clearApiuProxyUrl()">Clear</button>
       </div>
       <div id="apiu-proxy-status" style="font-size:11px;color:var(--text-muted);margin-top:6px">${localStorage.getItem('hype_apiu_proxy_url') ? '✓ APIU proxy active — card appears in Intel tab' : 'Not configured — no card shown in Intel tab'}</div>
+    </div>
+
+    <div class="nav-section" style="padding:12px 0 8px">Storage</div>
+    <div class="card">
+      <div class="card-title">📚 Knowledge Base Storage (Supabase)</div>
+      <div class="muted" style="font-size:11px;margin-bottom:12px">Optional: point the KB tab at your own Supabase project (needs the <code>kb_wiki</code> and <code>kb_trades</code> tables). Leave blank to use the built-in project.</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <input class="input" id="kb-sb-url" placeholder="https://xyz.supabase.co" value="${localStorage.getItem('hype_kb_supabase_url')||''}" style="font-family:var(--mono);font-size:11px">
+        <input class="input" id="kb-sb-key" type="password" placeholder="anon key (eyJhbGci…)" value="${localStorage.getItem('hype_kb_supabase_key')||''}" style="font-family:var(--mono);font-size:11px">
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" onclick="saveKbSupabase()">Save</button>
+          <button class="btn btn-ghost btn-sm" onclick="clearKbSupabase()">Clear</button>
+          <span id="kb-sb-status" style="font-size:11px;color:var(--text-muted)">${localStorage.getItem('hype_kb_supabase_url') ? '✓ Custom project — reload page to apply' : 'Using built-in project'}</span>
+        </div>
+      </div>
     </div>
 
     <div class="nav-section" style="padding:12px 0 8px">Notifications</div>

@@ -231,7 +231,10 @@ tr:hover td { background: rgba(255,255,255,0.018); }
   transition: all 0.12s; touch-action: manipulation; font-family: var(--font);
 }
 .chip:hover  { border-color: var(--border-strong); background: var(--surface2); color: var(--text); }
-.chip.active { background: var(--accent-subtle); color: var(--accent); border-color: rgba(80,210,193,0.45); }
+.chip.active, .chip.chip-active { background: var(--accent-subtle); color: var(--accent); border-color: rgba(80,210,193,0.45); }
+
+/* Ghost buttons used as filter toggles (News source filters etc.) */
+.btn-ghost.active { background: var(--accent-subtle); color: var(--accent); border-color: rgba(80,210,193,0.45); }
 
 .narrative-row { display: flex; gap: 6px; padding: 8px 14px; border-bottom: 1px solid var(--border); background: var(--surface); overflow-x: auto; scrollbar-width: none; flex-wrap: nowrap; }
 .narrative-row::-webkit-scrollbar { display: none; }
@@ -1635,6 +1638,20 @@ tr:hover td { background: rgba(255,255,255,0.018); }
 .arb-neut  { background:var(--surface2); color:var(--text-muted); }
 .arb-long  { background:rgba(74,222,128,.12); color:var(--green); }
 .arb-short { background:rgba(248,113,113,.12); color:var(--red); }
+
+/* ── Rendered markdown (Daily Brief / Weekly Research full reports) ────────── */
+.hmd-body { margin-top: 10px; padding: 14px 16px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-lg); font-size: 13px; line-height: 1.65; color: var(--text-muted); overflow-x: auto; }
+.hmd-body .hmd-h { color: var(--text); margin: 14px 0 6px; font-size: 13.5px; font-weight: 700; letter-spacing: -0.01em; }
+.hmd-body h3.hmd-h { font-size: 15px; }
+.hmd-body .hmd-h:first-child { margin-top: 0; }
+.hmd-body .hmd-p { margin: 0 0 8px; }
+.hmd-body .hmd-ul { margin: 4px 0 10px 18px; padding: 0; }
+.hmd-body .hmd-ul li { margin-bottom: 4px; }
+.hmd-body .hmd-hr { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+.hmd-body code { background: var(--surface); border: 1px solid var(--border); padding: 1px 5px; border-radius: 4px; font-family: var(--mono); font-size: 11.5px; }
+.hmd-body .hmd-pre { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 10px 12px; font-family: var(--mono); font-size: 11.5px; white-space: pre; overflow-x: auto; margin: 8px 0; }
+.hmd-body strong { color: var(--text); }
+.hmd-body a { color: var(--accent); }
 
 /* ── Listing Toast ────────────────────────────────────────────────────────── */
 .listing-toast { pointer-events:all; background:var(--surface2); border:1px solid var(--accent); border-radius:var(--radius-lg); padding:10px 14px; min-width:220px; max-width:300px; box-shadow:0 4px 20px rgba(0,0,0,.4); opacity:0; transform:translateX(20px); transition:opacity .3s ease, transform .3s ease; }

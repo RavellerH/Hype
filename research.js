@@ -9,10 +9,18 @@
 'use strict';
 
 const _WRS_INDEX_URL = 'https://raw.githubusercontent.com/RavellerH/Hype/gh-pages/research/index.json';
+const _WRS_RAW_BASE  = 'https://raw.githubusercontent.com/RavellerH/Hype/gh-pages/research/';
 
 let _wrsReports = [];
 let _wrsLoaded  = false;
 let _wrsOpenId  = null;
+let _wrsFullOpen = new Set();
+const _wrsFullCache = {};
+
+// Full-markdown toggle — renderer + helpers live in dailybrief.js (_hypeMd*)
+function wrsToggleFull(file) {
+  _hypeMdToggle(_wrsFullOpen, _wrsFullCache, _WRS_RAW_BASE, file, _wrsRender);
+}
 
 function _wrsEsc(s) {
   if (s == null) return '';
@@ -118,7 +126,8 @@ function _wrsDetailHTML(r) {
       </div>
     </div>
     ${r.outlook ? `<div style="font-style:italic;font-size:13px;color:var(--accent);margin-top:10px;border-top:1px solid var(--border);padding-top:8px;">${_wrsEsc(r.outlook)}</div>` : ''}
-    <div style="margin-top:8px;"><a href="https://github.com/RavellerH/Hype/blob/gh-pages/research/${_wrsEsc(r.file)}" target="_blank" rel="noopener" style="font-size:11px;color:var(--text-faint);">view source markdown ↗</a></div>
+    ${r.file ? _hypeMdBlock(_wrsFullOpen, _wrsFullCache, r.file, 'wrsToggleFull') : ''}
+    <div style="margin-top:8px;"><a href="https://github.com/RavellerH/Hype/blob/gh-pages/research/${_wrsEsc(r.file)}" target="_blank" rel="noopener" style="font-size:11px;color:var(--text-faint);">view source on GitHub ↗</a></div>
   </div>`;
 }
 
