@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <meta name="theme-color" content="#0b0c0d">
   <title>Hype — Documentation</title>
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="icon" href="icons/icon-192.png" type="image/png">
@@ -10,16 +11,18 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg:            #0a0a0a;
-      --surface:       #111111;
-      --surface2:      #1a1a1a;
-      --border:        #242424;
-      --border-strong: #383838;
-      --text:          #e2e2e2;
-      --text-muted:    #6b7280;
-      --text-faint:    #4b5563;
-      --accent:        #38bdf8;
-      --accent-subtle: rgba(56,189,248,0.10);
+      --bg:            #0b0c0d;
+      --surface:       #101213;
+      --surface2:      #17191b;
+      --border:        #1f2225;
+      --border-strong: #31353a;
+      --text:          #e8eaec;
+      --text-muted:    #7e858e;
+      --text-faint:    #52585f;
+      --accent:        #50d2c1;
+      --accent-text:   #04231e;
+      --accent-subtle: rgba(80,210,193,0.10);
+      --accent-glow:   rgba(80,210,193,0.30);
       --green:         #4ade80;
       --green-bg:      rgba(74,222,128,0.08);
       --red:           #f87171;
@@ -29,16 +32,23 @@
       --font:          'Inter', system-ui, sans-serif;
       --mono:          'JetBrains Mono', monospace;
       --sidebar-w:     260px;
-      --topbar-h:      50px;
+      --topbar-h:      52px;
       --radius:        6px;
     }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     html { scroll-behavior: smooth; }
     body {
       background: var(--bg); color: var(--text);
       font-family: var(--font); font-size: 14px; line-height: 1.65;
-      -webkit-font-smoothing: antialiased;
+      -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
     }
+    ::selection { background: rgba(80,210,193,0.28); color: #fff; }
+    :focus-visible { outline: 2px solid var(--accent-glow); outline-offset: 1px; border-radius: 5px; }
+    ::-webkit-scrollbar       { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
 
     /* ── Topbar ── */
     .topbar {
@@ -52,13 +62,23 @@
       width: var(--sidebar-w);
       height: 100%;
       display: flex; align-items: center; gap: 8px;
-      padding: 0 20px;
+      padding: 0 16px;
       border-right: 1px solid var(--border);
       flex-shrink: 0;
-      font-weight: 700; font-size: 15px; color: var(--accent);
       text-decoration: none;
+      user-select: none;
     }
-    .topbar-logo span { color: var(--text); font-weight: 600; }
+    .brand-bolt {
+      width: 18px; height: 18px; flex-shrink: 0;
+      fill: var(--accent); stroke: none;
+      filter: drop-shadow(0 0 6px var(--accent-glow));
+    }
+    .brand-name { font-weight: 800; font-size: 15px; letter-spacing: -0.02em; color: var(--text); }
+    .brand-tag {
+      font-size: 8px; font-weight: 700; letter-spacing: 0.16em;
+      color: var(--text-faint); border: 1px solid var(--border);
+      padding: 2px 5px; border-radius: 4px; margin-top: 1px;
+    }
     .topbar-right {
       flex: 1; display: flex; align-items: center; justify-content: space-between;
       padding: 0 24px;
@@ -66,12 +86,12 @@
     .topbar-title { font-size: 13px; font-weight: 500; color: var(--text-muted); }
     .back-btn {
       display: flex; align-items: center; gap: 6px;
-      font-size: 12px; font-weight: 500; color: var(--text-muted);
-      text-decoration: none; padding: 5px 12px;
-      border: 1px solid var(--border); border-radius: var(--radius);
-      background: var(--surface2); transition: color .12s, border-color .12s;
+      font-size: 11.5px; font-weight: 500; color: var(--text-muted);
+      text-decoration: none; padding: 4px 10px; min-height: 28px;
+      border: 1px solid var(--border); border-radius: 7px;
+      background: transparent; transition: all .13s;
     }
-    .back-btn:hover { color: var(--text); border-color: var(--border-strong); }
+    .back-btn:hover { color: var(--text); background: var(--surface2); border-color: var(--border-strong); }
 
     /* ── Layout ── */
     .layout {
@@ -89,31 +109,37 @@
       bottom: 0;
       left: 0;
       overflow-y: auto;
+      background: var(--surface);
       border-right: 1px solid var(--border);
-      padding: 20px 0 40px;
-      scrollbar-width: thin;
-      scrollbar-color: var(--border) transparent;
+      padding: 8px 0 40px;
+      scrollbar-width: none;
     }
-    .sidebar::-webkit-scrollbar { width: 4px; }
-    .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .sidebar::-webkit-scrollbar { display: none; }
 
     .nav-group { margin-bottom: 6px; }
     .nav-group-label {
-      display: block; padding: 6px 20px 4px;
-      font-size: 10px; font-weight: 700; letter-spacing: .08em;
+      display: block; padding: 14px 16px 5px;
+      font-size: 9.5px; font-weight: 700; letter-spacing: .1em;
       text-transform: uppercase; color: var(--text-faint);
+      user-select: none;
     }
+    .nav-group:first-child .nav-group-label { padding-top: 8px; }
     .nav-link {
-      display: flex; align-items: center; gap: 8px;
-      padding: 6px 20px;
-      font-size: 13px; color: var(--text-muted);
+      position: relative;
+      display: flex; align-items: center; gap: 9px;
+      margin: 1px 8px; padding: 6px 9px;
+      border-radius: 7px;
+      font-size: 12.5px; font-weight: 500; color: var(--text-muted);
       text-decoration: none; cursor: pointer;
-      border-left: 2px solid transparent;
-      transition: color .12s, background .12s, border-color .12s;
-      line-height: 1.3;
+      transition: color .12s, background .12s;
+      line-height: 1.3; user-select: none;
     }
     .nav-link:hover { color: var(--text); background: var(--surface2); }
-    .nav-link.active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-subtle); }
+    .nav-link.active { color: var(--accent); background: var(--accent-subtle); font-weight: 600; }
+    .nav-link.active::before {
+      content: ''; position: absolute; left: -8px; top: 7px; bottom: 7px;
+      width: 2px; border-radius: 2px; background: var(--accent);
+    }
     .nav-link .icon { font-size: 13px; width: 18px; text-align: center; flex-shrink: 0; }
 
     /* ── Main content ── */
@@ -180,7 +206,7 @@
       border-radius: 100px;
     }
     .badge-live { background: rgba(74,222,128,0.12); color: var(--green); }
-    .badge-ws   { background: rgba(56,189,248,0.12); color: var(--accent); }
+    .badge-ws   { background: rgba(80,210,193,0.12); color: var(--accent); }
     .badge-local{ background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
 
     /* ── Lists ── */
@@ -308,10 +334,10 @@
       display: none;
       position: fixed; bottom: 72px; right: 20px; z-index: 200;
       width: 44px; height: 44px;
-      background: var(--accent); color: var(--bg);
+      background: var(--accent); color: var(--accent-text);
       border: none; border-radius: 50%; cursor: pointer;
       font-size: 18px; align-items: center; justify-content: center;
-      box-shadow: 0 4px 16px rgba(56,189,248,0.3);
+      box-shadow: 0 4px 16px var(--accent-glow);
     }
     .sidebar-overlay {
       display: none; position: fixed; inset: 0; z-index: 150;
@@ -340,7 +366,11 @@
 
 <!-- Topbar -->
 <header class="topbar">
-  <a class="topbar-logo" href="index.html">⚡ <span>Hype</span></a>
+  <a class="topbar-logo" href="index.html">
+    <svg class="brand-bolt" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+    <span class="brand-name">Hype</span>
+    <span class="brand-tag">DOCS</span>
+  </a>
   <div class="topbar-right">
     <span class="topbar-title">Documentation</span>
     <a class="back-btn" href="index.html">← Back to App</a>
