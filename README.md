@@ -32,6 +32,7 @@ A personal trading dashboard for [Hyperliquid](https://hyperliquid.xyz) — live
 | **HL Pulse** | Hyperliquid ecosystem intel — HL-filtered news, HYPE stats, HyperEVM TVL, top protocols, AI content studio (X threads / posts / digests) |
 | **Fundamentals** | Top 100 coins — price, 24h/7d/30d%, market cap, volume, ATH drawdown |
 | **DeFi** | DeFiLlama macro dashboard — total TVL, chain dominance, protocol rankings, stablecoin supply |
+| **Settings** | Wallet switcher, API proxy, CoinGecko key, RSS proxy, bot worker URL, AI endpoints (Edge Function + Vercel backend), APIU proxy, Telegram notifications |
 
 ---
 

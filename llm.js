@@ -16,6 +16,16 @@
  *   const text = await _callLLM('chat', userMsg, { history: _chatMsgs, maxTokens: 1024 });
  */
 
+/**
+ * Base URL for the app's own /api/* endpoints (Vercel serverless).
+ * Empty string on the Vercel deployment itself (relative fetch works);
+ * on GitHub Pages the user sets their Vercel URL once in
+ * Settings → App Backend URL (key shared with dailybrief.js/research.js).
+ */
+function _apiBase() {
+  return (localStorage.getItem('hype_trigger_backend_url') || '').trim().replace(/\/$/, '');
+}
+
 function _llmRouterUrl() {
   const base = (localStorage.getItem('hype_edge_fn_url') || '').trim().replace(/\/$/, '');
   if (!base) return null;

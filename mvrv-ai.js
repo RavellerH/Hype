@@ -1048,7 +1048,7 @@ async function sendChat() {
   ].filter(Boolean).join('\n');
 
   try {
-    const res = await fetch('/api/chat', {
+    const res = await fetch(_apiBase() + '/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ system, messages: _chatHistory.map(m => ({ role: m.role, content: m.content })) }),

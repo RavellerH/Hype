@@ -357,7 +357,7 @@ async function kbWikiAiGenerate() {
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Generating…'; }
 
   try {
-    const resp = await fetch('/api/chat', {
+    const resp = await fetch(_apiBase() + '/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mode: 'wiki-generate', title, category: cat, coins: coinsRaw, tags: tagsRaw })
@@ -387,7 +387,7 @@ async function kbWikiAiEnhance(wikiId) {
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Enhancing…'; }
 
   try {
-    const resp = await fetch('/api/chat', {
+    const resp = await fetch(_apiBase() + '/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mode: 'wiki-enhance', title: entry.title, category: entry.category, content: entry.content })
@@ -708,7 +708,7 @@ async function kbConfirmClose(tradeId) {
 
 async function _analyzeTradeWithAI(trade) {
   try {
-    const resp = await fetch('/api/chat', {
+    const resp = await fetch(_apiBase() + '/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mode: 'trade-analyze', trade })

@@ -244,14 +244,25 @@ async function _fetchViaRss2json(url) {
     .filter(i => i.title && !isNaN(i.ts) && i.ts >= _cutoff());
 }
 
+async function _fetchViaCustomWorker(url) {
+  const base = (localStorage.getItem('hype_rss_proxy') || '').trim().replace(/\/$/, '');
+  if (!base) throw new Error('cw:unset');
+  const r = await fetch(`${base}/?url=${encodeURIComponent(url)}`);
+  if (!r.ok) throw new Error(`cw:${r.status}`);
+  return _parseXml(await r.text());
+}
+
 async function _fetchRSS(feed) {
   try {
-    // Race three proxies — whichever responds first wins
-    const parsed = await Promise.any([
+    // Race the proxies — whichever responds first wins. A user-deployed
+    // Cloudflare Worker (Settings → RSS Proxy) joins the race when configured.
+    const racers = [
       _fetchViaAllOrigins(feed.url),
       _fetchViaRss2json(feed.url),
       _fetchViaCorsproxyIo(feed.url),
-    ]);
+    ];
+    if (localStorage.getItem('hype_rss_proxy')) racers.unshift(_fetchViaCustomWorker(feed.url));
+    const parsed = await Promise.any(racers);
     const result = parsed.map(p => ({
       id: feed.id + ':' + encodeURIComponent(p.link || p.title).slice(0, 80),
       source: feed.id, title: p.title, excerpt: p.desc.slice(0, 220),

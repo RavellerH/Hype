@@ -252,15 +252,15 @@ function loggerInit() {
 function loggerSetStatus(state, msg, ts) {
   const dot = document.getElementById('logger-dot');
   const tip = document.getElementById('logger-tip');
+  const lastTs = ts || localStorage.getItem(LOG_LAST_KEY);
+  const lastNum = parseInt(lastTs || '0');
+  const ago = lastNum ? Math.round((Date.now() - lastNum) / 60000) + 'm ago' : 'never';
+  const text = `Logger: ${msg || state} · last ${ago}`;
   if (dot) {
     dot.className = `logger-dot ${state}`;
+    dot.title = text; // hover tooltip — the #logger-tip span is display:none
   }
-  if (tip) {
-    const lastTs = ts || localStorage.getItem(LOG_LAST_KEY);
-    const lastNum = parseInt(lastTs || '0');
-    const ago = lastNum ? Math.round((Date.now() - lastNum) / 60000) + 'm ago' : 'never';
-    tip.textContent = `Logger: ${msg || state} · last ${ago}`;
-  }
+  if (tip) tip.textContent = text;
 }
 
 function loggerRefreshStatus() {
