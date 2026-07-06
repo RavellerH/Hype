@@ -44,10 +44,6 @@ function wrsRefresh() { loadResearch(); }
 // /api/trigger-workflow, which only exists on the Vercel deployment.
 const _WRS_BACKEND_KEY = 'hype_trigger_backend_url';
 
-function _wrsBackendUrl() {
-  return (localStorage.getItem(_WRS_BACKEND_KEY) || '').replace(/\/$/, '');
-}
-
 function wrsSetBackend() {
   const cur = localStorage.getItem(_WRS_BACKEND_KEY) || '';
   const url = prompt('Vercel app URL (only needed if this page is NOT already served from it), e.g. https://your-app.vercel.app:', cur);
@@ -60,15 +56,7 @@ async function wrsGenerateNow() {
   const status = document.getElementById('wrs-gen-status');
   if (status) status.textContent = 'triggering…';
   try {
-    const r = await fetch(`${_wrsBackendUrl()}/api/trigger-workflow`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ workflow: 'weekly-research.yml' }),
-    });
-    if (!r.ok) {
-      if (r.status === 405) throw new Error('405 — this page isn\'t served from your Vercel app. Click ⚙ and paste its URL.');
-      throw new Error((await r.json().catch(() => ({})))?.error || `${r.status}`);
-    }
+    await hypeApiPost('/api/trigger-workflow', { workflow: 'weekly-research.yml' });
     if (status) status.textContent = 'triggered — fetching in 30s…';
     setTimeout(loadResearch, 30000);
   } catch (e) {

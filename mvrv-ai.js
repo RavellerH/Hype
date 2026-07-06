@@ -1048,13 +1048,7 @@ async function sendChat() {
   ].filter(Boolean).join('\n');
 
   try {
-    const res = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ system, messages: _chatHistory.map(m => ({ role: m.role, content: m.content })) }),
-    });
-    const d = await res.json();
-    if (!res.ok) throw new Error(d.error || `HTTP ${res.status}`);
+    const d = await hypeApiPost('/api/chat', { system, messages: _chatHistory.map(m => ({ role: m.role, content: m.content })) });
     _chatHistory.push({ role: 'assistant', content: d.content || JSON.stringify(d) });
   } catch(e) {
     _chatHistory.push({ role: 'assistant', content: `Error: ${e.message}` });

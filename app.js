@@ -19,6 +19,32 @@ let _recentPnlOpen  = false;
 // Set via the monitor settings panel (stored in localStorage)
 let _cgDemoKey = localStorage.getItem('hype_cg_key') || '';
 
+// ── Vercel backend (/api/*) ──────────────────────────────────────────────────
+// The /api/* serverless functions only exist on the Vercel deployment. When
+// this page is served from another host (e.g. GitHub Pages at
+// ravellerh.github.io/Hype), a same-origin fetch('/api/…') hits that host
+// instead and fails with 404/405. The Vercel app URL saved via the Daily
+// Brief / Weekly Research ⚙ button (localStorage "hype_trigger_backend_url")
+// routes those calls to the right origin from anywhere.
+function hypeApiUrl(path) {
+  const base = (localStorage.getItem('hype_trigger_backend_url') || '').replace(/\/$/, '');
+  return base + path;
+}
+
+async function hypeApiPost(path, payload) {
+  const r = await fetch(hypeApiUrl(path), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (r.status === 404 || r.status === 405) {
+    throw new Error(`${r.status} — this page isn't served from your Vercel app. Open Daily Brief → ⚙ and paste its URL.`);
+  }
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
+  return data;
+}
+
 // ── WebSocket state ───────────────────────────────────────────────────────────
 let ws = null;
 let wsReconnectTimer = null;

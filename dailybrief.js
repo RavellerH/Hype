@@ -45,10 +45,6 @@ function dbrRefresh() { loadDailyBrief(); }
 // Pages rejects POST at the edge. Same fix as nansen.js's backend-url field.
 const _DBR_BACKEND_KEY = 'hype_trigger_backend_url';
 
-function _dbrBackendUrl() {
-  return (localStorage.getItem(_DBR_BACKEND_KEY) || '').replace(/\/$/, '');
-}
-
 function dbrSetBackend() {
   const cur = localStorage.getItem(_DBR_BACKEND_KEY) || '';
   const url = prompt('Vercel app URL (only needed if this page is NOT already served from it), e.g. https://your-app.vercel.app:', cur);
@@ -61,15 +57,7 @@ async function dbrGenerateNow() {
   const status = document.getElementById('dbr-gen-status');
   if (status) status.textContent = 'triggering…';
   try {
-    const r = await fetch(`${_dbrBackendUrl()}/api/trigger-workflow`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ workflow: 'daily-brief.yml' }),
-    });
-    if (!r.ok) {
-      if (r.status === 405) throw new Error('405 — this page isn\'t served from your Vercel app. Click ⚙ and paste its URL.');
-      throw new Error((await r.json().catch(() => ({})))?.error || `${r.status}`);
-    }
+    await hypeApiPost('/api/trigger-workflow', { workflow: 'daily-brief.yml' });
     if (status) status.textContent = 'triggered — fetching in 30s…';
     setTimeout(loadDailyBrief, 30000);
   } catch (e) {
