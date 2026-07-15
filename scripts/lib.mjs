@@ -109,10 +109,50 @@ export function isoWeek(d) {
   return `${date.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
 }
 
+// Closes whatever a truncated response left open (unterminated string, dangling
+// "key": with no value, trailing comma, unclosed braces/brackets) so JSON.parse
+// can accept it.
+function _repairJSON(text) {
+  let inStr = false, escaped = false;
+  const stack = [];
+  for (const ch of text) {
+    if (inStr) {
+      if (escaped) escaped = false;
+      else if (ch === '\\') escaped = true;
+      else if (ch === '"') inStr = false;
+    } else if (ch === '"') inStr = true;
+    else if (ch === '{' || ch === '[') stack.push(ch);
+    else if (ch === '}' || ch === ']') stack.pop();
+  }
+  let out = text;
+  if (inStr) out += '"';
+  out = out.replace(/"[^"\n]*"\s*:\s*$/, '').replace(/,\s*$/, '');
+  while (stack.length) out += stack.pop() === '{' ? '}' : ']';
+  return out;
+}
+
 export function extractJSON(text) {
-  const match = (text || '').match(/\{[\s\S]*\}/);
-  if (!match) throw new Error(`No JSON object in model response: ${(text || '').slice(0, 120)}`);
-  return JSON.parse(match[0]);
+  // Models often wrap output in ```json fences and thinking models sometimes
+  // hit the token cap mid-object, so tolerate both instead of requiring a
+  // clean {...} block.
+  let t = String(text || '');
+  const fence = t.match(/```(?:json)?\s*([\s\S]*?)\s*(?:```|$)/i);
+  if (fence && fence[1].includes('{')) t = fence[1];
+  const start = t.indexOf('{');
+  if (start === -1) throw new Error(`No JSON object in model response: ${String(text || '').slice(0, 120)}`);
+  t = t.slice(start).trim();
+
+  try { return JSON.parse(t); } catch {}
+  const last = t.lastIndexOf('}');
+  if (last !== -1) { try { return JSON.parse(t.slice(0, last + 1)); } catch {} }
+  try { return JSON.parse(_repairJSON(t)); } catch {}
+  // Drop trailing members one comma at a time until what's left parses.
+  let cut = t;
+  for (let i = cut.lastIndexOf(','); i !== -1; i = cut.lastIndexOf(',')) {
+    cut = cut.slice(0, i);
+    try { return JSON.parse(_repairJSON(cut)); } catch {}
+  }
+  throw new Error(`Unparseable JSON in model response: ${t.slice(0, 120)}`);
 }
 
 // Calls the Supabase llm-router Edge Function (supabase/functions/llm-router) —

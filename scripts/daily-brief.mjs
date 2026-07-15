@@ -53,7 +53,7 @@ async function main() {
     `"takeaway":"<one or two neutral, non-advice sentences>"}\n` +
     `No text outside the JSON object.\n\nCONTEXT:\n${context}`;
 
-  const raw = await routedDraft(routerUrl, 'debrief', BRIEF_SYSTEM, userPrompt, 1400);
+  const raw = await routedDraft(routerUrl, 'debrief', BRIEF_SYSTEM, userPrompt, 3000);
   const brief = extractJSON(raw);
   const file = `${today}.md`;
 

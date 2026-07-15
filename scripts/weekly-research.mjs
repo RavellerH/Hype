@@ -38,7 +38,7 @@ async function main() {
     `"outlook":"<2-3 sentence forward-looking, non-financial-advice outlook>"}\n` +
     `No text outside the JSON object.\n\nWEEK CONTEXT:\n${context}`;
 
-  const raw = await routedDraft(routerUrl, 'weekly_review', BRIEF_SYSTEM, userPrompt, 1800);
+  const raw = await routedDraft(routerUrl, 'weekly_review', BRIEF_SYSTEM, userPrompt, 3600);
   const report = extractJSON(raw);
   const weekId = isoWeek(new Date());
   const file = `${weekId}.md`;
