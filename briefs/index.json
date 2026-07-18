@@ -1,5 +1,23 @@
 [
   {
+    "date": "2026-07-18",
+    "file": "2026-07-18.md",
+    "headline": "HYPE Experiences Modest Pullback Amidst Extreme Market Fear and Stagnant Funding",
+    "market_analysis": "HYPE price declined by 1.10% over the past 24 hours, settling at $59.65. Despite this depreciation, the 8-hour funding rate for HYPE remained nominally positive at +0.0013%, mirroring rates for BTC, ETH, and SUI, and slightly exceeding SOL's +0.0005%. This suggests minimal long leverage being paid by shorts, indicating a lack of strong directional conviction among market participants despite the price dip. Open Interest for HYPE stands at a substantial $1.35 billion, while Hyperliquid's total perp volume over the last 24 hours was $3.37 billion. The high volume alongside a price decrease and near-flat positive funding could indicate profit-taking or short-selling activity rather than a significant long squeeze, especially given the broad market's extreme fear.",
+    "risks": [
+      "The broader market sentiment, indicated by a Fear & Greed Index score of 25 ('Extreme Fear'), suggests prevalent bearish sentiment that could continue to weigh on asset prices, including HYPE.",
+      "HYPE's high Open Interest of $1.35 billion, coupled with the current price decline, could position the market for increased volatility or cascading liquidations if downward momentum accelerates.",
+      "Extremely low positive funding for HYPE, mirroring other major assets, implies a lack of strong buying conviction, potentially leaving HYPE vulnerable to further price drops without significant long support."
+    ],
+    "opportunities": [
+      "The substantial Hyperliquid total perp volume of $3.37 billion points to robust market liquidity, which can facilitate efficient entry and exit for traders.",
+      "HyperEVM's Total Value Locked (TVL) at $1.27 billion indicates continued underlying ecosystem health and user engagement, which could provide long-term stability or growth potential for HYPE."
+    ],
+    "news_summary": "No specific news headlines were provided in the context. However, the prevailing market sentiment, as indicated by the Fear & Greed Index at 25, signals \"Extreme Fear\" across the broader market. This general bearish sentiment is consistent with HYPE's 1.10% price decline over the past 24 hours, suggesting market-wide risk aversion rather than asset-specific issues.",
+    "confidence": "medium",
+    "takeaway": "HYPE experienced a slight downturn, characterized by minimal long conviction despite substantial trading volume, set against a backdrop of extreme market fear."
+  },
+  {
     "date": "2026-07-17",
     "file": "2026-07-17.md",
     "headline": "HYPE Price Drops 8.92% Amid High Open Interest and System-Wide Low Positive Funding",
