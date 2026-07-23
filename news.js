@@ -43,6 +43,8 @@ let _newsItems    = [];
 let _newsFng      = [];
 let _newsStatus   = {};
 let _newsFilter   = 'all';
+let _newsSearch   = '';
+let _newsSent     = 'all'; // 'all' | 'BULL' | 'BEAR' | 'NEUTRAL'
 let _newsPage     = 1;
 let _newsLoaded   = false;
 let _newsSeenSet  = new Set();
@@ -69,9 +71,38 @@ function _aiCacheSave() {
   } catch {}
 }
 
+function _newsHasRouter() {
+  return typeof _callLLM === 'function' && !!localStorage.getItem('hype_edge_fn_url');
+}
+
+async function _analyzeViaBot(botUrl, unseen) {
+  const res = await fetch(`${botUrl}/analyze-news`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ articles: unseen.map(a => ({ id: a.id, title: a.title, excerpt: a.excerpt })) }),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const { analyses = [], error } = await res.json();
+  if (error) throw new Error(error);
+  return analyses;
+}
+
+async function _analyzeViaRouter(unseen) {
+  const list = unseen.map(a => `id=${a.id}\ntitle=${a.title}\nexcerpt=${a.excerpt || ''}`).join('\n---\n');
+  const prompt = `Classify each crypto news article below for a trader. Reply with ONLY a JSON array, no prose, one object per article: {"id":"<the id verbatim>","sentiment":"BULL"|"BEAR"|"NEUTRAL","coins":["BTC",...max 3 tickers],"timeframe":"immediate"|"short-term"|"long-term","reasoning":"<one sentence>"}.\n\n${list}`;
+  const text = await _callLLM('news', prompt, { maxTokens: 1200 });
+  if (!text) throw new Error('router unavailable');
+  const raw = text.replace(/```json|```/g, '').trim();
+  const start = raw.indexOf('['), end = raw.lastIndexOf(']');
+  if (start < 0 || end < 0) throw new Error('bad JSON from router');
+  const arr = JSON.parse(raw.slice(start, end + 1));
+  if (!Array.isArray(arr)) throw new Error('bad JSON from router');
+  return arr.filter(a => a && a.id && a.sentiment);
+}
+
 async function _analyzeTopArticles() {
   const botUrl = (localStorage.getItem('hype_bot_url') || '').replace(/\/$/, '');
-  if (!botUrl) return;
+  if (!botUrl && !_newsHasRouter()) return;
 
   // Load from cache first
   _newsAnalyses = { ..._aiCacheLoad() };
@@ -83,20 +114,22 @@ async function _analyzeTopArticles() {
   _newsAiState = 'loading';
   _updateFeedEl();
 
-  try {
-    const res = await fetch(`${botUrl}/analyze-news`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ articles: unseen.map(a => ({ id: a.id, title: a.title, excerpt: a.excerpt })) }),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const { analyses = [], error } = await res.json();
-    if (error) throw new Error(error);
+  let analyses = null, lastErr = null;
+  if (botUrl) {
+    try { analyses = await _analyzeViaBot(botUrl, unseen); }
+    catch (e) { lastErr = e; }
+  }
+  if (!analyses && _newsHasRouter()) {
+    try { analyses = await _analyzeViaRouter(unseen); lastErr = null; }
+    catch (e) { lastErr = lastErr || e; }
+  }
+
+  if (analyses) {
     analyses.forEach(a => { if (a.id) _newsAnalyses[a.id] = a; });
     _aiCacheSave();
     _newsAiState = 'done';
-  } catch (e) {
-    _newsAiState = 'error:' + e.message;
+  } else {
+    _newsAiState = 'error:' + (lastErr?.message || 'no AI backend reachable');
   }
   _buildPage();
 }
@@ -244,14 +277,25 @@ async function _fetchViaRss2json(url) {
     .filter(i => i.title && !isNaN(i.ts) && i.ts >= _cutoff());
 }
 
+async function _fetchViaCustomWorker(url) {
+  const base = (localStorage.getItem('hype_rss_proxy') || '').trim().replace(/\/$/, '');
+  if (!base) throw new Error('cw:unset');
+  const r = await fetch(`${base}/?url=${encodeURIComponent(url)}`);
+  if (!r.ok) throw new Error(`cw:${r.status}`);
+  return _parseXml(await r.text());
+}
+
 async function _fetchRSS(feed) {
   try {
-    // Race three proxies — whichever responds first wins
-    const parsed = await Promise.any([
+    // Race the proxies — whichever responds first wins. A user-deployed
+    // Cloudflare Worker (Settings → RSS Proxy) joins the race when configured.
+    const racers = [
       _fetchViaAllOrigins(feed.url),
       _fetchViaRss2json(feed.url),
       _fetchViaCorsproxyIo(feed.url),
-    ]);
+    ];
+    if (localStorage.getItem('hype_rss_proxy')) racers.unshift(_fetchViaCustomWorker(feed.url));
+    const parsed = await Promise.any(racers);
     const result = parsed.map(p => ({
       id: feed.id + ':' + encodeURIComponent(p.link || p.title).slice(0, 80),
       source: feed.id, title: p.title, excerpt: p.desc.slice(0, 220),
@@ -336,12 +380,22 @@ function _renderFilters() {
   const counts = {};
   _newsItems.forEach(n => { counts[n.source] = (counts[n.source]||0)+1; });
   const srcs = ['all', ...Object.keys(NEWS_SOURCES).filter(s => (counts[s]||0) > 0)];
+  const hasAI = Object.keys(_newsAnalyses).length > 0;
+  const sentChips = hasAI ? `
+    <div class="filter-sep"></div>
+    ${['all','BULL','BEAR','NEUTRAL'].map(s => {
+      const lbl = s === 'all' ? 'Any sentiment' : s === 'BULL' ? '▲ Bull' : s === 'BEAR' ? '▼ Bear' : '– Neutral';
+      return `<button class="chip${_newsSent === s ? ' active' : ''}" onclick="newsSentFilter('${s}')">${lbl}</button>`;
+    }).join('')}` : '';
   return `<div class="filter-bar" style="gap:4px;padding:8px 12px;flex-wrap:wrap" id="news-filter-bar">
+    <input class="input" id="news-search" placeholder="Search articles…" value="${_newsSearch.replace(/"/g,'&quot;')}"
+      oninput="newsSearch(this.value)" style="width:160px;min-height:28px;padding:4px 9px;font-size:12px;flex:none">
     ${srcs.map(s => {
       const active = _newsFilter === s ? ' active' : '';
       const lbl    = s === 'all' ? `All (${_newsItems.length})` : `${NEWS_SOURCES[s].label} (${counts[s]||0})`;
       return `<button class="btn btn-ghost btn-sm${active}" onclick="newsFilter('${s}')">${lbl}</button>`;
     }).join('')}
+    ${sentChips}
     <div style="margin-left:auto">
       <button class="btn btn-ghost btn-sm" id="news-refresh-btn" onclick="newsRefresh()">↺ Refresh</button>
     </div>
@@ -382,10 +436,26 @@ function _renderCard(item) {
   </div>`;
 }
 
+function _newsVisible() {
+  let items = _newsFilter === 'all' ? _newsItems : _newsItems.filter(n => n.source === _newsFilter);
+  if (_newsSearch) {
+    const q = _newsSearch.toLowerCase();
+    items = items.filter(n => n.title.toLowerCase().includes(q) || (n.excerpt || '').toLowerCase().includes(q));
+  }
+  if (_newsSent !== 'all') {
+    items = items.filter(n => _newsAnalyses[n.id]?.sentiment === _newsSent);
+  }
+  return items;
+}
+
 function _renderFeed() {
-  const visible = _newsFilter === 'all' ? _newsItems : _newsItems.filter(n => n.source === _newsFilter);
+  const visible = _newsVisible();
   const page    = visible.slice(0, _newsPage * NEWS_PER_PAGE);
-  if (!page.length) return '<div class="news-empty">No articles yet — loading…</div>';
+  if (!page.length) {
+    return (_newsSearch || _newsSent !== 'all')
+      ? '<div class="news-empty">No articles match the current filters.</div>'
+      : '<div class="news-empty">No articles yet — loading…</div>';
+  }
   const more = visible.length > page.length
     ? `<button class="news-load-more" onclick="newsLoadMore()">Load ${Math.min(NEWS_PER_PAGE, visible.length - page.length)} more</button>`
     : '';
@@ -418,14 +488,14 @@ function _renderAIBar() {
   const botUrl = localStorage.getItem('hype_bot_url') || '';
   const analyseCount = Object.keys(_newsAnalyses).length;
   let statusLine = '';
-  if (!botUrl) {
-    statusLine = `<span style="color:var(--yellow)">⚠ Set bot URL to enable AI analysis</span>`;
+  if (!botUrl && !_newsHasRouter()) {
+    statusLine = `<span style="color:var(--yellow)">⚠ Set the bot worker URL or Edge Function URL (Settings) to enable AI analysis</span>`;
   } else if (_newsAiState === 'loading') {
     statusLine = `<span style="color:var(--text-muted)">AI analysing headlines…</span>`;
   } else if (_newsAiState.startsWith('error')) {
-    statusLine = `<span style="color:var(--red)" title="${_newsAiState}">AI error · check bot URL</span>`;
+    statusLine = `<span style="color:var(--red)" title="${_newsAiState}">AI error · check bot URL / Edge Function in Settings</span>`;
   } else if (analyseCount) {
-    statusLine = `<span style="color:var(--green)">AI</span> <span style="color:var(--text-faint)">${analyseCount} articles analysed · Llama 3.1 8B · free</span>`;
+    statusLine = `<span style="color:var(--green)">AI</span> <span style="color:var(--text-faint)">${analyseCount} articles analysed</span>`;
   } else {
     statusLine = `<span style="color:var(--text-faint)">AI ready · analysing on load</span>`;
   }
@@ -476,6 +546,9 @@ async function loadNews() {
 
   clearInterval(_newsTimer);
   _newsTimer = setInterval(async () => {
+    // Don't hammer 9 sources in the background while another tab is open
+    if (typeof currentPage !== 'undefined' && currentPage !== 'news') return;
+    if (document.hidden) return;
     sessionStorage.removeItem(NEWS_CACHE_KEY);
     _newsPage = 1;
     await _fetchAllProgressively();
@@ -484,7 +557,16 @@ async function loadNews() {
 }
 
 function newsFilter(src) { _newsFilter = src; _newsPage = 1; _buildPage(); }
+function newsSentFilter(s) { _newsSent = s; _newsPage = 1; _buildPage(); }
 function newsLoadMore()   { _newsPage++; _buildPage(); }
+
+// Only the feed is re-rendered while typing so the search input keeps focus
+function newsSearch(q) {
+  _newsSearch = q;
+  _newsPage = 1;
+  const el = document.getElementById('news-feed');
+  if (el) el.outerHTML = _renderFeed();
+}
 
 function _newsSaveBotUrl() {
   const val = (document.getElementById('news-bot-url')?.value || '').trim().replace(/\/$/, '');

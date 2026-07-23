@@ -10,7 +10,7 @@ let activeNarrative = 'all';
 let autoRefreshTimer = null;
 let _silentRefresh = false;
 let _lastRefreshTs = 0;
-const _SKIP_SILENT = new Set(['phases','monitor','journal','analytics','kb','mvrv','ai','capital']);
+const _SKIP_SILENT = new Set(['phases','monitor','journal','analytics','kb','mvrv','ai','capital','settings']);
 let marketSortKey = 'volume';
 let allMarketData = [];
 let _recentPnlHours = 24;
@@ -106,7 +106,7 @@ async function getCGGlobal() {
 }
 async function getCGMarkets() {
   if (_cgShared.markets && Date.now() - _cgShared.marketsTs < 3*60*1000) return _cgShared.markets;
-  const r = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false&price_change_percentage=24h,7d,30d', { headers: _cgHeaders() });
+  const r = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=true&price_change_percentage=24h,7d,30d', { headers: _cgHeaders() });
   if (!r.ok) throw new Error('CG markets ' + r.status);
   _cgShared.markets = await r.json();
   _cgShared.marketsTs = Date.now();
@@ -626,7 +626,7 @@ function navigate(page) {
     pageEl.classList.add('active');
     document.querySelectorAll(`[data-page="${page}"]`).forEach(el=>el.classList.add('active'));
     currentPage = page;
-    const loaders={overview:loadOverview,capital:typeof loadCapital!=='undefined'?loadCapital:null,trades:loadTrades,funding:loadFunding,flows:loadFlows,monitor:loadMonitor,markets:loadMarkets,phases:loadPhases,intel:typeof loadIntel!=='undefined'?loadIntel:null,watchlist:loadWatchlist,journal:typeof loadJournal!=='undefined'?loadJournal:null,indicators:typeof loadIndicators!=='undefined'?loadIndicators:null,smartmoney:typeof loadNansen!=='undefined'?loadNansen:null,analytics:typeof loadAnalytics!=='undefined'?loadAnalytics:null,signals:typeof loadSignals!=='undefined'?loadSignals:null,news:typeof loadNews!=='undefined'?loadNews:null,hlpulse:typeof loadHLPulse!=='undefined'?loadHLPulse:null,fundamentals:typeof loadFundamentals!=='undefined'?loadFundamentals:null,ai:typeof loadAI!=='undefined'?loadAI:null,arb:typeof loadArb!=='undefined'?loadArb:null,defi:typeof loadDefi!=='undefined'?loadDefi:null,kb:typeof loadKB!=='undefined'?loadKB:null,trend:typeof loadTrend!=='undefined'?loadTrend:null,onchain:typeof loadOnchain!=='undefined'?loadOnchain:null,heatmap:typeof loadHeatmap!=='undefined'?loadHeatmap:null,brief:typeof loadDailyBrief!=='undefined'?loadDailyBrief:null,research:typeof loadResearch!=='undefined'?loadResearch:null};
+    const loaders={overview:loadOverview,capital:typeof loadCapital!=='undefined'?loadCapital:null,trades:loadTrades,funding:loadFunding,flows:loadFlows,monitor:loadMonitor,markets:loadMarkets,phases:loadPhases,intel:typeof loadIntel!=='undefined'?loadIntel:null,watchlist:loadWatchlist,journal:typeof loadJournal!=='undefined'?loadJournal:null,indicators:typeof loadIndicators!=='undefined'?loadIndicators:null,smartmoney:typeof loadNansen!=='undefined'?loadNansen:null,analytics:typeof loadAnalytics!=='undefined'?loadAnalytics:null,signals:typeof loadSignals!=='undefined'?loadSignals:null,news:typeof loadNews!=='undefined'?loadNews:null,hlpulse:typeof loadHLPulse!=='undefined'?loadHLPulse:null,fundamentals:typeof loadFundamentals!=='undefined'?loadFundamentals:null,ai:typeof loadAI!=='undefined'?loadAI:null,arb:typeof loadArb!=='undefined'?loadArb:null,defi:typeof loadDefi!=='undefined'?loadDefi:null,kb:typeof loadKB!=='undefined'?loadKB:null,trend:typeof loadTrend!=='undefined'?loadTrend:null,onchain:typeof loadOnchain!=='undefined'?loadOnchain:null,heatmap:typeof loadHeatmap!=='undefined'?loadHeatmap:null,brief:typeof loadDailyBrief!=='undefined'?loadDailyBrief:null,research:typeof loadResearch!=='undefined'?loadResearch:null,settings:loadSettings};
     if(loaders[page]) loaders[page]();
   } catch(e) { console.error('navigate error:', e); }
 }
@@ -2344,64 +2344,7 @@ async function loadMonitor() {
     </div>
 
     <div class="card" style="margin-top:14px">
-      <div class="card-title">⚡ API Proxy (Cloudflare Worker)</div>
-      <div class="muted" style="font-size:11px;margin-bottom:12px">Optional: paste your Cloudflare Worker URL for edge-cached API calls (faster in Indonesia). Leave blank to use Hyperliquid directly.</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <input class="input" id="proxy-url-input" placeholder="https://your-worker.your-user.workers.dev" value="${localStorage.getItem('hype_proxy_url')||''}" style="flex:1;font-family:var(--mono);font-size:11px">
-        <button class="btn btn-primary btn-sm" onclick="saveProxyUrl()">Save</button>
-        <button class="btn btn-ghost btn-sm" onclick="clearProxyUrl()">Clear</button>
-      </div>
-      <div id="proxy-status" style="font-size:11px;color:var(--text-muted);margin-top:6px">${localStorage.getItem('hype_proxy_url') ? '✓ Proxy active — reload page to apply' : 'Using direct Hyperliquid API'}</div>
-    </div>
-
-    <div class="card" style="margin-top:14px">
-      <div class="card-title">🦎 CoinGecko Demo API Key</div>
-      <div class="muted" style="font-size:11px;margin-bottom:12px">Free tier: get your key at <span style="color:var(--accent)">coingecko.com/en/api</span> → "Get Free API Key". Without a key the public endpoint is rate-limited and Fundamentals/Intel tabs may show empty data.</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <input class="input" id="cg-key-input" type="password" placeholder="CG-xxxxxxxxxxxxxxxxxxxx" value="${localStorage.getItem('hype_cg_key')||''}" style="flex:1;font-family:var(--mono);font-size:11px">
-        <button class="btn btn-primary btn-sm" onclick="saveCGKey()">Save</button>
-        <button class="btn btn-ghost btn-sm" onclick="clearCGKey()">Clear</button>
-      </div>
-      <div id="cg-key-status" style="font-size:11px;color:var(--text-muted);margin-top:6px">${localStorage.getItem('hype_cg_key') ? '✓ CoinGecko key active — 30 req/min, 10k/month' : 'No key — using unauthenticated public endpoint (may rate-limit)'}</div>
-    </div>
-
-    <div class="card" style="margin-top:14px">
-      <div class="card-title">🔮 APIU Macro Proxy (Cloudflare Worker)</div>
-      <div class="muted" style="font-size:11px;margin-bottom:12px">Optional: deploy <code>cloudflare/apiu-worker.js</code> to surface apiu.ai's BTC daily verdict + regime state as a second-opinion card in the Intel tab. The APIU key stays server-side as a Worker secret — paste only the worker URL here.</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <input class="input" id="apiu-proxy-url-input" placeholder="https://hype-apiu-proxy.your-user.workers.dev" value="${localStorage.getItem('hype_apiu_proxy_url')||''}" style="flex:1;font-family:var(--mono);font-size:11px">
-        <button class="btn btn-primary btn-sm" onclick="saveApiuProxyUrl()">Save</button>
-        <button class="btn btn-ghost btn-sm" onclick="clearApiuProxyUrl()">Clear</button>
-      </div>
-      <div id="apiu-proxy-status" style="font-size:11px;color:var(--text-muted);margin-top:6px">${localStorage.getItem('hype_apiu_proxy_url') ? '✓ APIU proxy active — card appears in Intel tab' : 'Not configured — no card shown in Intel tab'}</div>
-    </div>
-
-    <div class="card" style="margin-top:14px">
-      <div class="card-title">📲 Telegram Notifications</div>
-      <div class="muted" style="font-size:11px;margin-bottom:12px">Token stored in your browser only — never committed to code or sent anywhere except Telegram.</div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <div>
-          <div class="stat-label" style="margin-bottom:4px">Bot Token</div>
-          <input class="input" id="tg-token-input" type="password" placeholder="Paste your bot token" value="${tgToken}" style="width:100%;font-family:var(--mono);font-size:11px">
-        </div>
-        <div>
-          <div class="stat-label" style="margin-bottom:4px">Your Chat ID</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap">
-            <input class="input" id="tg-chat-input" placeholder="e.g. 123456789" value="${tgChatId}" style="flex:1;min-width:120px;font-family:var(--mono)">
-            <button class="btn btn-ghost btn-sm" onclick="getTGChatId()" style="white-space:nowrap">Auto-detect</button>
-          </div>
-          <div class="muted" style="font-size:10px;margin-top:4px">Send any message to your bot first, then click Auto-detect.</div>
-        </div>
-        <div>
-          <div class="stat-label" style="margin-bottom:4px">P&L Milestone — Alert every $</div>
-          <input class="input" id="tg-pnl-thr" type="number" placeholder="e.g. 500" value="${pnlThreshold||''}" style="width:130px">
-        </div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <button class="btn btn-primary btn-sm" onclick="saveTGSettings()">Save</button>
-          <button class="btn btn-ghost btn-sm" onclick="testTelegram()">Send Test</button>
-          <span id="tg-status" style="font-size:11px;color:var(--text-muted)">${tgToken&&tgChatId?'✓ Configured':'Not configured'}</span>
-        </div>
-      </div>
+      <div class="muted" style="font-size:11px">Looking for API proxy, CoinGecko key, APIU or Telegram configuration? It moved to the <a onclick="navigate('settings')" style="color:var(--accent);cursor:pointer">Settings</a> tab.</div>
     </div>
 
     <div class="card" style="margin-top:14px">
@@ -3467,12 +3410,227 @@ document.addEventListener('visibilitychange',()=>{
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeMktDetail();
 });
+// ── Settings page ─────────────────────────────────────────────────────────────
+
+function saveSettingKey(key, inputId, statusId, okMsg) {
+  const v = (document.getElementById(inputId)?.value || '').trim().replace(/\/+$/, '');
+  if (v) localStorage.setItem(key, v); else localStorage.removeItem(key);
+  const s = document.getElementById(statusId);
+  if (s) s.textContent = v ? (okMsg || '✓ Saved') : 'Cleared';
+}
+
+function saveKbSupabase() {
+  const url = (document.getElementById('kb-sb-url')?.value || '').trim().replace(/\/$/, '');
+  const key = (document.getElementById('kb-sb-key')?.value || '').trim();
+  const s = document.getElementById('kb-sb-status');
+  if (url && !key) { if (s) s.textContent = 'Enter the anon key too.'; return; }
+  if (url) { localStorage.setItem('hype_kb_supabase_url', url); localStorage.setItem('hype_kb_supabase_key', key); }
+  else { localStorage.removeItem('hype_kb_supabase_url'); localStorage.removeItem('hype_kb_supabase_key'); }
+  if (s) s.textContent = url ? '✓ Saved — reload page to apply' : 'Cleared — using built-in project (reload to apply)';
+}
+
+function clearKbSupabase() {
+  localStorage.removeItem('hype_kb_supabase_url');
+  localStorage.removeItem('hype_kb_supabase_key');
+  const u = document.getElementById('kb-sb-url'), k = document.getElementById('kb-sb-key');
+  if (u) u.value = ''; if (k) k.value = '';
+  const s = document.getElementById('kb-sb-status');
+  if (s) s.textContent = 'Cleared — using built-in project (reload to apply)';
+}
+
+function clearSettingKey(key, inputId, statusId) {
+  localStorage.removeItem(key);
+  const el = document.getElementById(inputId);
+  if (el) el.value = '';
+  const s = document.getElementById(statusId);
+  if (s) s.textContent = 'Cleared';
+}
+
+function _settingsUrlCard(title, desc, key, inputId, statusId, placeholder, okMsg, activeMsg, emptyMsg) {
+  const cur = localStorage.getItem(key) || '';
+  return `
+    <div class="card">
+      <div class="card-title">${title}</div>
+      <div class="muted" style="font-size:11px;margin-bottom:12px">${desc}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <input class="input" id="${inputId}" placeholder="${placeholder}" value="${cur.replace(/"/g,'&quot;')}" style="flex:1;font-family:var(--mono);font-size:11px">
+        <button class="btn btn-primary btn-sm" onclick="saveSettingKey('${key}','${inputId}','${statusId}','${okMsg}')">Save</button>
+        <button class="btn btn-ghost btn-sm" onclick="clearSettingKey('${key}','${inputId}','${statusId}')">Clear</button>
+      </div>
+      <div id="${statusId}" style="font-size:11px;color:var(--text-muted);margin-top:6px">${cur ? activeMsg : emptyMsg}</div>
+    </div>`;
+}
+
+function loadSettings() {
+  const el = document.getElementById('settings-content');
+  if (!el) return;
+  el.innerHTML = `
+  <div style="padding:14px;max-width:860px">
+    <div class="section-title" style="margin-bottom:12px">Settings</div>
+
+    <div class="nav-section" style="padding:4px 0 8px">Account</div>
+    <div class="card">
+      <div class="card-title">👛 Hyperliquid Wallet</div>
+      <div class="muted" style="font-size:11px;margin-bottom:12px">All portfolio, trade, funding and flow data is read from this address via the public Hyperliquid API. No keys, read-only.</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span class="wallet-badge" style="max-width:none;font-size:12px;padding:6px 12px">${currentWallet}</span>
+        <button class="btn btn-primary btn-sm" onclick="changeWallet()">Change Wallet</button>
+        <span id="wallet-status" style="font-size:11px;color:var(--text-muted)"></span>
+      </div>
+    </div>
+
+    <div class="nav-section" style="padding:12px 0 8px">Connection</div>
+    <div class="card">
+      <div class="card-title">⚡ API Proxy (Cloudflare Worker)</div>
+      <div class="muted" style="font-size:11px;margin-bottom:12px">Optional: paste your Cloudflare Worker URL for edge-cached API calls. Leave blank to use Hyperliquid directly.</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <input class="input" id="proxy-url-input" placeholder="https://your-worker.your-user.workers.dev" value="${localStorage.getItem('hype_proxy_url')||''}" style="flex:1;font-family:var(--mono);font-size:11px">
+        <button class="btn btn-primary btn-sm" onclick="saveProxyUrl()">Save</button>
+        <button class="btn btn-ghost btn-sm" onclick="clearProxyUrl()">Clear</button>
+      </div>
+      <div id="proxy-status" style="font-size:11px;color:var(--text-muted);margin-top:6px">${localStorage.getItem('hype_proxy_url') ? '✓ Proxy active — reload page to apply' : 'Using direct Hyperliquid API'}</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🦎 CoinGecko Demo API Key</div>
+      <div class="muted" style="font-size:11px;margin-bottom:12px">Free tier: get your key at <span style="color:var(--accent)">coingecko.com/en/api</span> → "Get Free API Key". Without a key the public endpoint is rate-limited and Fundamentals/Intel tabs may show empty data.</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <input class="input" id="cg-key-input" type="password" placeholder="CG-xxxxxxxxxxxxxxxxxxxx" value="${localStorage.getItem('hype_cg_key')||''}" style="flex:1;font-family:var(--mono);font-size:11px">
+        <button class="btn btn-primary btn-sm" onclick="saveCGKey()">Save</button>
+        <button class="btn btn-ghost btn-sm" onclick="clearCGKey()">Clear</button>
+      </div>
+      <div id="cg-key-status" style="font-size:11px;color:var(--text-muted);margin-top:6px">${localStorage.getItem('hype_cg_key') ? '✓ CoinGecko key active — 30 req/min, 10k/month' : 'No key — using unauthenticated public endpoint (may rate-limit)'}</div>
+    </div>
+
+    ${_settingsUrlCard(
+      '📰 RSS Proxy (Cloudflare Worker)',
+      'Optional: deploy <code>cloudflare/worker.js</code> and paste its URL. News feeds will try your private proxy first, falling back to the public CORS proxies (allorigins / rss2json / corsproxy.io) — fewer silent failures and rate limits.',
+      'hype_rss_proxy', 'rss-proxy-input', 'rss-proxy-status',
+      'https://hype-rss.your-user.workers.dev',
+      '✓ Saved — used on next News refresh',
+      '✓ RSS proxy active — raced first for all feeds',
+      'Not configured — using public CORS proxies only')}
+
+    ${_settingsUrlCard(
+      '🤖 Bot Worker URL',
+      'Optional: your deployed <code>cloudflare/bot-worker.js</code> URL. Powers the bot status widget in News and AI drafts in HL Pulse.',
+      'hype_bot_url', 'bot-url-input', 'bot-url-status',
+      'https://hype-bot.your-subdomain.workers.dev',
+      '✓ Saved',
+      '✓ Bot worker configured',
+      'Not configured')}
+
+    <div class="nav-section" style="padding:12px 0 8px">AI</div>
+    ${_settingsUrlCard(
+      '🧠 Supabase Edge Function URL',
+      'Your <code>claude-proxy</code> Edge Function URL (see AI tab → ⚙ Setup for the one-time deploy). Enables Claude chat, trade lessons, weekly reviews and intel synthesis. The llm-router URL is derived automatically.',
+      'hype_edge_fn_url', 'edge-url-input', 'edge-url-status',
+      'https://xyz.supabase.co/functions/v1/claude-proxy',
+      '✓ Saved — AI features enabled',
+      '✓ Configured — AI features enabled',
+      'Not configured — AI features disabled')}
+
+    ${_settingsUrlCard(
+      '▲ App Backend URL (Vercel)',
+      'Only needed when this page is served from GitHub Pages instead of your Vercel deployment. Points <code>/api/chat</code> (KB AI, MVRV chat) and <code>/api/trigger-workflow</code> (Daily Brief / Weekly Research "Generate Now") at your Vercel app.',
+      'hype_trigger_backend_url', 'backend-url-input', 'backend-url-status',
+      'https://your-app.vercel.app',
+      '✓ Saved',
+      '✓ Backend configured — AI endpoints routed to Vercel',
+      'Not configured — relative /api/* (works only on the Vercel deployment)')}
+
+    <div class="nav-section" style="padding:12px 0 8px">Intel</div>
+    <div class="card">
+      <div class="card-title">🔮 APIU Macro Proxy (Cloudflare Worker)</div>
+      <div class="muted" style="font-size:11px;margin-bottom:12px">Optional: deploy <code>cloudflare/apiu-worker.js</code> to surface apiu.ai's BTC daily verdict + regime state as a second-opinion card in the Intel tab. The APIU key stays server-side as a Worker secret — paste only the worker URL here.</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <input class="input" id="apiu-proxy-url-input" placeholder="https://hype-apiu-proxy.your-user.workers.dev" value="${localStorage.getItem('hype_apiu_proxy_url')||''}" style="flex:1;font-family:var(--mono);font-size:11px">
+        <button class="btn btn-primary btn-sm" onclick="saveApiuProxyUrl()">Save</button>
+        <button class="btn btn-ghost btn-sm" onclick="clearApiuProxyUrl()">Clear</button>
+      </div>
+      <div id="apiu-proxy-status" style="font-size:11px;color:var(--text-muted);margin-top:6px">${localStorage.getItem('hype_apiu_proxy_url') ? '✓ APIU proxy active — card appears in Intel tab' : 'Not configured — no card shown in Intel tab'}</div>
+    </div>
+
+    <div class="nav-section" style="padding:12px 0 8px">Storage</div>
+    <div class="card">
+      <div class="card-title">📚 Knowledge Base Storage (Supabase)</div>
+      <div class="muted" style="font-size:11px;margin-bottom:12px">Optional: point the KB tab at your own Supabase project (needs the <code>kb_wiki</code> and <code>kb_trades</code> tables). Leave blank to use the built-in project.</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <input class="input" id="kb-sb-url" placeholder="https://xyz.supabase.co" value="${localStorage.getItem('hype_kb_supabase_url')||''}" style="font-family:var(--mono);font-size:11px">
+        <input class="input" id="kb-sb-key" type="password" placeholder="anon key (eyJhbGci…)" value="${localStorage.getItem('hype_kb_supabase_key')||''}" style="font-family:var(--mono);font-size:11px">
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" onclick="saveKbSupabase()">Save</button>
+          <button class="btn btn-ghost btn-sm" onclick="clearKbSupabase()">Clear</button>
+          <span id="kb-sb-status" style="font-size:11px;color:var(--text-muted)">${localStorage.getItem('hype_kb_supabase_url') ? '✓ Custom project — reload page to apply' : 'Using built-in project'}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-section" style="padding:12px 0 8px">Notifications</div>
+    <div class="card">
+      <div class="card-title">📲 Telegram Notifications</div>
+      <div class="muted" style="font-size:11px;margin-bottom:12px">Token stored in your browser only — never committed to code or sent anywhere except Telegram.</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div>
+          <div class="stat-label" style="margin-bottom:4px">Bot Token</div>
+          <input class="input" id="tg-token-input" type="password" placeholder="Paste your bot token" value="${tgToken}" style="width:100%;font-family:var(--mono);font-size:11px">
+        </div>
+        <div>
+          <div class="stat-label" style="margin-bottom:4px">Your Chat ID</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <input class="input" id="tg-chat-input" placeholder="e.g. 123456789" value="${tgChatId}" style="flex:1;min-width:120px;font-family:var(--mono)">
+            <button class="btn btn-ghost btn-sm" onclick="getTGChatId()" style="white-space:nowrap">Auto-detect</button>
+          </div>
+          <div class="muted" style="font-size:10px;margin-top:4px">Send any message to your bot first, then click Auto-detect.</div>
+        </div>
+        <div>
+          <div class="stat-label" style="margin-bottom:4px">P&L Milestone — Alert every $</div>
+          <input class="input" id="tg-pnl-thr" type="number" placeholder="e.g. 500" value="${pnlThreshold||''}" style="width:130px">
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" onclick="saveTGSettings()">Save</button>
+          <button class="btn btn-ghost btn-sm" onclick="testTelegram()">Send Test</button>
+          <span id="tg-status" style="font-size:11px;color:var(--text-muted)">${tgToken&&tgChatId?'✓ Configured':'Not configured'}</span>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── Wallet management ─────────────────────────────────────────────────────────
+function _shortAddr(a){ return a && a.length > 12 ? `${a.slice(0,6)}…${a.slice(-4)}` : (a || '—'); }
+
+function _renderWalletBadge(){
+  const el = document.getElementById('wallet-display');
+  if (!el) return;
+  el.textContent = _shortAddr(currentWallet);
+  el.title = `${currentWallet} — click to switch wallet`;
+  el.style.cursor = 'pointer';
+  el.onclick = changeWallet;
+}
+
+function changeWallet(){
+  const input = prompt('Hyperliquid wallet address (0x…):', currentWallet);
+  if (input === null) return;
+  const addr = input.trim().toLowerCase();
+  if (!/^0x[0-9a-f]{40}$/.test(addr)) { alert('Invalid address — must be a 42-character 0x address.'); return; }
+  if (addr === currentWallet.toLowerCase()) return;
+  localStorage.setItem('hype_wallet', addr);
+  currentWallet = addr;
+  _renderWalletBadge();
+  const status = document.getElementById('wallet-status');
+  if (status) status.textContent = '✓ Wallet saved — reloading data…';
+  // Full reload: every module caches per-wallet state, this is the clean path
+  setTimeout(() => location.reload(), 400);
+}
+
 document.addEventListener('DOMContentLoaded',()=>{
   const wl=getWatchlist();
   if(!wl.find(w=>w.address===DEFAULT_WALLET.toLowerCase())){
     wl.unshift({address:DEFAULT_WALLET.toLowerCase(),label:'My Wallet',added_at:Date.now()});
     saveWatchlist(wl);
   }
+  _renderWalletBadge();
   initMobileTableLabels();
   navigate('overview');
   startListingWatcher();

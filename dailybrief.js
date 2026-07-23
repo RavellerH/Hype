@@ -10,10 +10,77 @@
 'use strict';
 
 const _DBR_INDEX_URL = 'https://raw.githubusercontent.com/RavellerH/Hype/gh-pages/briefs/index.json';
+const _DBR_RAW_BASE  = 'https://raw.githubusercontent.com/RavellerH/Hype/gh-pages/briefs/';
 
 let _dbrBriefs   = [];
 let _dbrLoaded   = false;
 let _dbrExpanded = new Set();
+let _dbrFullOpen = new Set();   // files whose full markdown is expanded
+const _dbrFullCache = {};       // file → markdown text
+
+// ── Minimal markdown renderer (shared with research.js) ─────────────────────
+// Escapes first, then supports: #–#### headings, **bold**, `code`, fenced
+// code blocks, -/*/1. lists, --- rules, [links](https://…), paragraphs.
+
+function _hypeMdEsc(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function _hypeMd(md) {
+  const lines = _hypeMdEsc(md || '').split('\n');
+  const out = [];
+  let inList = false, inCode = false;
+  const inline = t => t
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  for (const raw of lines) {
+    const l = raw.trimEnd();
+    if (/^```/.test(l.trim())) { inCode = !inCode; out.push(inCode ? '<pre class="hmd-pre">' : '</pre>'); continue; }
+    if (inCode) { out.push(raw + '\n'); continue; }
+    const li = l.match(/^\s*[-*]\s+(.*)/) || l.match(/^\s*\d+\.\s+(.*)/);
+    if (li) { if (!inList) { out.push('<ul class="hmd-ul">'); inList = true; } out.push(`<li>${inline(li[1])}</li>`); continue; }
+    if (inList) { out.push('</ul>'); inList = false; }
+    const h = l.match(/^(#{1,4})\s+(.*)/);
+    if (h) { const lv = Math.min(h[1].length + 2, 6); out.push(`<h${lv} class="hmd-h">${inline(h[2])}</h${lv}>`); continue; }
+    if (/^\s*(-{3,}|\*{3,})\s*$/.test(l)) { out.push('<hr class="hmd-hr">'); continue; }
+    if (!l.trim()) continue;
+    out.push(`<p class="hmd-p">${inline(l)}</p>`);
+  }
+  if (inList) out.push('</ul>');
+  if (inCode) out.push('</pre>');
+  return out.join('');
+}
+
+// Fetch + toggle the full markdown of a report; shared by brief & research
+async function _hypeMdToggle(openSet, cache, baseUrl, file, rerender) {
+  if (openSet.has(file)) { openSet.delete(file); rerender(); return; }
+  openSet.add(file);
+  rerender(); // shows "loading…" if not cached yet
+  if (cache[file] == null) {
+    try {
+      const r = await fetch(baseUrl + encodeURIComponent(file));
+      cache[file] = r.ok ? await r.text() : `*Failed to load (${r.status})*`;
+    } catch (e) {
+      cache[file] = `*Failed to load: ${e.message}*`;
+    }
+    rerender();
+  }
+}
+
+function _hypeMdBlock(openSet, cache, file, toggleFn) {
+  const isOpen = openSet.has(file);
+  const btn = `<button class="btn btn-ghost btn-sm" onclick="${toggleFn}('${_dbrEsc(file)}')">${isOpen ? '▲ Hide full report' : '📄 Read full report'}</button>`;
+  if (!isOpen) return `<div style="margin-top:8px;display:flex;gap:10px;align-items:center">${btn}</div>`;
+  const body = cache[file] == null
+    ? '<div class="loading" style="padding:14px"><div class="spinner"></div> Loading report…</div>'
+    : `<div class="hmd-body">${_hypeMd(cache[file])}</div>`;
+  return `<div style="margin-top:8px;display:flex;gap:10px;align-items:center">${btn}</div>${body}`;
+}
+
+function dbrToggleFull(file) {
+  _hypeMdToggle(_dbrFullOpen, _dbrFullCache, _DBR_RAW_BASE, file, _dbrRender);
+}
 
 function _dbrEsc(s) {
   if (s == null) return '';
@@ -112,7 +179,8 @@ function _dbrCardHTML(b, isLatest) {
     </div>
     ${b.news_summary ? `<div style="font-size:13px;color:var(--text-muted);margin:8px 0;line-height:1.5;"><b style="color:var(--text);">News:</b> ${_dbrEsc(b.news_summary)}</div>` : ''}
     ${b.takeaway ? `<div style="font-style:italic;font-size:13px;color:var(--accent);margin-top:8px;border-top:1px solid var(--border);padding-top:8px;">${_dbrEsc(b.takeaway)}</div>` : ''}
-    <div style="margin-top:8px;"><a href="https://github.com/RavellerH/Hype/blob/gh-pages/briefs/${_dbrEsc(b.file)}" target="_blank" rel="noopener" style="font-size:11px;color:var(--text-faint);">view source markdown ↗</a></div>
+    ${b.file ? _hypeMdBlock(_dbrFullOpen, _dbrFullCache, b.file, 'dbrToggleFull') : ''}
+    <div style="margin-top:8px;"><a href="https://github.com/RavellerH/Hype/blob/gh-pages/briefs/${_dbrEsc(b.file)}" target="_blank" rel="noopener" style="font-size:11px;color:var(--text-faint);">view source on GitHub ↗</a></div>
   `;
 
   return `

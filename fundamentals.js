@@ -9,6 +9,7 @@ let _fundSort     = { col: 'market_cap_rank', dir: 1 };
 let _fundSearch   = '';
 let _fundLoaded   = false;
 let _fundTimer    = null;
+let _fundPins     = new Set(JSON.parse(localStorage.getItem('hype_fund_pins') || '[]'));
 
 // ── Fetch ─────────────────────────────────────────────────────────────────────
 
@@ -61,7 +62,41 @@ function _fPrice(p) {
 function _renderFund() {
   const el = document.getElementById('fundamentals-content');
   if (!el) return;
-  el.innerHTML = _renderFundGlobalBar() + _renderFundToolbar() + _renderFundTable();
+  el.innerHTML = _renderFundGlobalBar() + _renderFundToolbar()
+    + `<div id="fund-table-zone" style="overflow:auto;flex:1;display:flex;flex-direction:column">${_renderFundTable()}</div>`;
+}
+
+// Re-render only the table — keeps the search input mounted so it doesn't
+// lose focus on every keystroke
+function _renderFundTableOnly() {
+  const zone = document.getElementById('fund-table-zone');
+  if (zone) zone.innerHTML = _renderFundTable();
+  else _renderFund();
+}
+
+// 7-day inline SVG sparkline from CoinGecko sparkline_in_7d data
+function _fundSpark(c) {
+  const prices = c.sparkline_in_7d?.price;
+  if (!Array.isArray(prices) || prices.length < 10) return '<span style="color:var(--text-faint)">—</span>';
+  const step = Math.max(1, Math.floor(prices.length / 40));
+  const pts  = prices.filter((_, i) => i % step === 0);
+  const min = Math.min(...pts), max = Math.max(...pts);
+  const range = max - min || 1;
+  const w = 84, h = 24, pad = 1;
+  const path = pts.map((p, i) => {
+    const x = pad + (i / (pts.length - 1)) * (w - pad * 2);
+    const y = h - pad - ((p - min) / range) * (h - pad * 2);
+    return `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join('');
+  const up = pts[pts.length - 1] >= pts[0];
+  const color = up ? 'var(--green)' : 'var(--red)';
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block;margin-left:auto"><path d="${path}" fill="none" stroke="${color}" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+}
+
+function fundTogglePin(id) {
+  if (_fundPins.has(id)) _fundPins.delete(id); else _fundPins.add(id);
+  localStorage.setItem('hype_fund_pins', JSON.stringify([..._fundPins]));
+  _renderFundTableOnly();
 }
 
 function _renderFundGlobalBar() {
@@ -108,9 +143,15 @@ function _renderFundTable() {
     coins = coins.filter(c => c.symbol.toLowerCase().includes(q) || c.name.toLowerCase().includes(q));
   }
   const { col, dir } = _fundSort;
+  const val = c => col === 'vol_mcap'
+    ? (c.total_volume && c.market_cap ? c.total_volume / c.market_cap : null)
+    : c[col];
   coins.sort((a, b) => {
-    const av = a[col] ?? (dir > 0 ? Infinity : -Infinity);
-    const bv = b[col] ?? (dir > 0 ? Infinity : -Infinity);
+    // Pinned coins always float to the top, keeping the chosen sort within groups
+    const ap = _fundPins.has(a.id) ? 0 : 1, bp = _fundPins.has(b.id) ? 0 : 1;
+    if (ap !== bp) return ap - bp;
+    const av = val(a) ?? (dir > 0 ? Infinity : -Infinity);
+    const bv = val(b) ?? (dir > 0 ? Infinity : -Infinity);
     return (av < bv ? -1 : av > bv ? 1 : 0) * dir;
   });
 
@@ -121,7 +162,10 @@ function _renderFundTable() {
   const rows = coins.map(c => {
     const vm = c.total_volume && c.market_cap ? (c.total_volume / c.market_cap * 100) : null;
     const athPct = c.ath_change_percentage;
-    return `<tr>
+    const pinned = _fundPins.has(c.id);
+    return `<tr${pinned ? ' style="background:var(--accent-subtle)"' : ''}>
+      <td style="padding-right:2px"><button onclick="fundTogglePin('${c.id}')" title="${pinned ? 'Unpin' : 'Pin to top'}"
+        style="background:none;border:none;cursor:pointer;font-size:13px;padding:2px;color:${pinned ? 'var(--accent)' : 'var(--text-faint)'}">${pinned ? '★' : '☆'}</button></td>
       <td class="num" style="color:var(--text-faint)">${c.market_cap_rank || '—'}</td>
       <td>
         <div style="display:flex;align-items:center;gap:7px">
@@ -133,6 +177,7 @@ function _renderFundTable() {
       <td class="num">${_fPrice(c.current_price)}</td>
       <td class="num">${_fPct(c.price_change_percentage_24h_in_currency ?? c.price_change_percentage_24h)}</td>
       <td class="num">${_fPct(c.price_change_percentage_7d_in_currency)}</td>
+      <td style="padding:3px 10px">${_fundSpark(c)}</td>
       <td class="num">${_fPct(c.price_change_percentage_30d_in_currency)}</td>
       <td class="num">$${_fShort(c.market_cap || 0)}</td>
       <td class="num">$${_fShort(c.total_volume || 0)}</td>
@@ -142,23 +187,23 @@ function _renderFundTable() {
   }).join('');
 
   return `
-  <div style="overflow:auto;flex:1">
     <table class="fund-table">
       <thead><tr>
+        <th style="width:26px"></th>
         ${th('market_cap_rank', '#')}
         ${th('name', 'Coin')}
         ${th('current_price', 'Price', 'right')}
         ${th('price_change_percentage_24h', '24h', 'right')}
         ${th('price_change_percentage_7d_in_currency', '7d', 'right')}
+        <th style="text-align:right">7d Chart</th>
         ${th('price_change_percentage_30d_in_currency', '30d', 'right')}
         ${th('market_cap', 'Mkt Cap', 'right')}
         ${th('total_volume', '24h Vol', 'right')}
-        ${th('total_volume', 'Vol/MCap', 'right')}
+        ${th('vol_mcap', 'Vol/MCap', 'right')}
         ${th('ath_change_percentage', 'ATH %', 'right')}
       </tr></thead>
-      <tbody>${rows || '<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--text-faint)">No results</td></tr>'}</tbody>
-    </table>
-  </div>`;
+      <tbody>${rows || '<tr><td colspan="12" style="text-align:center;padding:24px;color:var(--text-faint)">No results</td></tr>'}</tbody>
+    </table>`;
 }
 
 // ── Actions ───────────────────────────────────────────────────────────────────
@@ -166,9 +211,9 @@ function _renderFundTable() {
 function fundSort(col) {
   if (_fundSort.col === col) _fundSort.dir *= -1;
   else { _fundSort.col = col; _fundSort.dir = 1; }
-  _renderFund();
+  _renderFundTableOnly();
 }
-function fundSearch(q) { _fundSearch = q; _renderFund(); }
+function fundSearch(q) { _fundSearch = q; _renderFundTableOnly(); }
 async function fundRefresh() {
   _fundLoaded = false;
   const el = document.getElementById('fundamentals-content');
