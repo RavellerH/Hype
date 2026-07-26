@@ -1,5 +1,17 @@
 [
   {
+    "week": "2026-W30",
+    "file": "2026-W30.md",
+    "week_start": "2026-07-19",
+    "week_end": "2026-07-26",
+    "title": "HYPE Navigates Volatile Week with Price Declines, Persistent Long Funding, and Moderate Deleveraging",
+    "summary": "HYPE experienced a week marked by fluctuating price action, ultimately closing lower despite showing periods of relative strength against a persistently 'Fear'-driven broader market. While perpetual funding for HYPE remained largely positive, indicating a persistent long bias, its Open Interest gradually decreased over the period. The Hyperliquid platform maintained substantial trading volume, though HyperEVM's Total Value Locked saw a slight, consistent decline. The primary market structure contradiction involved positive funding rates persisting even during significant price drops.",
+    "market_structure": "",
+    "risks": [],
+    "opportunities": [],
+    "confidence": null
+  },
+  {
     "week": "2026-W29",
     "file": "2026-W29.md",
     "week_start": "2026-07-16",
