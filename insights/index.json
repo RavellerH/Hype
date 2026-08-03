@@ -1,0 +1,41 @@
+[
+  {
+    "date": "2026-08-03",
+    "file": "2026-08-03.md",
+    "headline": "Weak Bull Macro with Fear Sentiment Drives Short Opportunities",
+    "position_actions": [
+      {
+        "coin": "BTC",
+        "action": "hold",
+        "reason": "Technical read agrees with the short position (DISTRIBUTION) and liquidation is a robust 18.8% away, despite a minor funding drag."
+      },
+      {
+        "coin": "HYPE",
+        "action": "tighten_stop",
+        "reason": "Liquidation is closer at 10.5%, and the technical read shows low confidence (0.21) with mixed EMA signals, indicating potential instability."
+      }
+    ],
+    "new_setups": [
+      {
+        "coin": "SOL",
+        "direction": "SHORT",
+        "rationale": "Strong MARKDOWN phase (score -0.6298, confidence 0.67) with aligned bearish signals and a favorable R:R of 20.29."
+      },
+      {
+        "coin": "SUI",
+        "direction": "SHORT",
+        "rationale": "Clear MARKDOWN phase (score -0.4888, confidence 0.529) with aligned bearish signals across EMAs and MACD."
+      }
+    ],
+    "regime_verdict": "BULL",
+    "regime_score": 3,
+    "regime_note": "The macro regime is weakly bullish (score 3/10, confidence 55%) but market sentiment is in 'Fear' (28). This suggests a selective approach, favoring well-aligned short setups and cautious sizing due to the conflicted macro signals.",
+    "risks": [
+      "Conflicting macro signals with a weak 'BULL' score against a 'Fear' sentiment could lead to unexpected volatility.",
+      "HYPE's close liquidation distance (10.5%) coupled with a low-confidence technical read (0.21) and mixed EMA signals indicates heightened risk for this position.",
+      "The low confidence (55%) in the overall BULL macro regime score suggests that market conditions could shift rapidly."
+    ],
+    "confidence": "medium",
+    "takeaway": "Maintain a selective and risk-aware approach, capitalizing on high-conviction short setups while managing existing positions with caution due to mixed signals."
+  }
+]
