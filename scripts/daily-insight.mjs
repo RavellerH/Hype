@@ -32,7 +32,7 @@ function pctFromLiq(pos) {
 function fundingDragNote(pos) {
   if (!pos.cum_funding) return 'no funding data';
   const favorable = pos.side === 'long' ? pos.cum_funding > 0 : pos.cum_funding < 0;
-  return `${favorable ? 'net positive' : 'net negative'} cumulative funding since open ($${pos.cum_funding.toFixed(2)})`;
+  return `${favorable ? 'favorable (tailwind)' : 'unfavorable (headwind)'} — cumulative funding since open $${pos.cum_funding.toFixed(2)}`;
 }
 
 // Generalized per-coin funding crowding read (same scale intel.js uses for BTC, applied per-coin).
