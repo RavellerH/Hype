@@ -21,6 +21,7 @@ A personal trading dashboard for [Hyperliquid](https://hyperliquid.xyz) — live
 | **Intel** | Live market intelligence — auto-scored regime, funding, OI, alt breadth, MVRV Z |
 | **MVRV** | Bitcoin MVRV Z-Score cycle indicator with beginner guide and AI commentary |
 | **AI** | Trade staging (entry/SL/TP, rationale, Supabase persistence) + Claude AI chat |
+| **Daily Insight** | Actionable daily report — per-position hold/trim/add/close calls (technicals vs. your open positions), new trade setups for watchlist coins with a real signal, and a macro regime read. Auto-generated server-side once a day. |
 | **Watchlist** | Monitor any Hyperliquid wallet address |
 | **Journal** | Personal trade journal (localStorage) |
 | **Indicators** | Fear & Greed, BMSB, Pi Cycle Top |
@@ -152,6 +153,36 @@ Your Anthropic API key stays in Supabase — never exposed in the browser.
 
 ---
 
+## Daily Insight — Actionable Daily Report
+
+Unlike the Daily Brief (macro commentary), the **Daily Insight** tab is prescriptive: it reads your
+actual open positions from Hyperliquid, runs the same Wyckoff-phase/TA-confluence engine used by
+the Phases tab against each one, and asks for one concrete call per position (hold / trim / add /
+tighten stop / close) tied to the numbers — phase direction vs. position side, distance to
+liquidation, funding drag. It also scans your watchlist coins you *don't* hold for a real technical
+signal and proposes entry/SL/TP levels only when one exists, plus a macro regime read (Fear & Greed,
+BTC funding, alt breadth, mcap change, BTC OI, BTC dominance).
+
+Generated server-side every day by a GitHub Actions workflow
+(`.github/workflows/insights.yml` → `scripts/daily-insight.mjs`), committed into the repo as
+`insights/<date>.md` + `insights/index.json` — same no-database pattern as Daily Brief / Weekly
+Research.
+
+**Required repo secrets** (Settings → Secrets and variables → Actions):
+- `LLM_ROUTER_URL`, `TG_TOKEN`, `TG_CHAT` — same as Daily Brief / Weekly Research
+- `PRIMARY_WALLET` — your Hyperliquid wallet address, so the workflow can read your open positions server-side
+
+**Optional secrets:**
+- `SUPABASE_URL` + `SUPABASE_ANON_KEY` — if set, adds a short journal-history note (recent win rate,
+  tag frequency) from the `hype_journal` table as extra context. Skipped silently if not configured,
+  or if the table happens to be empty.
+
+Smart-money/whale-flow data (Nansen) was left out of this report by default since it requires a paid
+API key that isn't wired up anywhere in this repo — nothing to configure, just not part of the input
+set today.
+
+---
+
 ## Telegram Notifications
 
 Configure in Settings tab. Paste your bot token (from [@BotFather](https://t.me/BotFather)), click "Auto-detect Chat ID", set a PnL threshold. Notifications fire when unrealized PnL moves beyond the threshold.
@@ -248,7 +279,17 @@ Env vars in `wrangler-bot.toml [vars]`: `SIGNAL_COINS`, `ARB_THRESHOLD`, `MAX_FU
 
 ## Changelog
 
-### 2026-06-20 (latest — Capital tab)
+### 2026-08-03 (latest — Daily Insight)
+- **New Daily Insight tab** — actionable daily report distinct from the macro-only Daily Brief:
+  reads your live open positions (`scripts/daily-insight.mjs` via a new `insights.yml` workflow),
+  runs the Wyckoff-phase/TA-confluence engine against each one, and returns one concrete
+  hold/trim/add/tighten-stop/close call per position plus new watchlist setups with entry/SL/TP —
+  all grounded in computed numbers, not invented. Includes a macro regime score (ported from the
+  Intel tab's scoring engine) and an optional journal-history note when Supabase secrets are
+  configured. Generated server-side once a day, committed as `insights/<date>.md` +
+  `insights/index.json`. Needs a new `PRIMARY_WALLET` repo secret.
+
+### 2026-06-20 (Capital tab)
 - **New Capital tab** — live spot vs. perps capital breakdown with allocation bar, polled every ~12s (`capital.js`).
 - **Capital history chart** — stacked spot/perps allocation over time, built from daily snapshots.
 - **Detailed perps trade & fee journal** — closed trades with avg entry/exit, hold time, gross/fee/net PnL, plus a recent fills & fees table, filterable by coin and time window.

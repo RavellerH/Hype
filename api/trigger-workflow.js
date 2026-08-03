@@ -3,7 +3,7 @@
 // (set in Vercel project settings) — it never reaches the browser, so the
 // Daily Brief / Weekly Research "Generate Now" buttons can't leak it.
 
-const ALLOWED_WORKFLOWS = new Set(['daily-brief.yml', 'weekly-research.yml']);
+const ALLOWED_WORKFLOWS = new Set(['daily-brief.yml', 'weekly-research.yml', 'insights.yml']);
 const GH_OWNER = 'RavellerH';
 const GH_REPO = 'Hype';
 
