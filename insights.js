@@ -107,15 +107,24 @@ function _insPositionActions(arr) {
   }).join('');
 }
 
+const _INS_CONVICTION_COLOR = { high: 'var(--green)', medium: 'var(--accent)', low: 'var(--text-faint)' };
+
 function _insNewSetups(arr) {
   if (!Array.isArray(arr) || !arr.length) return '<div style="font-size:12px;color:var(--text-faint);">No new setups flagged.</div>';
   return arr.map(s => {
     const color = s.direction === 'LONG' ? 'var(--green)' : 'var(--red)';
+    const convColor = _INS_CONVICTION_COLOR[s.conviction] || 'var(--text-faint)';
     return `<div style="margin-bottom:6px;padding:8px 10px;background:var(--surface2);border-radius:6px;border-left:3px solid ${color};">
-      <div><b style="color:var(--text);">${_insEsc(s.coin)}</b> <span style="font-size:10px;font-weight:700;color:${color};">${_insEsc(s.direction)}</span></div>
+      <div><b style="color:var(--text);">${_insEsc(s.coin)}</b> <span style="font-size:10px;font-weight:700;color:${color};">${_insEsc(s.direction)}</span>
+      ${s.conviction ? `<span style="font-size:9px;font-weight:700;text-transform:uppercase;color:${convColor};border:1px solid currentColor;border-radius:3px;padding:0 4px;margin-left:4px;">${_insEsc(s.conviction)} conviction</span>` : ''}</div>
       <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${_insEsc(s.rationale)}</div>
     </div>`;
   }).join('');
+}
+
+function _insSection(title, icon, text) {
+  if (!text) return '';
+  return `<div style="margin-top:10px;"><div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;">${icon} ${title}</div><div style="font-size:13px;color:var(--text-muted);margin-top:4px;line-height:1.5;">${_insEsc(text)}</div></div>`;
 }
 
 function _insList(arr, cls) {
@@ -128,7 +137,8 @@ function _insCardHTML(r, isLatest) {
   const expanded = isLatest || _insExpanded.has(r.date);
 
   const body = `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0;">
+    ${_insSection('Market Analysis', '◆', r.market_analysis)}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
       <div>
         <div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;">◎ Position Actions</div>
         <div style="margin-top:6px;">${_insPositionActions(r.position_actions)}</div>
@@ -138,6 +148,11 @@ function _insCardHTML(r, isLatest) {
         <div style="margin-top:6px;">${_insNewSetups(r.new_setups)}</div>
       </div>
     </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      ${_insSection('Sentiment', '☾', r.sentiment_summary)}
+      ${_insSection('Money Flow', '⇄', r.money_flow_summary)}
+    </div>
+    ${_insSection('Signal Consensus', '≡', r.consensus_summary)}
     ${r.regime_note ? `<div style="font-size:13px;color:var(--text-muted);margin:8px 0;line-height:1.5;"><b style="color:var(--text);">Regime:</b> ${_insEsc(r.regime_note)}</div>` : ''}
     ${(r.risks || []).length ? `<div style="margin-top:8px;"><div style="font-size:11px;font-weight:700;color:var(--red);text-transform:uppercase;">⚠ Risks</div>${_insList(r.risks, 'neg')}</div>` : ''}
     ${r.takeaway ? `<div style="font-style:italic;font-size:13px;color:var(--accent);margin-top:8px;border-top:1px solid var(--border);padding-top:8px;">${_insEsc(r.takeaway)}</div>` : ''}

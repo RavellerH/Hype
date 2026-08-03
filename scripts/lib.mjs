@@ -188,7 +188,52 @@ export function detectPhase(candles) {
   const phase = score >= 0.45 ? 'MARKUP' : score >= 0.12 ? 'ACCUMULATION' : score <= -0.45 ? 'MARKDOWN' : score <= -0.12 ? 'DISTRIBUTION' : 'NEUTRAL';
   const price_trend = pctChg > 0.03 ? 'up' : pctChg < -0.03 ? 'down' : 'flat';
   const candleBonus = 0.04 * Math.min(n / 60, 1);
-  return { phase, confidence: +Math.min(Math.abs(score) + candleBonus, 1).toFixed(3), price_trend, volume_trend: volTrend, range_compression: rangeCompressed, signals, score: +score.toFixed(4) };
+  return {
+    phase, confidence: +Math.min(Math.abs(score) + candleBonus, 1).toFixed(3), price_trend, volume_trend: volTrend,
+    range_compression: rangeCompressed, signals, score: +score.toFixed(4),
+    // Consensus: how many of the ~10 individual factors above actually agree, separate
+    // from the weighted score — a coin can have a modest score from mostly-agreeing weak
+    // signals, or a strong score from a couple of heavily-weighted ones with no broader support.
+    consensus: { bull: bullCount, bear: bearCount, total: bullCount + bearCount },
+  };
+}
+
+// CVD (candle-body-approximated volume delta) — ported from ta-signal.js:calcCVD.
+// No tick data required: apportions each candle's volume between buyers/sellers
+// by where the close sits within the candle's high-low range.
+export function calcCVD(opens, closes, highs, lows, volumes) {
+  let cvd = 0;
+  return closes.map((_, i) => {
+    const range = highs[i] - lows[i];
+    if (range > 0) cvd += volumes[i] * ((closes[i] - lows[i]) - (highs[i] - closes[i])) / range;
+    return cvd;
+  });
+}
+
+// Combines short-term price change + CVD + OI change into a "money flow" read —
+// ported verbatim from ta-signal.js:sigCVDOI. Distinguishes real demand/supply
+// from leverage-driven squeezes and quiet accumulation/distribution.
+export function sigCVDOI(priceChg, recentCVD, oiChgPct) {
+  const pUp = priceChg > 0.2;
+  const pDn = priceChg < -0.2;
+  const cUp = recentCVD > 0;
+  const oUp = oiChgPct != null && oiChgPct > 1.5;
+  const oDn = oiChgPct != null && oiChgPct < -1.5;
+  const oNa = oiChgPct == null;
+  let label, detail;
+
+  if (pUp && cUp && (oUp || oNa)) { label = 'STRONG BULL'; detail = 'Price up + net buying CVD + OI expanding — real demand with new longs, continuation likely'; }
+  else if (pUp && cUp) { label = 'SPOT DRIVEN'; detail = 'Price and CVD rising, OI flat/down — spot buyers driving move, shorts likely covering'; }
+  else if (pUp && !cUp && oUp) { label = 'SUSPECT PUMP'; detail = 'Price up but sellers dominate CVD — move driven by short squeeze, not real demand'; }
+  else if (pUp && !cUp) { label = 'WEAK RALLY'; detail = 'Price up with net selling CVD and falling OI — fragile move, likely reversal ahead'; }
+  else if (pDn && !cUp && (oDn || oNa)) { label = 'STRONG BEAR'; detail = 'Price, CVD and OI all falling — real selling with longs exiting, continuation likely'; }
+  else if (pDn && !cUp && oUp) { label = 'LEVERAGED SELL'; detail = 'Price and CVD down but OI rising — shorts adding leverage, squeeze risk if wrong'; }
+  else if (pDn && cUp && oDn) { label = 'ACCUMULATION'; detail = 'Price falling but net buyers absorb — dip buying while longs reduce exposure'; }
+  else if (pDn && cUp) { label = 'BULL DIVERGENCE'; detail = 'Price down but buyers dominating CVD — hidden accumulation, watch for reversal'; }
+  else { label = 'NEUTRAL'; detail = 'Price sideways or CVD/OI signals mixed — no clear directional edge'; }
+
+  const oStr = oNa ? 'OI N/A' : `OI ${oiChgPct >= 0 ? '+' : ''}${oiChgPct.toFixed(1)}%`;
+  return { label, detail, sub: `Price ${priceChg >= 0 ? '+' : ''}${priceChg.toFixed(2)}% · CVD ${cUp ? '▲ buying' : '▼ selling'} · ${oStr}` };
 }
 
 // Support/resistance pivots + entry/TP/SL, ported from ta-signal.js.

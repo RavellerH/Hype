@@ -155,13 +155,28 @@ Your Anthropic API key stays in Supabase — never exposed in the browser.
 
 ## Daily Insight — Actionable Daily Report
 
-Unlike the Daily Brief (macro commentary), the **Daily Insight** tab is prescriptive: it reads your
-actual open positions from Hyperliquid, runs the same Wyckoff-phase/TA-confluence engine used by
-the Phases tab against each one, and asks for one concrete call per position (hold / trim / add /
-tighten stop / close) tied to the numbers — phase direction vs. position side, distance to
-liquidation, funding drag. It also scans your watchlist coins you *don't* hold for a real technical
-signal and proposes entry/SL/TP levels only when one exists, plus a macro regime read (Fear & Greed,
-BTC funding, alt breadth, mcap change, BTC OI, BTC dominance).
+Unlike the Daily Brief (macro commentary), the **Daily Insight** tab is prescriptive and multi-layered:
+
+- **Technical phase** — the same Wyckoff-phase/TA-confluence engine used by the Phases tab (EMA
+  stack, MACD, RSI, volume, price action), plus a **consensus count** (how many of the ~10
+  individual factors actually agree, not just the final weighted score).
+- **Money flow** — a CVD (candle-derived buy/sell pressure) + open-interest read per coin, tracked
+  day-over-day via the report's own history, that distinguishes real demand/supply from
+  leverage-driven squeezes, short covers, and quiet accumulation/distribution (`STRONG BULL` /
+  `SPOT DRIVEN` / `SUSPECT PUMP` / `LEVERAGED SELL` / `ACCUMULATION` / `BULL DIVERGENCE` / …).
+- **Funding & crowding** — current funding rate per coin, read as a positioning-crowding signal.
+- **Sentiment** — Fear & Greed Index, recent Hyperliquid-relevant headlines, and aggregate
+  funding-based crowding across your tracked coins.
+- **Signal consensus** — per coin, whether technical phase, money flow, and funding actually agree
+  (high-conviction) or conflict (sit out / size down) — computed deterministically in code, not left
+  to the model to eyeball.
+- **Macro regime** — Fear & Greed, BTC funding, alt breadth, mcap change, BTC OI, BTC dominance.
+
+All of that feeds one LLM call that's asked to reason across it critically — naming agreements and
+contradictions explicitly — and produce: one concrete call per open position (hold / trim / add /
+tighten stop / close) tied to the actual numbers, new entry/SL/TP setups for watchlist coins only
+where a real signal exists, and full narrative sections (Market Analysis, Sentiment, Money Flow,
+Signal Consensus) rather than one-line summaries.
 
 Generated server-side every day by a GitHub Actions workflow
 (`.github/workflows/insights.yml` → `scripts/daily-insight.mjs`), committed into the repo as

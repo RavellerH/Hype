@@ -1,47 +1,96 @@
 import {
   getClearinghouseState, parsePositions, getCandles, detectPhase, findSR, calcTradeSetup, iATR,
-  getRegimeInputs, scoreRegime, getJournalSummary,
-  writeEntry, tgSend, extractJSON, routedDraft, esc,
+  calcCVD, sigCVDOI, getRegimeInputs, scoreRegime, getJournalSummary, getFundingRates, getHLNews,
+  writeEntry, readIndex, tgSend, extractJSON, routedDraft, esc,
 } from './lib.mjs';
 
 const INSIGHT_SYSTEM = `You are a senior Hyperliquid (HYPE) trading desk analyst writing a daily
-actionable brief for one trader's own book. You are given: (1) their currently open positions with
-computed technical read (phase, direction bias, distance to liquidation, funding drag) for each,
-(2) computed trade setups (entry/stop/targets) for coins they don't currently hold where the
-technicals show a real signal, and (3) a macro regime score. Base every claim ONLY on the numbers
-given — never invent data. For each open position, give ONE concrete recommendation: hold, trim,
-add, tighten stop, or close — and say why in one sentence tied to the actual numbers (phase
-direction vs. position side, distance to liquidation, funding cost). For new setups, only mention
-ones actually provided — do not invent additional coins or levels. If nothing in the data supports
-a clear action for a position or setup, say so plainly rather than manufacturing false conviction.
-Neutral, analytical, critical tone — no hype-speak, no generic "always DYOR" boilerplate, this is
-written for someone who already knows the risks.`;
+actionable brief for one trader's own book. You are given, per coin: a Wyckoff-style technical
+phase read with a consensus count (how many of ~10 individual TA factors actually agree, not just
+the final score), a money-flow read derived from CVD + OI (distinguishes real demand/supply from
+leverage-driven squeezes and quiet accumulation/distribution), the current funding rate and
+crowding read, and — for coins the trader already holds — position P&L, distance to liquidation and
+funding drag. You are also given macro sentiment (Fear & Greed, recent Hyperliquid-relevant
+headlines, aggregate funding crowding across the tracked coins) and a macro regime score.
+
+Do the analysis, don't just restate the numbers. For every coin, explicitly weigh whether the
+technical phase, the money-flow read, and the funding read AGREE or CONFLICT — say so plainly, and
+treat agreement as higher-conviction and conflict as a reason to size down or wait, not as a coin
+flip to resolve arbitrarily. Cross-check sentiment against price/technical action the same way (e.g.
+extreme fear with a MARKUP phase is a specific, nameable divergence — call it out). If the data on a
+point is thin, conflicting, or inconclusive, say so rather than manufacturing false conviction. Base
+every claim ONLY on the numbers given — never invent data, never invent coins or levels not present
+in the context. Neutral, analytical, critical tone — no hype-speak, no generic "always DYOR"
+boilerplate, this is written for someone who already knows the risks and wants the actual reasoning
+trail, not just a verdict.`;
 
 function pctFromLiq(pos) {
   if (!pos.liquidation_price || !pos.mark_price) return null;
   return Math.abs((pos.mark_price - pos.liquidation_price) / pos.mark_price) * 100;
 }
 
-// Positive = funding is being paid TO the position (tailwind), negative = paid BY it (headwind).
 function fundingDragNote(pos) {
   if (!pos.cum_funding) return 'no funding data';
   const favorable = pos.side === 'long' ? pos.cum_funding > 0 : pos.cum_funding < 0;
   return `${favorable ? 'net positive' : 'net negative'} cumulative funding since open ($${pos.cum_funding.toFixed(2)})`;
 }
 
-async function analyzeCoin(coin) {
+// Generalized per-coin funding crowding read (same scale intel.js uses for BTC, applied per-coin).
+function fundingRead(apr) {
+  if (apr == null) return { dir: 'neutral', note: 'funding data unavailable' };
+  if (apr < 0) return { dir: 'bull', note: `${apr.toFixed(1)}% APR — negative, favorable for longs (shorts pay)` };
+  if (apr < 10) return { dir: 'neutral', note: `${apr.toFixed(1)}% APR — low, uncrowded` };
+  if (apr < 30) return { dir: 'bear', note: `${apr.toFixed(1)}% APR — elevated, longs crowding` };
+  return { dir: 'bear', note: `${apr.toFixed(1)}% APR — very high, crowded longs, flush risk` };
+}
+
+const FLOW_BULL = new Set(['STRONG BULL', 'SPOT DRIVEN', 'BULL DIVERGENCE', 'ACCUMULATION']);
+const FLOW_BEAR = new Set(['STRONG BEAR', 'LEVERAGED SELL', 'SUSPECT PUMP', 'WEAK RALLY']);
+function flowDirection(label) {
+  if (FLOW_BULL.has(label)) return 'bull';
+  if (FLOW_BEAR.has(label)) return 'bear';
+  return 'neutral';
+}
+
+async function analyzeCoin(coin, fundingMap, prevOiSnapshot) {
   const candles = await getCandles(coin, '1h', 15);
   if (!candles || candles.length < 20) return null;
+  const opens = candles.map(c => parseFloat(c.o));
   const closes = candles.map(c => parseFloat(c.c));
   const highs = candles.map(c => parseFloat(c.h));
   const lows = candles.map(c => parseFloat(c.l));
+  const volumes = candles.map(c => parseFloat(c.v));
+
   const phase = detectPhase(candles);
   const atr = iATR(highs, lows, closes, 14).at(-1) || closes.at(-1) * 0.02;
   const sr = findSR(highs, lows, closes);
   const price = closes.at(-1);
   const direction = phase.score >= 0.12 ? 'LONG' : phase.score <= -0.12 ? 'SHORT' : 'NEUTRAL';
   const setup = calcTradeSetup(direction, price, sr, atr);
-  return { coin, price, phase, direction, setup };
+
+  // Money flow: CVD over the last 4 candles + day-over-day OI change (persisted
+  // across runs via insights/index.json, since a stateless script has no other
+  // memory of "OI an hour/day ago").
+  const cvdArr = calcCVD(opens, closes, highs, lows, volumes);
+  const lb = 4;
+  const recentCVD = cvdArr.at(-1) - (cvdArr.length > lb ? cvdArr[cvdArr.length - 1 - lb] : 0);
+  const priceChg4 = closes.length > lb ? (closes.at(-1) - closes[closes.length - 1 - lb]) / closes[closes.length - 1 - lb] * 100 : 0;
+
+  const f = fundingMap[coin];
+  const oiUsd = f ? f.openInterest * f.markPx : null;
+  const prevOi = prevOiSnapshot[coin];
+  const oiChgPct = (prevOi && oiUsd) ? (oiUsd - prevOi) / prevOi * 100 : null;
+  const flow = sigCVDOI(priceChg4, recentCVD, oiChgPct);
+
+  const fundingApr = f ? f.fundingRate * 24 * 365 * 100 : null;
+  const funding = fundingRead(fundingApr);
+
+  const phaseDir = phase.score >= 0.12 ? 'bull' : phase.score <= -0.12 ? 'bear' : 'neutral';
+  const flowDir = flowDirection(flow.label);
+  const dirs = [phaseDir, flowDir, funding.dir];
+  const agreeing = Math.max(dirs.filter(d => d === 'bull').length, dirs.filter(d => d === 'bear').length);
+
+  return { coin, price, phase, direction, setup, oiUsd, flow, fundingApr, funding, phaseDir, flowDir, agreeing };
 }
 
 async function main() {
@@ -51,9 +100,14 @@ async function main() {
 
   const watchlist = (SIGNAL_COINS || 'BTC,ETH,SOL,HYPE,SUI').split(',').map(c => c.trim());
 
-  const [state, regimeInputs] = await Promise.all([
+  const prevIndex = await readIndex('insights/index.json');
+  const prevOiSnapshot = prevIndex[0]?.oi_snapshot || {};
+
+  const [state, regimeInputs, fundingMap, news] = await Promise.all([
     getClearinghouseState(PRIMARY_WALLET),
     getRegimeInputs().catch(() => ({})),
+    getFundingRates().catch(() => ({})),
+    getHLNews().catch(() => []),
   ]);
   const positions = parsePositions(state);
   const regime = scoreRegime(regimeInputs);
@@ -62,22 +116,27 @@ async function main() {
   const analyzeTargets = [...new Set([...positions.map(p => p.coin), ...watchlist])];
   const analyses = {};
   for (const coin of analyzeTargets) {
-    try { analyses[coin] = await analyzeCoin(coin); } catch (e) { console.warn(`[insight] ${coin} analysis failed:`, e.message); }
+    try { analyses[coin] = await analyzeCoin(coin, fundingMap, prevOiSnapshot); } catch (e) { console.warn(`[insight] ${coin} analysis failed:`, e.message); }
   }
+
+  const oiSnapshot = {};
+  for (const coin of analyzeTargets) if (analyses[coin]?.oiUsd) oiSnapshot[coin] = analyses[coin].oiUsd;
 
   const posLines = positions.map(p => {
     const a = analyses[p.coin];
     const liqPct = pctFromLiq(p);
-    const techDirection = a?.direction || 'NEUTRAL';
-    const aligned = techDirection === 'NEUTRAL' ? 'no clear technical signal' :
-      (techDirection === 'LONG') === (p.side === 'long') ? 'technicals agree with position' : 'technicals conflict with position';
+    const aligned = !a || a.phaseDir === 'neutral' ? 'no clear technical signal' :
+      (a.phaseDir === 'bull') === (p.side === 'long') ? 'technicals agree with position' : 'technicals conflict with position';
     return [
       `${p.coin} — ${p.side.toUpperCase()} ${p.size} @ entry $${p.entry_price}, mark $${p.mark_price.toFixed(4)}, ` +
       `unrealized PnL $${p.unrealized_pnl.toFixed(2)}, ${p.leverage_value}x ${p.leverage_type}`,
       liqPct != null ? `  Liquidation: $${p.liquidation_price.toFixed(4)} (${liqPct.toFixed(1)}% away from mark)` : '  Liquidation: n/a (no leverage risk)',
-      `  Funding: ${fundingDragNote(p)}`,
-      a ? `  Technical read: phase=${a.phase.phase} (score ${a.phase.score}, confidence ${a.phase.confidence}) → ${aligned}` : '  Technical read: unavailable (insufficient candle data)',
-      a ? `  Signals: ${a.phase.signals.slice(0, 4).join('; ')}` : '',
+      `  Funding drag: ${fundingDragNote(p)}`,
+      a ? `  Technical phase: ${a.phase.phase} (score ${a.phase.score}, consensus ${a.phase.consensus.bull}bull/${a.phase.consensus.bear}bear of ${a.phase.consensus.total}) → ${aligned}` : '  Technical phase: unavailable',
+      a ? `  Money flow: ${a.flow.label} — ${a.flow.sub} — ${a.flow.detail}` : '',
+      a ? `  Current funding: ${a.funding.note}` : '',
+      a ? `  Directional agreement: ${a.agreeing}/3 signals (phase=${a.phaseDir}, flow=${a.flowDir}, funding=${a.funding.dir})` : '',
+      a ? `  Top TA signals: ${a.phase.signals.slice(0, 4).join('; ')}` : '',
     ].filter(Boolean).join('\n');
   }).join('\n\n');
 
@@ -86,10 +145,30 @@ async function main() {
     .map(c => analyses[c])
     .filter(a => a && a.direction !== 'NEUTRAL' && Math.abs(a.phase.score) >= 0.3)
     .map(a =>
-      `${a.coin} — ${a.direction} bias, phase=${a.phase.phase} (score ${a.phase.score}, confidence ${a.phase.confidence})\n` +
+      `${a.coin} — ${a.direction} bias, phase=${a.phase.phase} (score ${a.phase.score}, consensus ${a.phase.consensus.bull}bull/${a.phase.consensus.bear}bear of ${a.phase.consensus.total})\n` +
       `  Price $${a.price.toFixed(4)} · Entry $${a.setup.entry.toFixed(4)} · SL $${a.setup.sl.toFixed(4)} · TP1 $${a.setup.tp1.toFixed(4)} · TP2 $${a.setup.tp2.toFixed(4)} · R:R ${a.setup.rr.toFixed(2)}\n` +
-      `  Signals: ${a.phase.signals.slice(0, 4).join('; ')}`
+      `  Money flow: ${a.flow.label} — ${a.flow.sub} — ${a.flow.detail}\n` +
+      `  Funding: ${a.funding.note}\n` +
+      `  Directional agreement: ${a.agreeing}/3 signals (phase=${a.phaseDir}, flow=${a.flowDir}, funding=${a.funding.dir})\n` +
+      `  Top TA signals: ${a.phase.signals.slice(0, 4).join('; ')}`
     ).join('\n\n');
+
+  const allAnalyzed = Object.values(analyses).filter(Boolean);
+  const crowdedLong = allAnalyzed.filter(a => a.fundingApr != null && a.fundingApr >= 15).map(a => a.coin);
+  const crowdedShort = allAnalyzed.filter(a => a.fundingApr != null && a.fundingApr <= -10).map(a => a.coin);
+  const highConviction = allAnalyzed.filter(a => a.agreeing === 3).map(a => `${a.coin} (${a.phaseDir})`);
+  const conflicted = allAnalyzed.filter(a => a.agreeing <= 1).map(a => a.coin);
+
+  const sentimentLines = [
+    regimeInputs.fng ? `Fear & Greed Index: ${regimeInputs.fng.value} (${regimeInputs.fng.label})` : 'Fear & Greed Index: unavailable',
+    `Funding-based crowding across tracked coins: ${crowdedLong.length ? `crowded LONG — ${crowdedLong.join(', ')}` : 'no coin crowded long'}; ${crowdedShort.length ? `crowded SHORT — ${crowdedShort.join(', ')}` : 'no coin crowded short'}`,
+    news.length ? `Recent Hyperliquid-relevant headlines:\n${news.map(n => `  - [${n.age} ago] ${n.title}`).join('\n')}` : 'No recent Hyperliquid-relevant headlines found.',
+  ].join('\n');
+
+  const consensusLines = [
+    `High-conviction (all 3 directional signals — phase, money flow, funding — agree): ${highConviction.length ? highConviction.join(', ') : 'none today'}`,
+    `Conflicted / low-conviction (signals disagree, 1 or fewer of 3 aligned): ${conflicted.length ? conflicted.join(', ') : 'none today'}`,
+  ].join('\n');
 
   let journalNote = '';
   if (SUPABASE_URL && SUPABASE_ANON_KEY) {
@@ -111,6 +190,12 @@ async function main() {
     `MACRO REGIME: ${regime.verdict} (score ${regime.normScore}/10, confidence ${regime.confidence}%)`,
     regime.signals.map(s => `  ${s.name}: ${s.value} — ${s.note} (${s.score > 0 ? '+' : ''}${s.score})`).join('\n'),
     '',
+    'SENTIMENT:',
+    sentimentLines,
+    '',
+    'SIGNAL CONSENSUS ACROSS TRACKED COINS:',
+    consensusLines,
+    '',
     positions.length ? `OPEN POSITIONS (${positions.length}):\n${posLines}` : 'OPEN POSITIONS: none currently open.',
     '',
     newSetupLines ? `NEW SETUPS (watchlist coins not currently held, real signal only):\n${newSetupLines}` : 'NEW SETUPS: no watchlist coin currently shows a signal strong enough to flag.',
@@ -119,16 +204,20 @@ async function main() {
 
   const userPrompt = `Based on the context below, write today's actionable insight report. Return ONLY a JSON object with this exact shape:\n` +
     `{"headline":"<one line, specific not generic>",` +
-    `"position_actions":[{"coin":"<coin, only from OPEN POSITIONS above>","action":"hold|trim|add|tighten_stop|close","reason":"<one sentence, tied to the actual numbers>"}],` +
-    `"new_setups":[{"coin":"<coin, only from NEW SETUPS above>","direction":"LONG|SHORT","rationale":"<one sentence>"}],` +
+    `"market_analysis":"<6-10 sentences of real critical analysis, not a restatement of numbers — weave together technical phase, money flow, funding and macro regime per coin where relevant, explicitly naming where signals agree or conflict>",` +
+    `"sentiment_summary":"<3-5 sentences on Fear & Greed + headline tone + funding-based crowding, noting whether sentiment agrees or conflicts with price/technical action>",` +
+    `"money_flow_summary":"<3-5 sentences on what the CVD/OI-derived flow reads actually mean — which coins show real demand/supply vs. leverage-driven squeezes vs. quiet accumulation>",` +
+    `"consensus_summary":"<2-4 sentences: which coins are high-conviction (multi-signal agreement) vs conflicted (sit out or size down)>",` +
+    `"position_actions":[{"coin":"<coin, only from OPEN POSITIONS above>","action":"hold|trim|add|tighten_stop|close","reason":"<2-3 sentences, tied to the actual numbers, naming which signals agree or conflict>"}],` +
+    `"new_setups":[{"coin":"<coin, only from NEW SETUPS above>","direction":"LONG|SHORT","conviction":"high|medium|low","rationale":"<2-3 sentences>"}],` +
     `"regime_note":"<2-3 sentences on what the macro regime score means for sizing/risk today>",` +
-    `"risks":["<specific, data-grounded risk>","<specific, data-grounded risk>"],` +
+    `"risks":["<specific, data-grounded risk>","<specific, data-grounded risk>","<specific, data-grounded risk>"],` +
     `"confidence":"high|medium|low — how well the available data actually supports these calls",` +
     `"takeaway":"<one or two neutral, non-advice sentences>"}\n` +
     `Only include a position in "position_actions" if it appears in OPEN POSITIONS, and only include a coin in "new_setups" if it appears in NEW SETUPS. If OPEN POSITIONS is empty, return an empty array for position_actions. If NEW SETUPS has no coins, return an empty array for new_setups.\n` +
     `No text outside the JSON object.\n\nCONTEXT:\n${context}`;
 
-  const raw = await routedDraft(routerUrl, 'setups', INSIGHT_SYSTEM, userPrompt, 3000);
+  const raw = await routedDraft(routerUrl, 'setups', INSIGHT_SYSTEM, userPrompt, 4096);
   const insight = extractJSON(raw);
   const today = new Date().toISOString().slice(0, 10);
   const file = `${today}.md`;
@@ -143,6 +232,18 @@ async function main() {
     '',
     `*${today} · confidence: ${insight.confidence || 'n/a'} · regime: ${regime.verdict} (${regime.normScore}/10)*`,
     '',
+    '## Market Analysis',
+    insight.market_analysis || '',
+    '',
+    '## Sentiment',
+    insight.sentiment_summary || '',
+    '',
+    '## Money Flow',
+    insight.money_flow_summary || '',
+    '',
+    '## Signal Consensus',
+    insight.consensus_summary || '',
+    '',
     '## Position Actions',
     ...(insight.position_actions || []).map(a => {
       const p = posDetails[a.coin];
@@ -155,7 +256,7 @@ async function main() {
     ...(insight.new_setups || []).map(s => {
       const d = setupDetails[s.coin];
       const levels = d ? ` — entry $${d.setup.entry.toFixed(4)} · SL $${d.setup.sl.toFixed(4)} · TP1 $${d.setup.tp1.toFixed(4)} · TP2 $${d.setup.tp2.toFixed(4)} · R:R ${d.setup.rr.toFixed(2)}` : '';
-      return `- **${esc(s.coin)} ${esc(s.direction)}**${levels}: ${esc(s.rationale)}`;
+      return `- **${esc(s.coin)} ${esc(s.direction)}**${s.conviction ? ` (${esc(s.conviction)} conviction)` : ''}${levels}: ${esc(s.rationale)}`;
     }),
     !(insight.new_setups || []).length ? '_No new setups flagged today._' : '',
     '',
@@ -176,10 +277,13 @@ async function main() {
     indexPath: 'insights/index.json',
     indexEntry: {
       date: today, file, headline: insight.headline,
+      market_analysis: insight.market_analysis, sentiment_summary: insight.sentiment_summary,
+      money_flow_summary: insight.money_flow_summary, consensus_summary: insight.consensus_summary,
       position_actions: insight.position_actions || [], new_setups: insight.new_setups || [],
       regime_verdict: regime.verdict, regime_score: regime.normScore,
       regime_note: insight.regime_note, risks: insight.risks || [],
       confidence: insight.confidence || null, takeaway: insight.takeaway,
+      oi_snapshot: oiSnapshot,
     },
   });
 
@@ -187,7 +291,7 @@ async function main() {
 
   if (TG_TOKEN && TG_CHAT) {
     const actionLines = (insight.position_actions || []).map(a => `• ${a.coin}: ${a.action.toUpperCase()}`).join('\n');
-    const setupLines = (insight.new_setups || []).map(s => `• ${s.coin} ${s.direction}`).join('\n');
+    const setupLines = (insight.new_setups || []).map(s => `• ${s.coin} ${s.direction}${s.conviction ? ` (${s.conviction})` : ''}`).join('\n');
     await tgSend(TG_TOKEN, TG_CHAT,
       `<b>░▒▓ DAILY INSIGHT ▓▒░</b>\n<b>${esc(insight.headline)}</b>\n` +
       (actionLines ? `\n<b>Positions:</b>\n<pre>${esc(actionLines)}</pre>` : '') +
