@@ -1,5 +1,52 @@
 [
   {
+    "date": "2026-08-06",
+    "file": "2026-08-06.md",
+    "headline": "Conflicting Money Flow on BTC, Bearish Technicals on Alts Amidst 'WAIT' Macro Regime",
+    "market_analysis": "The overarching macro regime is 'WAIT' (score 1/10), signaling a period for reduced sizing and high-conviction plays only. BTC, currently held short, presents a significant conflict: while technicals indicate Distribution and funding is favorable for shorts (elevated longs crowding), money flow shows a clear Bull Divergence (price down with CVD buying and decreasing OI), suggesting hidden accumulation. This divergence in demand is a strong counter-signal to the short position. For potential new setups, SOL and SUI both exhibit strong MARKDOWN technical phases. However, SOL's money flow and funding are neutral, leading to a low conviction setup. SUI shows better alignment, with its MARKDOWN phase supported by elevated funding (longs crowding), though its money flow remains neutral. The lack of unanimous signal agreement across all tracked coins reinforces the 'WAIT' macro stance, urging caution and selective engagement.",
+    "sentiment_summary": "The Fear & Greed Index at 25 (Extreme Fear) places us in an opportunistic zone, which can sometimes precede reversals, but currently lacks confirming bullish price action or money flow. There is no significant funding-based crowding across any tracked coins, which removes a key contrarian signal but also suggests the market isn't excessively leveraged in one direction. Overall, sentiment is fearful but not overly crowded, which aligns with a 'WAIT' macro regime rather than signaling an immediate actionable trend.",
+    "money_flow_summary": "BTC shows a distinct Bull Divergence in its money flow, with price declining while CVD indicates buying and Open Interest decreases. This suggests quiet accumulation by real buyers, challenging the prevailing bearish technicals and potentially setting the stage for a reversal. In contrast, both SOL and SUI display Neutral money flow readings, where price action, CVD, and Open Interest signals are mixed or inconclusive. For these altcoins, there is no clear evidence of genuine demand or supply dominating, nor any signs of leverage-driven squeezes or quiet accumulation/distribution.",
+    "consensus_summary": "Today, there are no high-conviction setups where all three directional signals (technical phase, money flow, funding) align. BTC presents a critical conflict between its bearish technicals/funding and a strong bull divergence in money flow. Both SOL and SUI are low-to-medium conviction due to neutral money flow, despite strong bearish technicals and, in SUI's case, supportive funding.",
+    "position_actions": [
+      {
+        "coin": "BTC",
+        "action": "trim",
+        "reason": "The strong Bull Divergence in money flow (CVD buying despite price decline) directly conflicts with the existing short position and its bearish technical phase. While funding is favorable, this demand-side conflict, combined with a 'WAIT' macro regime, warrants reducing exposure to mitigate risk of an upside reversal."
+      }
+    ],
+    "new_setups": [
+      {
+        "coin": "SOL",
+        "direction": "SHORT",
+        "conviction": "low",
+        "rationale": "SOL exhibits a strong MARKDOWN technical phase, aligning with a short bias. However, money flow is neutral, providing no confirmation for the technicals, and funding is uncrowded. This lack of agreement from flow and funding makes it a low-conviction setup, especially in a 'WAIT' regime."
+      },
+      {
+        "coin": "SUI",
+        "direction": "SHORT",
+        "conviction": "medium",
+        "rationale": "SUI is in a MARKDOWN phase with strong bearish technicals. Critically, elevated funding (longs crowding) supports a short bias. The primary limiting factor is neutral money flow, which prevents it from being a high-conviction trade, but the technicals and funding alignment are noteworthy."
+      }
+    ],
+    "regime_verdict": "WAIT",
+    "regime_score": 1,
+    "regime_note": "The 'WAIT' macro regime (score 1/10) dictates a highly cautious and defensive posture. This implies reduced sizing for all positions, prioritizing capital preservation, and demanding exceptionally clear signal confluence before initiating new trades or adding to existing ones.",
+    "risks": [
+      "BTC's Bull Divergence on money flow could lead to an unexpected upside reversal, invalidating the existing short position.",
+      "The 'WAIT' macro regime indicates high uncertainty, potentially leading to choppy price action and poor follow-through on technical setups.",
+      "Low conviction setups (SOL, SUI) carry a higher inherent risk of failure due to conflicting or neutral confirming signals."
+    ],
+    "confidence": "medium",
+    "takeaway": "Maintain a defensive stance today, prioritizing risk reduction and capital preservation over aggressive positioning, given the conflicting signals and 'WAIT' macro regime.",
+    "oi_snapshot": {
+      "BTC": 2249480925.1195135,
+      "ETH": 1871043590.2644403,
+      "SOL": 296145060.87279993,
+      "HYPE": 1214456638.8694994,
+      "SUI": 23409629.155352004
+    }
+  },
+  {
     "date": "2026-08-05",
     "file": "2026-08-05.md",
     "headline": "Macro Wait Regime with Divergent Coin-Specific Signals and High-Risk HYPE Short",
