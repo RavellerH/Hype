@@ -1,5 +1,43 @@
 [
   {
+    "date": "2026-08-07",
+    "file": "2026-08-07.md",
+    "headline": "Conflicted Signals and Macro Caution Predominate Amidst Broad Alt Weakness",
+    "market_analysis": "The market currently operates under a 'WAIT' macro regime, emphasizing caution, a stance reinforced by broad altcoin weakness. For the existing BTC short position, the MARKDOWN technical phase aligns well, providing a fundamental bearish lean. However, the money flow is NEUTRAL, showing CVD selling but a slight increase in OI, indicating no strong conviction from this signal. Funding is low and uncrowded, making it neutral for a short. This results in only one out of three directional signals confirming the short, marking it as a low-conviction hold. ETH presents a strongly conflicted picture for a proposed short setup; while technicals show DISTRIBUTION, money flow exhibits a clear BULL DIVERGENCE (buying on CVD despite price decline) and negative funding favors longs, making a short thesis highly questionable and lacking conviction. In contrast, SOL's proposed short setup shows better alignment, with a strong MARKDOWN technical phase and elevated funding indicating crowded longs ripe for a squeeze. Money flow is NEUTRAL, but includes CVD selling, which does not directly contradict the bearish thesis. This makes SOL the most coherent short setup, though the neutral money flow prevents it from being high-conviction.",
+    "sentiment_summary": "The market is currently in 'Fear' (F&G 29), which often suggests contrarian long opportunities, yet this is contradicted by prevailing broad alt weakness (21% breadth) and bearish technicals for specific altcoins. Funding-based crowding is low across most tracked coins, with only SUI showing crowded shorts, indicating an absence of widespread speculative long excesses that could fuel immediate rallies. The lack of specific Hyperliquid headlines means sentiment is primarily driven by these macro and funding metrics, which collectively suggest a cautious or bearish outlook that is not yet extreme enough to trigger a strong contrarian reversal signal.",
+    "money_flow_summary": "BTC's money flow is categorized as NEUTRAL; despite observed CVD selling, Open Interest slightly increased, indicating a lack of clear dominance by either real supply or demand, preventing a strong directional edge. For ETH, a significant BULL DIVERGENCE is present: price is falling, but CVD shows underlying buying activity while Open Interest declines. This suggests quiet accumulation and potential for a reversal rather than genuine supply driving the price down. SOL's money flow is also NEUTRAL, with CVD selling coupled with decreasing Open Interest. While the CVD selling aligns with a bearish view, the overall neutral classification implies that the selling pressure is not overwhelmingly strong or indicative of a capitulatory event.",
+    "consensus_summary": "Today's market lacks any high-conviction setups where all three primary directional signals (technical phase, money flow, funding) are in agreement. Both the existing BTC position and the potential ETH short setup are identified as 'Conflicted / low-conviction,' urging extreme caution due to mixed or opposing signals. SOL is the most coherent setup, demonstrating two aligning signals for a short (markdown phase and bearish funding), but its neutral money flow prevents it from reaching high-conviction status.",
+    "position_actions": [
+      {
+        "coin": "BTC",
+        "action": "tighten_stop",
+        "reason": "The BTC short is profitable and benefits from a favorable funding tailwind. However, only the MARKDOWN technical phase agrees with the short, while money flow is neutral and current funding is uncrowded and not explicitly bearish. Given the low conviction (1/3 signals aligned) and a 'WAIT' macro regime, protecting existing profits by tightening the stop is prudent to manage risk without fully closing a still-valid technical setup."
+      }
+    ],
+    "new_setups": [
+      {
+        "coin": "ETH",
+        "direction": "SHORT",
+        "conviction": "low",
+        "rationale": "The proposed ETH SHORT setup faces significant conflict. While technicals indicate DISTRIBUTION, money flow shows a strong BULL DIVERGENCE (buying on CVD despite price drop), and negative funding explicitly favors longs. With two out of three key signals contradicting the short bias, this setup lacks conviction and is prone to immediate reversal against the proposed direction."
+      },
+      {
+        "coin": "SOL"
+      }
+    ],
+    "regime_verdict": "WAIT",
+    "regime_score": 1,
+    "risks": [],
+    "confidence": null,
+    "oi_snapshot": {
+      "BTC": 2254780970.452626,
+      "ETH": 1855676508.5587382,
+      "SOL": 292279234.32048,
+      "HYPE": 1203945786.953308,
+      "SUI": 24719434.117140003
+    }
+  },
+  {
     "date": "2026-08-06",
     "file": "2026-08-06.md",
     "headline": "Conflicting Money Flow on BTC, Bearish Technicals on Alts Amidst 'WAIT' Macro Regime",
