@@ -1,5 +1,33 @@
 [
   {
+    "date": "2026-08-10",
+    "file": "2026-08-10.md",
+    "headline": "Conflicted Signals Persist Amidst Macro 'WAIT' Regime; BTC Lacks Edge, HYPE & SUI Show Divergences",
+    "market_analysis": "The overall macro regime remains in a 'WAIT' state, signaling caution and a preference for capital preservation. BTC, our only open position, exhibits complete signal neutrality (0/3 directional agreement) across technical phase, money flow, and funding. Its technical read is 'NEUTRAL' with mixed EMA signals and a bearish MACD, yet it remains long-term bullish above the EMA 200, creating internal conflict. Money flow for BTC is also 'NEUTRAL' despite slight CVD selling and falling OI, lacking a clear directional edge, and funding is uncrowded. This widespread neutrality suggests the current BTC short lacks conviction. For new setups, HYPE presents a 'DISTRIBUTION' phase with 'WEAK RALLY' money flow, both aligning for a short, but funding is unfavorable as shorts pay. Conversely, SUI's 'MARKDOWN' phase and high funding favor a short, but a strong 'BULL DIVERGENCE' in money flow, alongside a long-term bullish EMA 200, creates significant conflict and suggests potential accumulation against the downward price action. These conflicting signals, especially the strong money flow divergence on SUI, demand a cautious approach or outright avoidance of new entries.",
+    "sentiment_summary": "The Fear & Greed Index sits at 30, indicating 'Fear,' which can be an opportunistic zone for contrarian buys. However, this 'Fear' doesn't align with clear technical bullish signals across the board, nor does it strongly confirm the bearish biases in our new setups, suggesting market hesitation rather than capitulation. Aggregate funding across tracked coins shows no significant crowding in either direction, further emphasizing a lack of strong conviction from the broader market participants. The absence of specific Hyperliquid-relevant headlines leaves market focus diffused. Overall, while 'Fear' could suggest oversold conditions, the lack of crowding and broad weakness in alt breadth implies a hesitant market rather than one poised for a clear directional move.",
+    "money_flow_summary": "Money flow analysis reveals nuanced dynamics across the coins. BTC is in a 'NEUTRAL' money flow state, where despite some CVD selling and falling OI, no clear directional edge is present, suggesting indecision rather than strong demand or supply. HYPE shows a 'WEAK RALLY' where price increases are driven by net selling CVD and falling OI, indicating a fragile move likely sustained by short covering or minimal buying, not real demand, making it susceptible to reversal. SUI, however, displays a potent 'BULL DIVERGENCE': price is falling, but significant CVD buying and rising OI suggest hidden accumulation by real buyers, directly contradicting the prevailing bearish price action and implying potential for a reversal driven by underlying demand.",
+    "consensus_summary": "Today's analysis reveals no high-conviction setups where all three directional signals (technical phase, money flow, funding) align. BTC, our open short, is particularly conflicted, with zero aligned signals. Both HYPE and SUI new setups also exhibit internal conflicts: HYPE has two bearish signals (phase, flow) against one bullish (funding), while SUI has two bearish (phase, funding) against one strong bullish (money flow). This widespread lack of clear agreement across signals necessitates sizing down or waiting for clearer market direction.",
+    "position_actions": [
+      {
+        "coin": "BTC",
+        "action": "close",
+        "reason": "The BTC short lacks any directional agreement across technical phase, money flow, and funding signals (0/3 aligned). Its technical phase is neutral, money flow is neutral, and funding, while favorable, cannot compensate for"
+      }
+    ],
+    "new_setups": [],
+    "regime_verdict": "WAIT",
+    "regime_score": 1,
+    "risks": [],
+    "confidence": null,
+    "oi_snapshot": {
+      "BTC": 2211932916.9355,
+      "ETH": 1603139650.5127676,
+      "SOL": 389687577.1978,
+      "HYPE": 1182787065.0155003,
+      "SUI": 25672945.91626
+    }
+  },
+  {
     "date": "2026-08-09",
     "file": "2026-08-09.md",
     "headline": "Mixed Signals Dominate: No High-Conviction Setups Amidst Bullish Regime & Fearful Sentiment",
