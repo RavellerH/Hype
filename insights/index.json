@@ -1,5 +1,58 @@
 [
   {
+    "date": "2026-08-11",
+    "file": "2026-08-11.md",
+    "headline": "Macro 'WAIT' Regime Prevails Amid Conflicted Signals and Spot-Driven Divergences",
+    "market_analysis": "The overall macro regime is 'WAIT', indicating a low-conviction environment with broad alt weakness, suggesting a cautious approach. BTC, currently held short, exhibits a markdown technical phase and favorable funding due to crowded longs, aligning with a bearish bias. However, its money flow is neutral with CVD buying and rising OI, which implies counter-demand or potential short squeeze, creating a conflict for the short position. ETH shows a bearish markdown phase, but its neutral money flow (CVD buying) and uncrowded funding conflict with a clear short setup, resulting in weak signal agreement. HYPE presents a bullish markup technical phase, yet its elevated funding indicates crowded longs, directly conflicting with a long entry by suggesting it's ripe for a fade. SUI's markdown technicals and crowded funding favor a short, but this is significantly undermined by a strong spot-driven money flow (CVD buying, OI decreasing) indicating genuine demand and short covering, creating a high-conviction conflict against a short entry.",
+    "sentiment_summary": "The Fear & Greed Index is at 29, signaling 'Fear,' which is an opportunistic zone (+1) but aligns with the 'risk-off' signal from 36% alt breadth. Despite this general fear, funding-based crowding across tracked coins is notably absent, indicating that while market sentiment is fearful, there isn't extreme speculative positioning to fade in specific assets. This suggests a market driven by underlying caution rather than leverage, and while fear can present opportunities, the lack of crowding doesn't align with fading extreme positioning.",
+    "money_flow_summary": "Most coins (BTC, ETH, HYPE) exhibit 'NEUTRAL' money flow, characterized by modest price changes alongside CVD buying and varying OI. This indicates a lack of clear, strong directional conviction from larger players, with flows potentially driven by small leverage plays or quiet accumulation/distribution rather than sustained demand or supply. In contrast, SUI's 'SPOT DRIVEN' money flow (price and CVD rising, OI flat/down) signifies genuine underlying demand from spot buyers and likely short covering, distinguishing it from leverage-driven moves and indicating real buying pressure.",
+    "consensus_summary": "Today offers no high-conviction setups where all three directional signals (technical phase, money flow, funding) align. Both ETH and HYPE are explicitly categorized as conflicted/low-conviction due to significant signal disagreement, advising caution. BTC has 2/3 signals aligned for its short, but the neutral money flow introduces uncertainty. SUI also has 2/3 agreement for a short, but the strong counter-signal from its spot-driven money flow makes it a low-conviction setup despite the numerical count.",
+    "position_actions": [
+      {
+        "coin": "BTC",
+        "action": "tighten_stop",
+        "reason": "While BTC's markdown technical phase and favorable funding from crowded longs support the existing short position, the 'NEUTRAL' money flow with CVD buying and rising OI introduces a conflict. This indicates potential underlying demand or short covering, which could reverse price action. Tightening the stop is prudent to protect existing gains given this conflicting signal."
+      }
+    ],
+    "new_setups": [
+      {
+        "coin": "ETH",
+        "direction": "SHORT",
+        "conviction": "low",
+        "rationale": "ETH's markdown technical phase supports a short bias, but this is immediately conflicted by neutral money flow showing CVD buying. Additionally, its funding is low and uncrowded, offering no leverage-fade edge. This combination results in only 1/3 signals aligning, rendering it a low-conviction setup."
+      },
+      {
+        "coin": "HYPE",
+        "direction": "LONG",
+        "conviction": "low",
+        "rationale": "HYPE displays a strong bullish markup technical phase, aligning with a long bias. However, its elevated funding rate indicates significant long crowding, which directly conflicts with a long entry as it suggests the potential for a long squeeze or unwind. This strong disagreement from funding reduces conviction for a long (1/3 signal agreement)."
+      },
+      {
+        "coin": "SUI",
+        "direction": "SHORT",
+        "conviction": "low",
+        "rationale": "SUI is in a markdown phase and has elevated funding (crowded longs), which would typically support a short. However, its money flow is 'SPOT DRIVEN' with CVD buying and flat/down OI, signaling real demand and likely short covering. This direct and strong conflict from money flow significantly reduces conviction for a short despite other signals."
+      }
+    ],
+    "regime_verdict": "WAIT",
+    "regime_score": 1,
+    "regime_note": "The macro regime is 'WAIT' (score 1/10), indicating a highly uncertain and low-conviction market environment. This score suggests that aggressive sizing is unwarranted, and a conservative approach with reduced risk exposure or sitting on hands is advisable today due to the lack of clear directional bias.",
+    "risks": [
+      "The 'WAIT' macro regime increases the likelihood of chop and reversals, making follow-through difficult for directional trades.",
+      "Conflicting money flow signals (e.g., CVD buying in bearish setups) can lead to unexpected bounces or short squeezes, undermining technical biases.",
+      "The absence of specific Hyperliquid-relevant headlines limits insights into platform-specific catalysts or sentiment shifts."
+    ],
+    "confidence": "medium",
+    "takeaway": "Proceed with caution in the 'WAIT' regime, prioritize setups with clear signal agreement, and reduce position sizing on conflicted trades.",
+    "oi_snapshot": {
+      "BTC": 2486705257.931868,
+      "ETH": 1600478033.7481601,
+      "SOL": 383481067.4338001,
+      "HYPE": 1187169778.3615005,
+      "SUI": 25577764.132200003
+    }
+  },
+  {
     "date": "2026-08-10",
     "file": "2026-08-10.md",
     "headline": "Conflicted Signals Persist Amidst Macro 'WAIT' Regime; BTC Lacks Edge, HYPE & SUI Show Divergences",
