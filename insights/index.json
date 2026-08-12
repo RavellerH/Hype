@@ -1,5 +1,53 @@
 [
   {
+    "date": "2026-08-12",
+    "file": "2026-08-12.md",
+    "headline": "Conflicting Signals Dominate: De-risking BTC Short, Avoiding Crowded Long Setups",
+    "market_analysis": "Today's market is characterized by pervasive signal conflict, especially evident in potential new setups. BTC, despite a profitable open short, faces strong headwinds from 'SPOT DRIVEN' money flow, where CVD shows active buying and OI is flat/rising, indicating spot demand and likely short covering. This directly conflicts with a short position, further compounded by a negative funding rate that favors longs. The technical phase for BTC is neutral, offering no clear directional edge. For SOL and SUI, while both display strong 'MARKUP' technical phases, their 'WEAK RALLY' money flow reads — price rising on net selling CVD and falling OI — signal fragile moves driven by leverage or lack of real demand, rather than genuine spot accumulation. This bearish money flow strongly conflicts with their bullish technicals, and is exacerbated by elevated funding rates indicating crowded long positions, making them susceptible to pullbacks. The macro 'WAIT' regime further suggests caution, as broad market weakness (Alt Breadth 36%) provides little support for isolated long plays.",
+    "sentiment_summary": "Overall market sentiment sits in 'Fear' (27), aligning with the 'WAIT' macro regime and broad altcoin weakness. However, there's no significant funding-based crowding across tracked coins, indicating that while fear is present, there isn't an immediate setup for a broad squeeze or capitulation purely based on Hyperliquid positioning. The absence of specific Hyperliquid headlines allows focus on underlying market structure. The 'Fear' sentiment, when paired with the 'MARKUP' phases seen in SOL and SUI, could be a potential divergence if those technicals were backed by stronger money flow, but the current 'WEAK RALLY' flow undermines this optimistic interpretation.",
+    "money_flow_summary": "The money flow dynamics present a mixed picture today. BTC is experiencing 'SPOT DRIVEN' demand, with rising CVD indicating genuine buying interest, while stable OI suggests either spot absorption or shorts covering, rather than fresh leverage entries. Conversely, SOL and SUI both exhibit 'WEAK RALLY' characteristics: price increases occurring despite net selling CVD and flat/falling OI. This suggests their recent price action is fragile, potentially driven by short squeezes, low liquidity, or leveraged buying without underlying spot conviction, making these moves highly susceptible to reversals rather than true accumulation phases.",
+    "consensus_summary": "Today offers no high-conviction trade setups where technicals, money flow, and funding align directionally. ETH and HYPE are explicitly flagged as conflicted, and our analysis extends this to SOL and SUI, where bullish technical phases are contradicted by bearish money flow and funding signals. BTC also shows significant conflict with its open short position, as current money flow and funding favor longs. The overall environment suggests a need for caution, favoring capital preservation over aggressive positioning.",
+    "position_actions": [
+      {
+        "coin": "BTC",
+        "action": "close",
+        "reason": "The existing BTC short, while profitable, is now facing strong conflicting signals. Money flow indicates 'SPOT DRIVEN' buying with rising CVD, suggesting real demand or short covering. This directly contradicts a short position. Furthermore, the current negative funding rate (shorts pay longs) presents an ongoing drag and incentive for longs, creating an unfavorable environment for remaining short despite the cumulative funding tailwind. De-risking is prudent given these persistent adverse signals."
+      }
+    ],
+    "new_setups": [
+      {
+        "coin": "SOL",
+        "direction": "LONG",
+        "conviction": "low",
+        "rationale": "SOL exhibits a strong 'MARKUP' technical phase, which is a bullish signal. However, this is significantly undermined by a 'WEAK RALLY' money flow, indicating price appreciation despite net selling CVD and flat OI, suggesting a fragile move lacking real demand. Additionally, elevated funding points to crowded long positions, increasing the risk of a flush. The conflict between technical strength and weak underlying flow/crowded funding reduces conviction to low."
+      },
+      {
+        "coin": "SUI",
+        "direction": "LONG",
+        "conviction": "low",
+        "rationale": "SUI also shows a compelling 'MARKUP' technical phase. Nevertheless, similar to SOL, its 'WEAK RALLY' money flow (price up on net selling CVD) signals a lack of genuine buying conviction supporting the price move. The high funding rate further highlights crowded long positioning, making it vulnerable to liquidations. The strong disagreement between the bullish technicals and bearish money flow/funding necessitates a low conviction on any long setup."
+      }
+    ],
+    "regime_verdict": "WAIT",
+    "regime_score": 1,
+    "regime_note": "The 'WAIT' macro regime, scored 1/10, underscores an environment of low conviction and high uncertainty. This implies that aggressive sizing or initiating new positions with conflicting signals is ill-advised. The focus should be on preserving capital, reducing exposure to high-risk setups, and waiting for clearer, multi-signal aligned opportunities.",
+    "risks": [
+      "Pervasive signal conflict across open positions and potential setups increases uncertainty and the risk of whipsaws.",
+      "The 'WAIT' macro regime score of 1/10 indicates low overall market conviction and potential for sideways action or traps.",
+      "Weak Rally money flow on SOL/SUI suggests technical strength may be deceptive, leading to false breakouts.",
+      "Elevated funding rates on SOL/SUI indicate crowded long positions, increasing the risk of liquidation cascades if prices decline."
+    ],
+    "confidence": "medium",
+    "takeaway": "Proceed with extreme caution today, prioritizing de-risking and avoiding new entries unless multiple signals align with high conviction.",
+    "oi_snapshot": {
+      "BTC": 2516801243.24186,
+      "ETH": 1574673929.3529,
+      "SOL": 383912658.6937601,
+      "HYPE": 1173459259.2462204,
+      "SUI": 25937267.060696002
+    }
+  },
+  {
     "date": "2026-08-11",
     "file": "2026-08-11.md",
     "headline": "Macro 'WAIT' Regime Prevails Amid Conflicted Signals and Spot-Driven Divergences",
