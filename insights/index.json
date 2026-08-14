@@ -1,5 +1,53 @@
 [
   {
+    "date": "2026-08-14",
+    "file": "2026-08-14.md",
+    "headline": "Cautious Short Bias Amidst 'WAIT' Macro Regime and Neutral Money Flow",
+    "market_analysis": "The market is currently operating under a 'WAIT' macro regime (score 1/10), indicating high uncertainty and favoring caution. For BTC, the open short position benefits from a clear technical DISTRIBUTION phase and elevated funding rates signaling crowded longs, both aligning with a bearish outlook. However, its money flow remains NEUTRAL despite observed CVD selling, suggesting a lack of strong, sustained conviction from participants and potential for price to consolidate or reverse if real demand emerges. Similarly, new short setups for SOL and SUI exhibit strong bearish technical phases (DISTRIBUTION and MARKDOWN respectively) and elevated funding rates with crowded longs, which are supportive of a short. Yet, like BTC, both SOL and SUI show NEUTRAL money flow, characterized by CVD selling but mixed or unclear OI signals. This consistent pattern of technical and funding agreement for shorts, coupled with neutral money flow, creates a medium-conviction environment where price action could be subject to chop or unexpected bounces if underlying demand/supply dynamics lack decisive conviction. The agreement between bearish technicals and bearish funding across all tracked coins is a strong signal, but the neutral money flow acts as a tempering factor, urging prudence.",
+    "sentiment_summary": "The Fear & Greed Index is at 29 (Fear), which typically marks an opportunistic zone for long positions, presenting a potential counter-signal to the predominantly short-biased technical and funding reads across the tracked coins. The absence of specific Hyperliquid-relevant headlines implies no immediate catalyst-driven sentiment. While the aggregate funding-based crowding across tracked coins is reported as 'no coin crowded long' and 'no coin crowded short,' individual coin data for BTC, SOL, and SUI clearly indicates 'elevated' funding with 'longs crowding,' presenting a direct conflict. For specific trading decisions, the individual coin funding details are prioritized, suggesting a bearish sentiment derived from over-leveraged long positions.",
+    "money_flow_summary": "All tracked coins — BTC, SOL, and SUI — display a NEUTRAL money flow read. This consistently means that while we are seeing CVD (Cumulative Volume Delta) indicating selling pressure, the Open Interest (OI) movements are not providing a clear, sustained directional signal. For BTC, OI increased slightly with selling, potentially indicating new shorts entering or trapped longs. For SOL and SUI, OI decreased alongside CVD selling, which could suggest short covering or longs liquidating, rather than fresh, aggressive selling interest driving price down. This lack of clear conviction from OI implies that current price movements, despite bearish technicals, might not be supported by strong, institutional-grade demand or supply, warranting caution on sizing.",
+    "consensus_summary": "No coins today present a 'high-conviction' setup with all three directional signals (technical phase, money flow, funding) in agreement. Similarly, no coins are 'low-conviction' or 'conflicted' with fewer than two signals aligned. All tracked coins (BTC, SOL, SUI) show a consistent 2/3 agreement, with bearish technical phases and bearish funding reads aligning, but money flow remaining neutral. This points to a uniform medium conviction level for all short-biased trades.",
+    "position_actions": [
+      {
+        "coin": "BTC",
+        "action": "hold",
+        "reason": "The BTC short position maintains positive P&L and benefits from a favorable funding tailwind. The technical phase (DISTRIBUTION) and current elevated funding (longs crowding) both agree with the short direction. While money flow is neutral, the 2/3 directional agreement and existing profitability support holding the position, especially given the macro 'WAIT' regime suggests caution rather than aggressive new entries."
+      }
+    ],
+    "new_setups": [
+      {
+        "coin": "SOL",
+        "direction": "SHORT",
+        "conviction": "medium",
+        "rationale": "SOL presents a bearish DISTRIBUTION phase and elevated funding with crowded longs, aligning for a short entry. However, the money flow is neutral, indicating a lack of strong conviction from OI despite CVD selling. Combined with the 'WAIT' macro regime, this points to a medium conviction, favoring reduced sizing or waiting for clearer money flow confirmation."
+      },
+      {
+        "coin": "SUI",
+        "direction": "SHORT",
+        "conviction": "medium",
+        "rationale": "SUI shows a strong bearish MARKDOWN phase and elevated funding with crowded longs, making a compelling case for a short. Similar to SOL, its money flow is neutral, suggesting that while CVD indicates selling, OI movements do not confirm robust bearish conviction. The 'WAIT' macro regime further dictates caution, assigning a medium conviction despite strong technicals."
+      }
+    ],
+    "regime_verdict": "WAIT",
+    "regime_score": 1,
+    "regime_note": "The 'WAIT' macro regime (score 1/10) with 45% confidence signals high market uncertainty and a lack of clear directional bias at a broader level. This implies that aggressive sizing on new entries should be avoided, and existing positions should be managed with tighter stops or considered for partial profit-taking, prioritizing capital preservation.",
+    "risks": [
+      "Consistent neutral money flow across all tracked coins indicates a potential lack of sustained directional conviction, increasing the risk of consolidations or reversals.",
+      "The 'Fear' sentiment from the Fear & Greed Index (29) can often precede market bounces, conflicting with short-biased setups and potentially triggering short squeezes.",
+      "The low confidence (45%) in the 'WAIT' macro regime score suggests that the overall market state is highly uncertain, making high-conviction directional calls risky.",
+      "The conflict between aggregate funding crowding (no coins crowded) and individual coin funding (longs crowded at 11% APR) introduces ambiguity in overall market sentiment derived from funding metrics."
+    ],
+    "confidence": "medium",
+    "takeaway": "Maintain caution, prioritizing capital preservation and disciplined position management, as conflicting signals and a 'WAIT' macro regime limit high-conviction opportunities despite technical and funding alignment for bearish plays.",
+    "oi_snapshot": {
+      "BTC": 2569170123.40338,
+      "ETH": 1644460953.8830214,
+      "SOL": 380835416.5974602,
+      "HYPE": 1251437944.287468,
+      "SUI": 25878528.755280003
+    }
+  },
+  {
     "date": "2026-08-13",
     "file": "2026-08-13.md",
     "headline": "Mixed Signals Across Altcoins Amidst Macro Wait Regime, Selective High-Conviction Trades Warranted",
