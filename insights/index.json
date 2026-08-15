@@ -1,5 +1,53 @@
 [
   {
+    "date": "2026-08-15",
+    "file": "2026-08-15.md",
+    "headline": "Conflicted Signals and Wait Regime Demand Selective Engagement",
+    "market_analysis": "The macro regime is characterized by 'WAIT' (score 1/10), suggesting a need for caution and reduced sizing across the board. BTC, currently held as a short, presents conflicting signals: while profitable and benefiting from a favorable funding tailwind, its technical phase is in ACCUMULATION, directly opposing the short bias. Money flow for BTC is neutral, further diminishing conviction for the short. For new setups, ETH shows a promising LONG bias with agreement between its ACCUMULATION technical phase and strong SPOT DRIVEN money flow, alongside uncrowded funding, creating a higher-conviction opportunity. HYPE, also with a LONG bias, exhibits strong MARKUP technicals and SPOT DRIVEN money flow, but its elevated and crowded long funding introduces a significant counter-signal, increasing entry risk despite otherwise bullish indicators. Overall, high-conviction multi-signal agreements are absent today, reinforcing a selective approach.",
+    "sentiment_summary": "The Fear & Greed Index is at 34 ('Fear'), indicating an opportunistic zone. Crucially, across tracked coins, no significant funding-based crowding is observed in either direction, suggesting a lack of speculative fervor often seen at market extremes. No specific Hyperliquid-relevant headlines were found. This 'Fear' sentiment, combined with a lack of crowding and the macro 'WAIT' regime, implies a cautious market environment where potential bullish moves might be met with skepticism rather than immediate Fomo, especially given broad alt weakness.",
+    "money_flow_summary": "Money flow signals reveal distinct patterns. BTC's NEUTRAL flow, characterized by buying CVD but rising OI, suggests mixed demand dynamics without a clear directional edge. In contrast, both ETH and HYPE exhibit strong SPOT DRIVEN money flow, where rising prices and CVD are accompanied by flat or declining OI. This is a robust bullish signal, indicating genuine demand from spot buyers and potentially shorts covering, rather than leverage-driven squeezes that are prone to rapid reversals.",
+    "consensus_summary": "Today's analysis shows a distinct lack of high-conviction setups where all three directional signals (phase, money flow, funding) align. BTC is explicitly identified as conflicted, with its technicals contradicting the existing short position. This overall lack of strong directional consensus across multiple signals suggests a market environment where aggressive positioning is unwarranted, reinforcing the 'WAIT' macro regime's call for caution and selective engagement.",
+    "position_actions": [
+      {
+        "coin": "BTC",
+        "action": "trim",
+        "reason": "The BTC short is currently profitable and benefits from a funding tailwind; however, its technical phase is ACCUMULATION (bullish), directly conflicting with the short position. Money flow is neutral, providing no clear directional edge. Given that only 1/3 signals align with the short and the macro regime is 'WAIT', trimming the position is a prudent risk management step to reduce exposure against conflicting technicals."
+      }
+    ],
+    "new_setups": [
+      {
+        "coin": "ETH",
+        "direction": "LONG",
+        "conviction": "high",
+        "rationale": "ETH presents a strong LONG setup with its ACCUMULATION technical phase aligning with robust SPOT DRIVEN money flow, indicating genuine buying interest. Furthermore, funding is low and uncrowded, posing no immediate risk of a leverage-induced reversal or significant funding drag, providing clear directional agreement across technicals, money flow, and funding neutrality."
+      },
+      {
+        "coin": "HYPE",
+        "direction": "LONG",
+        "conviction": "medium",
+        "rationale": "HYPE exhibits a strong bullish bias from its MARKUP technical phase and compelling SPOT DRIVEN money flow, suggesting real demand. However, the elevated 11.0% APR funding rate and 'longs crowding' signal introduce a significant counter-signal for a new long entry, increasing the risk of a potential long squeeze or unfavorable funding drag, thus reducing the overall conviction to medium despite otherwise strong indicators."
+      }
+    ],
+    "regime_verdict": "WAIT",
+    "regime_score": 1,
+    "regime_note": "The macro 'WAIT' regime (score 1/10) with low confidence (45%) signals extreme caution. This implies that today is not a day for aggressive sizing or high-risk entries. Focus should be on protecting capital, sizing down on new trades, and waiting for clearer, more aligned signals before increasing market exposure.",
+    "risks": [
+      "Conflicting signals across multiple assets could lead to choppy price action and stop-outs.",
+      "Broad altcoin weakness (31% breadth) may cap upside potential even for strong individual setups.",
+      "Elevated funding on HYPE (11.0%) for longs poses a risk of sudden long squeezes or increased funding drag.",
+      "The low confidence in the macro regime score itself highlights market uncertainty and potential for rapid shifts in sentiment or trend."
+    ],
+    "confidence": "medium",
+    "takeaway": "Maintain a cautious stance, prioritize high-conviction setups with aligned signals, and manage risk aggressively in the current environment.",
+    "oi_snapshot": {
+      "BTC": 2726045276.5882735,
+      "ETH": 1668008049.28272,
+      "SOL": 380280562.1223,
+      "HYPE": 1241851996.4356413,
+      "SUI": 25805296.72582
+    }
+  },
+  {
     "date": "2026-08-14",
     "file": "2026-08-14.md",
     "headline": "Cautious Short Bias Amidst 'WAIT' Macro Regime and Neutral Money Flow",
