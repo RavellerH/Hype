@@ -1,5 +1,59 @@
 [
   {
+    "date": "2026-08-17",
+    "file": "2026-08-17.md",
+    "headline": "Mixed Signals and Crowded Longs Amidst 'Fear' Macro Regime",
+    "market_analysis": "The overall macro regime remains in a 'WAIT' state, scoring 1/10, suggesting caution. Sentiment is 'Fear' at 31, which presents an opportunistic zone if technicals align with accumulation or markup. However, funding rates show elevated crowding in several long-biased coins, notably LINK, ETH, and HYPE, which could cap upside. BTC, currently held short, faces significant headwinds as its technical phase is 'ACCUMULATION' and money flow indicates 'SPOT DRIVEN' buying with rising CVD and flat OI, directly conflicting with the short position despite favorable funding tailwinds. For our long LINK position, technicals are in 'MARKUP' with 'STRONG BULL' money flow, but elevated funding from crowded longs introduces a clear conflict and potential drag. New long setups for ETH and HYPE also exhibit strong 'MARKUP' phases and positive money flow, but similarly contend with elevated, crowded funding rates. SUI, proposed as a short, has a 'MARKDOWN' technical phase but its money flow is 'SPOT DRIVEN' with buying CVD and declining OI, creating a direct conflict against the short thesis, making it a low-conviction setup.",
+    "sentiment_summary": "The Fear & Greed Index is at 31, indicating 'Fear,' often a contrarian signal for accumulation or markup phases. However, this opportunistic sentiment is not universally supported by technical action, as our BTC short position is seeing accumulation against it. Crucially, there are no coins crowded long or short based on aggregate funding, which is a positive sign against extreme positioning, but specific coins like LINK, ETH, and HYPE do show elevated funding indicating individual crowding among longs. The absence of specific Hyperliquid-relevant headlines means market drivers are likely broader macro or asset-specific.",
+    "money_flow_summary": "Money flow analysis reveals a distinction between genuine demand and leverage-driven moves. 'SPOT DRIVEN' flow, observed in BTC, ETH, and SUI, indicates price and CVD rising while OI is flat or declining, suggesting spot buyers are active and shorts are likely covering, which is a bullish signal. Conversely, 'STRONG BULL' flow in LINK and HYPE, where price, CVD, and OI are all expanding, points to real demand with new longs entering the market, implying continuation is likely. Notably, SUI's 'SPOT DRIVEN' bullish flow directly contradicts its 'MARKDOWN' technical phase, signaling active buying even as price moves down.",
+    "consensus_summary": "Today's analysis shows no high-conviction setups where all three directional signals (phase, money flow, funding) are aligned. SUI is explicitly identified as a conflicted/low-conviction setup due to its bearish technical phase being contradicted by bullish spot-driven money flow. For our open positions and new setups, a common theme is strong technical and money flow alignment, often conflicting with elevated funding rates from crowded longs, which reduces overall conviction.",
+    "position_actions": [
+      {
+        "coin": "BTC",
+        "action": "trim",
+        "reason": "The SHORT position on BTC faces strong conflict: the technical phase is 'ACCUMULATION' (bullish) and money flow is 'SPOT DRIVEN' buying (bullish), both directly contradicting the short thesis. While PnL is positive and funding is a tailwind, the fundamental technicals and flow argue against holding this short, necessitating a trim to reduce exposure given the ongoing buying pressure."
+      },
+      {
+        "coin": "LINK",
+        "action": "tighten_stop",
+        "reason": "The LONG position on LINK benefits from a strong 'MARKUP' technical phase and 'STRONG BULL' money flow, indicating real demand. However, current funding is elevated and shows longs crowding, presenting a risk to continuation. Given the positive PnL and relatively close liquidation price (6.3%), tightening the stop is prudent to protect gains while allowing for further upside, managing the funding-related conflict."
+      }
+    ],
+    "new_setups": [
+      {
+        "coin": "ETH",
+        "direction": "LONG",
+        "conviction": "medium",
+        "rationale": "ETH exhibits a strong 'MARKUP' technical phase and 'SPOT DRIVEN' money flow, indicating genuine buying interest and shorts covering. However, the elevated funding rate signifies crowding among longs, posing a risk to continuation and dampening conviction despite otherwise bullish signals."
+      },
+      {
+        "coin": "HYPE",
+        "direction": "LONG",
+        "conviction": "medium",
+        "rationale": "HYPE presents a robust 'MARKUP' technical phase and 'STRONG BULL' money flow, pointing to strong demand and expanding open interest. Similar to ETH, the primary mitigating factor is the elevated funding rate and crowded long positioning, introducing a conflict that reduces overall conviction from high to medium."
+      }
+    ],
+    "regime_verdict": "WAIT",
+    "regime_score": 1,
+    "regime_note": "The macro regime 'WAIT' (score 1/10) signals a period of high uncertainty and a need for caution. This low conviction score, combined with the 45% confidence, implies that sizing down across all positions and new setups is advisable, prioritizing capital preservation and waiting for clearer directional signals.",
+    "risks": [
+      "Macro regime 'WAIT' suggests increased uncertainty and volatility, demanding cautious sizing.",
+      "Elevated funding rates and crowded long positioning on LINK, ETH, and HYPE could lead to squeezes or reversals.",
+      "BTC's short position is in direct conflict with bullish technical and money flow signals, increasing risk of a sharp rally.",
+      "SUI's proposed short setup is contradicted by bullish money flow, indicating potential for a trap."
+    ],
+    "confidence": "medium",
+    "takeaway": "Maintain caution in a 'WAIT' macro regime with several conflicting signals; prioritize risk management and reduced sizing, particularly where funding or money flow contradicts technicals.",
+    "oi_snapshot": {
+      "BTC": 2800140081.0660796,
+      "LINK": 44930012.70269998,
+      "ETH": 1676861528.24428,
+      "SOL": 376794891.67487985,
+      "HYPE": 1299556157.234499,
+      "SUI": 25208699.218409993
+    }
+  },
+  {
     "date": "2026-08-16",
     "file": "2026-08-16.md",
     "headline": "Cautious Bearish Bias Prevails Amidst Conflicted Alt Signals; BTC Short Maintains Edge",
