@@ -1,5 +1,53 @@
 [
   {
+    "date": "2026-08-18",
+    "file": "2026-08-18.md",
+    "headline": "Conflicting Signals Dominant Across Assets Amidst Macro 'WAIT' Regime",
+    "market_analysis": "Today's market analysis reveals a pervasive conflict between core directional signals, aligning with a cautious macro 'WAIT' regime. Our standing BTC short position faces significant technical headwinds, trading within a MARKUP phase where 4 out of 4 technical factors are bullish, directly conflicting with the short. While money flow for BTC is neutral, offering no strong counter-signal, the negative funding rate actually favors longs, adding another layer of conflict for our short. For new setups, HYPE exhibits a MARKUP phase, indicating bullish technicals, but its money flow points to a 'WEAK RALLY' with underlying selling pressure and rising price, which is a bearish divergence, making the bullish phase fragile. SUI, conversely, shows a clear MARKDOWN phase with strong bearish technicals, but its money flow presents a 'BULL DIVERGENCE,' suggesting hidden accumulation despite falling price. In both HYPE and SUI, the money flow explicitly conflicts with the technical phase and proposed direction, reducing conviction. The overarching 'WAIT' macro regime (score 1/10) reinforces the need for extreme caution, as the market currently lacks clear, high-conviction directional consensus across any tracked assets.",
+    "sentiment_summary": "The broader sentiment is currently 'Fear' with the Fear & Greed Index at 41, yet there are no coins crowded long. Interestingly, BTC is noted as crowded SHORT based on funding, which, combined with the low macro BTC funding rate, suggests a local short-term skew. This 'Fear' sentiment, however, presents a divergence when considering BTC's MARKUP technical phase; typically, strong price advances during fear can indicate resilience or capitulation-driven bottoms. There are no recent Hyperliquid-specific headlines to influence sentiment, implying that market drivers are internal or broader crypto-specific without platform-specific news.",
+    "money_flow_summary": "Money flow signals paint a nuanced picture today. BTC's 'NEUTRAL' money flow suggests an absence of significant real demand or supply, with price movement primarily driven by other factors rather than strong conviction CVD or OI shifts. HYPE exhibits a 'WEAK RALLY,' where price gains are occurring despite net selling pressure (CVD down) and only minimal OI increase, indicating a fragile move that is vulnerable to reversal and not supported by genuine demand. SUI, on the other hand, shows a 'BULL DIVERGENCE,' where price is falling, but robust buying is observed in CVD, suggesting potential hidden accumulation that could precede a reversal, despite the current markdown phase.",
+    "consensus_summary": "Today is characterized by a significant lack of high-conviction setups, with no assets showing agreement across all three directional signals (phase, money flow, funding). Instead, all tracked coins—ETH, SOL, BTC, HYPE, and SUI—are flagged as conflicted or low-conviction. This broad disagreement across indicators warrants a cautious approach, as even with 2/3 signal alignment, the conflicting signal is often a critical one, such as money flow contradicting technicals.",
+    "position_actions": [
+      {
+        "coin": "BTC",
+        "action": "close",
+        "reason": "The existing BTC short position directly conflicts with a strong MARKUP technical phase (bullish consensus 4/4) and negative funding (favorable for longs). While money flow is neutral, it doesn't provide support for the short. Given the fundamental disagreement with technicals and the overall 'WAIT' macro regime, closing the position is prudent to eliminate contradictory exposure."
+      }
+    ],
+    "new_setups": [
+      {
+        "coin": "HYPE",
+        "direction": "LONG",
+        "conviction": "low",
+        "rationale": "While HYPE is in a MARKUP phase with bullish technicals and favorable funding for longs, the 'WEAK RALLY' money flow indicates price appreciation without real demand (CVD selling). This key conflict suggests the bullish move is fragile and could reverse, reducing conviction for a new long entry despite the technical setup."
+      },
+      {
+        "coin": "SUI",
+        "direction": "SHORT",
+        "conviction": "low",
+        "rationale": "SUI presents a clear MARKDOWN technical phase and funding favoring shorts. However, the 'BULL DIVERGENCE' money flow, characterized by buying despite price declines, conflicts directly with a short bias. This hidden accumulation signal suggests potential for a bullish reversal, making a short entry low conviction."
+      }
+    ],
+    "regime_verdict": "WAIT",
+    "regime_score": 1,
+    "regime_note": "The macro regime score of 1/10 (WAIT) with 45% confidence strongly advises against aggressive trading. This regime implies heightened market uncertainty and reduced directional clarity, necessitating smaller position sizing, tighter risk management, and a general preference for waiting on the sidelines for higher-conviction setups.",
+    "risks": [
+      "Holding existing positions against directly conflicting technical phases (e.g., BTC short against MARKUP).",
+      "Whipsaw action in new setups (HYPE, SUI) due to strong divergences between technical phases and money flow, leading to false breakouts/breakdowns.",
+      "Overall market indecision and lack of clear trend due to the 'WAIT' macro regime, potentially leading to lower liquidity and increased slippage.",
+      "Unexpected market shifts given the 'Fear' sentiment and lack of recent Hyperliquid-specific headlines to contextualize price action."
+    ],
+    "confidence": "low",
+    "takeaway": "Today's analysis is dominated by conflicting signals across all monitored assets, underscoring the importance of caution and reduced exposure in a 'WAIT' market regime.",
+    "oi_snapshot": {
+      "BTC": 2749704868.25944,
+      "ETH": 1730542822.2989,
+      "SOL": 384272715.4615799,
+      "HYPE": 1334455056.3988798,
+      "SUI": 24946129.510062
+    }
+  },
+  {
     "date": "2026-08-17",
     "file": "2026-08-17.md",
     "headline": "Conflicted Signals Across Board: BTC Short Faces Strong Headwinds, HYPE Long Setup Challenged by Crowding",
