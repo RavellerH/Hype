@@ -1,5 +1,52 @@
 [
   {
+    "date": "2026-08-19",
+    "file": "2026-08-19.md",
+    "headline": "Mixed Signals Persist: Macro 'WAIT' Regime Calls for Caution, No High-Conviction Setups",
+    "market_analysis": "Today's market analysis reveals a prevailing state of uncertainty, with no high-conviction trades across the tracked assets and a macro regime advising caution. BTC's short position is currently profitable, benefiting from strong bearish money flow where price, CVD, and OI are all declining, indicating real selling pressure and longs exiting. However, the technical phase for BTC is neutral, offering no clear direction, and the current funding rate is directionally bullish for the asset (meaning shorts pay longs), conflicting with our short position. This results in only 1 of 3 signals aligning for BTC, suggesting caution despite current profitability. ETH presents a potential long setup with a clear MARKUP technical phase, but this bullish signal is significantly dampened by neutral money flow and uncrowded funding, leading to low directional agreement. Similarly, SOL shows a bullish ACCUMULATION phase, but its money flow indicates a leveraged selling environment, posing squeeze risk, and funding is neutral. The technical strength in ETH and SOL is therefore compromised by conflicting or neutral money flow, preventing high-conviction entries. The general lack of agreement between technicals, money flow, and funding across all tracked coins reinforces the 'WAIT' macro regime.",
+    "sentiment_summary": "The Fear & Greed Index is at 46, signaling 'Fear,' which, while not extreme, indicates market participants are risk-averse. There are no recent Hyperliquid-specific headlines to influence sentiment. Funding-based crowding is notably absent for long positions, with only HYPE showing crowded shorts, suggesting a lack of aggressive bullish conviction. This 'Fear' sentiment, combined with broad altcoin weakness and flat market cap, aligns with the 'WAIT' macro regime and conflicts with any strong bullish technical setups, advocating for a cautious approach rather than aggressive positioning.",
+    "money_flow_summary": "Money flow data reveals distinct dynamics across coins. BTC exhibits 'STRONG BEAR' flow, with falling price, CVD, and OI, indicating genuine supply pressure as longs exit and real selling occurs. This suggests continuation is likely. ETH's 'NEUTRAL' money flow, despite a slight price increase, shows declining CVD and OI, implying no real demand or supply conviction behind its price action. SOL's 'LEVERAGED SELL' flow is critical, as price and CVD are down but OI is rising; this suggests short sellers are adding leverage, creating potential for a squeeze if the market turns. This lack of clear, consistent demand across altcoins, combined with BTC's outright selling, paints a picture of underlying weakness or indecision.",
+    "consensus_summary": "Today, there are no high-conviction setups where all three directional signals (technical phase, money flow, funding) agree. All tracked coins – BTC, ETH, and SOL – fall into the conflicted/low-conviction category, with only one or fewer signals aligning. This broad disagreement across assets strongly advises against aggressive positioning.",
+    "position_actions": [
+      {
+        "coin": "BTC",
+        "action": "tighten_stop",
+        "reason": "While the BTC short is profitable and benefits from strong bearish money flow, its technical phase is neutral, and the current funding rate is directionally bullish for the asset, conflicting with our short. With only 1/3 signals aligning for the short, and a 'WAIT' macro regime, tightening the stop helps lock in profits while acknowledging the conflicted signals and reducing risk."
+      }
+    ],
+    "new_setups": [
+      {
+        "coin": "ETH",
+        "direction": "LONG",
+        "conviction": "low",
+        "rationale": "ETH shows a clear MARKUP technical phase (bullish consensus), but money flow is neutral, indicating no real demand conviction, and funding is uncrowded/neutral. The conflict between the strong technical signal and the inconclusive money flow, combined with the overall 'WAIT' macro regime, significantly lowers conviction for a long entry despite the favorable R:R."
+      },
+      {
+        "coin": "SOL",
+        "direction": "LONG",
+        "conviction": "low",
+        "rationale": "SOL's technicals suggest an ACCUMULATION phase, presenting a bullish bias. However, money flow shows 'LEVERAGED SELL' with rising OI, posing a significant squeeze risk, which directly conflicts with a clean long entry. Funding is neutral. This divergence between a bullish technical phase and a conflicted/risky money flow, compounded by the 'WAIT' macro regime, results in low conviction for a new long position."
+      }
+    ],
+    "regime_verdict": "WAIT",
+    "regime_score": 0,
+    "regime_note": "The macro regime is 'WAIT' (score 0/10), reflecting significant market uncertainty and broad weakness in altcoins. This regime score suggests sizing down, avoiding aggressive directional bets, and prioritizing capital preservation today. It is a signal to exercise extreme caution and wait for clearer market signals before deploying significant capital.",
+    "risks": [
+      "Continued altcoin weakness may negate bullish technicals in ETH/SOL if BTC's strong bearish flow persists.",
+      "SOL's leveraged selling money flow creates high squeeze risk if price reverses, potentially leading to rapid liquidation of new short positions or swift upside for new longs.",
+      "The 'WAIT' macro regime and conflicting signals across assets increase the probability of choppy, unpredictable price action."
+    ],
+    "confidence": "medium",
+    "takeaway": "Maintain caution and prioritize risk management as macro signals and asset-specific indicators are broadly conflicted, offering no high-conviction trading opportunities today.",
+    "oi_snapshot": {
+      "BTC": 2666662903.54112,
+      "ETH": 1702562033.1517794,
+      "SOL": 400809827.2626001,
+      "HYPE": 1316309224.4530196,
+      "SUI": 24721577.364288
+    }
+  },
+  {
     "date": "2026-08-18",
     "file": "2026-08-18.md",
     "headline": "Conflicting Signals Dominant Across Assets Amidst Macro 'WAIT' Regime",
