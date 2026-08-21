@@ -1,5 +1,24 @@
 [
   {
+    "date": "2026-08-21",
+    "file": "2026-08-21.md",
+    "headline": "Conflicting Signals Across the Board: Bullish Technicals Meet Crowded Longs and Macro Caution",
+    "market_analysis": "The market presents a challenging landscape today, marked by strong technical bullishness across most tracked assets, yet accompanied by widespread crowding in long positions and a 'WAIT' macro regime. For BTC, despite holding a short position, technicals indicate a clear MARKUP phase and money flow shows strong bull demand, directly conflicting with the current trade. The favorable funding tailwind for the short is overshadowed by the clear price-bullish signals from technicals and money flow. ETH, SOL, and SUI all exhibit strong MARKUP phases and robust money flow indicating real demand, suggesting continuation. However, their elevated funding rates, coupled with crowded",
+    "position_actions": [],
+    "new_setups": [],
+    "regime_verdict": "WAIT",
+    "regime_score": 1,
+    "risks": [],
+    "confidence": null,
+    "oi_snapshot": {
+      "BTC": 2562478742.7439127,
+      "ETH": 2039453311.4438288,
+      "SOL": 423852739.36237967,
+      "HYPE": 1732523702.5437,
+      "SUI": 29411955.189315967
+    }
+  },
+  {
     "date": "2026-08-20",
     "file": "2026-08-20.md",
     "headline": "Pervasive Signal Conflict Across Assets Calls for Defensive Stance",
