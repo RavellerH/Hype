@@ -1,5 +1,62 @@
 [
   {
+    "date": "2026-08-22",
+    "file": "2026-08-22.md",
+    "headline": "Conflicting Signals Dominate as 'WAIT' Regime Calls for Caution and Risk Management",
+    "market_analysis": "Today's market is characterized by pervasive signal conflict, particularly for long biases. Bitcoin, currently held short, faces a significant technical conflict with a strong MARKUP phase (7bull/2bear consensus) that indicates bullish structure, directly opposing the short position. While its money flow is neutral, the funding drag is favorable, but overall crowded long funding remains a potential squeeze risk. For new setups, ETH and HYPE both show strong technical MARKUP phases and bullish money flow (STRONG BULL for ETH, BULL DIVERGENCE for HYPE, indicating hidden accumulation), suggesting underlying demand. However, both face very high to elevated funding rates and crowded long positions, creating substantial flush risk that conflicts with the long bias. SOL presents even weaker conviction, with a bullish MARKUP phase but neutral money flow and elevated, crowded funding, indicating a lack of real demand. SUI, despite a strong technical MARKUP, shows a critical conflict with 'SUSPECT PUMP' money flow, suggesting a short squeeze rather than genuine buying, compounded by extremely high funding flush risk. The macro 'WAIT' regime (0/10) reinforces the need for caution, as most potential setups feature strong directional disagreements between technicals/money flow and funding, dampening conviction across the board.",
+    "sentiment_summary": "The Fear & Greed Index at 71 indicates 'Greed' in the market, which typically suggests caution and tightening of stops. This aligns with the observed funding-based crowding, where ETH, HYPE, and SUI show significant long crowding, creating flush risk. No Hyperliquid-relevant headlines were found, leaving market sentiment to be primarily driven by the Greed index and funding data. The general bullish technical phases across several coins, coupled with this extreme greed and crowded longs, suggests potential for overextension or a liquidity event, directly conflicting with the perceived bullishness in price action.",
+    "money_flow_summary": "Money flow reads present a mixed picture. ETH exhibits 'STRONG BULL' flow with net buying CVD and expanding OI, signaling real demand and potential for continuation. HYPE's 'BULL DIVERGENCE' suggests hidden accumulation where price decline is met with buying CVD, often preceding a reversal. In contrast, BTC and SOL show 'NEUTRAL' money flow, indicating no clear directional edge or underlying demand. Critically, SUI's 'SUSPECT PUMP' money flow, characterized by price up but sellers dominating CVD, strongly implies a move driven by a short squeeze rather than genuine demand, raising red flags for a long position.",
+    "consensus_summary": "Today offers no high-conviction setups where all three directional signals align. BTC, SOL, and SUI are highly conflicted: BTC's strong technicals oppose the short, SOL's bullish technicals are undermined by neutral money flow and crowded funding, and SUI's strong technicals are contradicted by both its 'suspect pump' money flow and extreme funding risk. ETH and HYPE show agreement between technicals and money flow but face significant conflict from crowded funding, tempering their conviction levels to medium at best.",
+    "position_actions": [
+      {
+        "coin": "BTC",
+        "action": "tighten_stop",
+        "reason": "The current SHORT position on BTC is in direct conflict with a strong MARKUP technical phase (7bull/2bear consensus) and is showing an unrealized P&L loss. While funding drag is favorable, the overall market exhibits 'Greed' and a 'WAIT' macro regime (0/10) necessitates cautious risk management on conflicting trades. Tightening the stop mitigates downside risk given the strong technical disagreement."
+      }
+    ],
+    "new_setups": [
+      {
+        "coin": "ETH",
+        "direction": "LONG",
+        "conviction": "medium",
+        "rationale": "ETH shows strong bullish technicals (MARKUP) and robust 'STRONG BULL' money flow, indicating real demand. However, the extremely high funding (74.9% APR) and crowded longs introduce significant flush risk, conflicting with a straightforward long thesis and warranting caution despite bullish undercurrents. The R:R of 0.15 is also unattractive."
+      },
+      {
+        "coin": "SOL",
+        "direction": "LONG",
+        "conviction": "low",
+        "rationale": "SOL's MARKUP phase provides a bullish technical read, but this is immediately contradicted by 'NEUTRAL' money flow (no clear demand) and elevated, crowded funding (potential flush risk). With only one out of three signals aligning directionally, conviction is low, making this a risky entry. The macro regime further advises against such conflicted trades."
+      },
+      {
+        "coin": "HYPE",
+        "direction": "LONG",
+        "conviction": "medium",
+        "rationale": "HYPE presents a bullish MARKUP technical phase and 'BULL DIVERGENCE' money flow, suggesting hidden accumulation despite recent price action. This positive alignment is, however, offset by elevated funding (22.4% APR) and crowded longs, which pose a significant flush risk and temper conviction. The R:R of 0.21 is poor."
+      },
+      {
+        "coin": "SUI",
+        "direction": "LONG",
+        "conviction": "low",
+        "rationale": "SUI's MARKUP technical phase is strongly bullish, but both its 'SUSPECT PUMP' money flow (indicating a short squeeze, not real demand) and extremely high funding (83.4% APR) with crowded longs conflict severely with a long bias, signaling high potential for a reversal or liquidation flush. This is a highly conflicted setup with significant risk."
+      }
+    ],
+    "regime_verdict": "WAIT",
+    "regime_score": 0,
+    "regime_note": "The macro regime score of 'WAIT' (0/10, 40% confidence) signals a period of high uncertainty and unfavorable conditions for aggressive trading. This dictates a strategy of reduced sizing, heightened risk management, and prioritizing capital preservation over seeking high-risk opportunities. The mixed macro signals, including Greed but also BTC dominance suppressing alts, reinforce this cautious stance.",
+    "risks": [
+      "High funding rates and crowded long positions across ETH, HYPE, and SUI indicate a significant risk of liquidity flushes or short squeezes against long positions.",
+      "BTC dominance (58.8"
+    ],
+    "confidence": null,
+    "oi_snapshot": {
+      "BTC": 2596868768.448,
+      "ETH": 2366883870.1788,
+      "SOL": 488105658.2969599,
+      "HYPE": 1850958029.0540001,
+      "SUI": 32220906.907646
+    }
+  },
+  {
     "date": "2026-08-21",
     "file": "2026-08-21.md",
     "headline": "Conflicting Signals Across the Board: Bullish Technicals Meet Crowded Longs and Macro Caution",
