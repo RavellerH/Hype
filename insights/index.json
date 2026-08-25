@@ -1,5 +1,66 @@
 [
   {
+    "date": "2026-08-25",
+    "file": "2026-08-25.md",
+    "headline": "Conflicting Signals and Crowded Longs Amidst 'WAIT' Macro Regime",
+    "market_analysis": "The overall macro regime is set to 'WAIT' (0/10), signaling a period of market uncertainty and advising caution. This aligns with the pervasive conflict observed across individual coin signals today. For the existing BTC short position, technicals are in a strong MARKUP phase (7/7 bull consensus) and money flow indicates 'STRONG BULL' with real demand and expanding OI. These are unequivocally bullish signals that directly conflict with the short position, despite the favorable funding tailwind. The significant unrealized P&L loss further underscores this directional misalignment. For new setups, ETH shows a MARKUP phase but a 'WEAK RALLY' money flow, suggesting fragility and a likely reversal, while elevated funding also acts as a headwind for a long. SOL and HYPE both present strong MARKUP phases and bullish money flow ('STRONG BULL' for SOL, 'SPOT DRIVEN' for HYPE), indicating real demand or short covering. However, both face extremely high funding rates (29.5% and 32.7% APR respectively), which introduce substantial flush risk for long positions and conflict with conviction. SUI, despite a MARKDOWN phase and favorable funding for a short, exhibits 'SPOT DRIVEN' money flow (price and CVD rising), which contradicts a short bias. In summary, no coin shows clear, high-conviction alignment across technicals, money flow, and funding, reflecting the cautious 'WAIT' macro environment.",
+    "sentiment_summary": "The Fear & Greed Index is at 74 (Greed), typically indicative of bullish sentiment. However, the macro regime is 'WAIT', suggesting caution despite this greed. Funding-based crowding is notably long for SOL and HYPE, indicating an overextension of bullish positions which can be vulnerable to reversals or flushes. There are no recent Hyperliquid-relevant headlines to influence sentiment. This combination of general greed and crowded long positioning, especially in alts, conflicts with the 'WAIT' regime's cautious outlook, suggesting potential for market instability or a correction despite the prevailing positive sentiment.",
+    "money_flow_summary": "BTC and SOL exhibit 'STRONG BULL' money flow, characterized by rising prices, net buying CVD, and expanding Open Interest. This signifies genuine demand and new capital entering the market, suggesting continuation for these moves. HYPE and SUI show 'SPOT DRIVEN' flow, where price and CVD are rising, but Open Interest is flat or declining. This often implies spot buyers leading the charge, potentially alongside short covering, rather than significant new leveraged long positions. In contrast, ETH displays a 'WEAK RALLY' money flow, with price rising but net selling CVD and falling Open Interest, indicating a fragile move that is likely to reverse as underlying demand is absent and leverage is unwinding.",
+    "consensus_summary": "No high-conviction setups emerged today, as every tracked coin presents conflicting signals across technical phase, money flow, and funding reads. For BTC, technicals and money flow strongly conflict with the current short position. Similarly, all new setup candidates (ETH, SOL, HYPE, SUI) show at least one major signal disagreement or structural risk (e.g., excessive funding rates or poor R:R), placing them in the low-conviction category.",
+    "position_actions": [
+      {
+        "coin": "BTC",
+        "action": "close",
+        "reason": "The BTC short position is in direct conflict with strong bullish technicals (MARKUP phase, 7/7 bull consensus) and 'STRONG BULL' money flow (real demand, expanding OI). While funding is a tailwind, the fundamental directional drivers are decisively against the position, resulting in significant unrealized losses. Closing the position mitigates further losses against a robust uptrend."
+      }
+    ],
+    "new_setups": [
+      {
+        "coin": "ETH",
+        "direction": "LONG",
+        "conviction": "low",
+        "rationale": "Despite a MARKUP technical phase, money flow is a 'WEAK RALLY' (price up on selling CVD and falling OI), directly contradicting a bullish bias. Elevated funding for longs further introduces headwinds, resulting in conflicting signals and low conviction for a new long entry."
+      },
+      {
+        "coin": "SOL",
+        "direction": "LONG",
+        "conviction": "low",
+        "rationale": "While technicals show a strong MARKUP phase and money flow indicates 'STRONG BULL' with real demand, the extremely high funding rate (29.5% APR) introduces significant flush risk for a long. This funding headwind conflicts with the bullish momentum, compounded by a very poor R:R of 0.39, leading to low conviction."
+      },
+      {
+        "coin": "HYPE",
+        "direction": "LONG",
+        "conviction": "low",
+        "rationale": "The MARKUP phase and 'SPOT DRIVEN' money flow (spot buyers, potential short covering) are bullish. However, the exceptionally high funding rate (32.7% APR) indicates extreme crowding and high flush risk for longs, creating a strong conflict that makes a new long entry low conviction despite otherwise favorable signals."
+      },
+      {
+        "coin": "SUI",
+        "direction": "SHORT",
+        "conviction": "low",
+        "rationale": "The technical phase is MARKDOWN and funding is favorable for a short. However, money flow is 'SPOT DRIVEN' (price and CVD rising, OI flat/down), which is a bullish indicator that conflicts with a short bias. This disagreement between key signals results in low conviction for a new short."
+      }
+    ],
+    "regime_verdict": "WAIT",
+    "regime_score": 0,
+    "regime_note": "The 'WAIT' macro regime (score 0/10) suggests a high degree of market uncertainty. This environment mandates a cautious approach, implying reduced position sizing, avoidance of speculative high-conviction trades, and a focus on active risk management rather than seeking aggressive new entries.",
+    "risks": [
+      "Existing BTC short position is significantly misaligned with strong bullish technicals and money flow, posing considerable directional risk.",
+      "Elevated and very high funding rates on SOL and HYPE indicate crowded long positions, increasing the risk of sharp liquidations or 'long squeezes'.",
+      "'WEAK RALLY' money flow for ETH suggests potential for a quick reversal despite price appreciation, indicating fragility.",
+      "The 'WAIT' macro regime (0/10 confidence) underscores general market uncertainty and potential for unexpected moves.",
+      "BTC dominance at 59.1% may suppress altcoin performance, making long positions in SOL, ETH, HYPE, SUI more vulnerable."
+    ],
+    "confidence": "medium",
+    "takeaway": "Maintain a cautious stance as the 'WAIT' macro regime persists and signals across coins show pervasive conflicts, particularly regarding crowded long funding and misaligned money flow. Prioritize risk management and consider exiting misaligned positions.",
+    "oi_snapshot": {
+      "BTC": 3034862208.523628,
+      "ETH": 1754189537.1770005,
+      "SOL": 543727207.1267997,
+      "HYPE": 1964794352.3520014,
+      "SUI": 30072011.980232008
+    }
+  },
+  {
     "date": "2026-08-24",
     "file": "2026-08-24.md",
     "headline": "Wait Regime Prevails Amidst Conflicting Signals: BTC Short Faces Bullish Divergence",
