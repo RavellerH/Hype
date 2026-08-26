@@ -1,5 +1,50 @@
 [
   {
+    "date": "2026-08-26",
+    "file": "2026-08-26.md",
+    "headline": "Bearish Setups Align with Cautious Macro, HYPE Shows Divergent Strength",
+    "market_analysis": "BTC's current SHORT position finds support from a technical read of DISTRIBUTION and elevated funding indicating long crowding, despite a negative PnL. Money flow remains neutral, providing no immediate counter-signal, leading to a moderately confident hold. In stark contrast, the open LIT LONG position is severely conflicted, with all three signals – technicals, money flow, and funding – pointing to a strong bearish outcome, further amplified by its proximity to liquidation. For new setups, SOL presents a high-conviction SHORT, as its MARKDOWN phase, strong bear money flow, and crowded long funding align perfectly. ETH, however, shows a low-conviction SHORT due to conflicting neutral money flow and funding against its bearish technical phase. HYPE signals a potential LONG opportunity with a MARKUP phase and strong bull money flow, yet elevated funding with longs already crowded introduces a notable conflict, tempering its overall conviction. SUI's proposed SHORT is also low conviction, as a significant bull divergence in money flow directly contradicts its markdown technicals and crowded long funding. The overarching 'CAUTION' macro regime, combined with broad alt weakness and rising BTC dominance, reinforces a conservative stance, favoring short opportunities with strong signal alignment.",
+    "sentiment_summary": "The Fear & Greed Index at 65 indicates 'Greed' in the market, which typically suggests optimism. However, this sentiment diverges significantly from the 'CAUTION' macro regime, broad altcoin weakness (23% Alt Breadth), and falling market capitalization, hinting at potential overextension or an unhealthy market structure. The absence of specific Hyperliquid-relevant headlines keeps focus on on-chain metrics. While there's no extreme funding-based crowding across tracked coins, several coins still show elevated funding rates, which could imply subtle long bias despite the lack of 'crowded' classification.",
+    "money_flow_summary": "SOL and LIT both exhibit 'STRONG BEAR' money flow, characterized by falling prices, dominant CVD selling, and decreasing Open Interest (or N/A for LIT, but still indicates active selling), signaling genuine supply pressure and likely continuation of their downtrends. HYPE, conversely, displays 'STRONG BULL' money flow with rising price, strong CVD buying, and expanding OI, suggesting real demand and new participants driving its uptrend. SUI presents a 'BULL DIVERGENCE' where price falls while CVD shows dominant buying, indicating quiet accumulation by smart money despite visible weakness. BTC and ETH show 'NEUTRAL' money flow, with mixed CVD and OI signals, implying no clear, immediate directional bias from order flow dynamics.",
+    "consensus_summary": "SOL (bear) is a high-conviction setup where technical markdown, strong bear money flow, and elevated funding all align for a clear bearish outlook. LIT's existing LONG position, conversely, faces high-conviction conflict, as all signals (distribution, strong bear flow, crowded longs) agree on a bearish outcome that directly opposes the position. ETH, HYPE, and SUI remain conflicted or show mixed signals, requiring a more cautious approach due to disagreements between technicals, money flow, and funding reads.",
+    "position_actions": [
+      {
+        "coin": "BTC",
+        "action": "hold",
+        "reason": "While PnL is negative, two out of three directional signals (bearish technical distribution phase, bearish funding due to longs crowding) support the SHORT, and money flow is neutral rather than actively bullish. The favorable funding drag and distance to liquidation further support holding this position."
+      },
+      {
+        "coin": "LIT",
+        "action": "close",
+        "reason": "All three directional signals (technical distribution, strong bear money flow, and elevated funding indicating long crowding) actively conflict with the current LONG position. The proximity to liquidation (5.3% away) further increases risk, warranting a complete exit to prevent further losses."
+      }
+    ],
+    "new_setups": [
+      {
+        "coin": "ETH",
+        "direction": "SHORT",
+        "conviction": "low",
+        "rationale": "While the technical phase indicates distribution, money flow is neutral and funding is uncrowded, leading to only 1 out of 3 signals aligning. This conflict and lack of strong consensus reduces conviction for a new short setup."
+      },
+      {
+        "coin": "SOL",
+        "direction": "SHORT"
+      }
+    ],
+    "regime_verdict": "CAUTION",
+    "regime_score": -4,
+    "risks": [],
+    "confidence": null,
+    "oi_snapshot": {
+      "BTC": 2805584525.65248,
+      "LIT": 144987169.8288,
+      "ETH": 1652663080.990152,
+      "SOL": 467605988.10176015,
+      "HYPE": 2020271056.2341998,
+      "SUI": 29624503.105164
+    }
+  },
+  {
     "date": "2026-08-25",
     "file": "2026-08-25.md",
     "headline": "Conflicting Signals and Crowded Longs Amidst 'WAIT' Macro Regime",
