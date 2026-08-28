@@ -1,5 +1,24 @@
 [
   {
+    "date": "2026-08-28",
+    "file": "2026-08-28.md",
+    "headline": "Conflicting Signals Dominate Hyperliquid, Warrants Selective Approach Amidst Macro WAIT Regime",
+    "market_analysis": "The macro regime is characterized by 'WAIT' (-1/10) with low confidence (45%), signaling caution across the board. ETH presents a seemingly robust MARKUP phase supported by strong bullish money flow, where real demand and new longs are entering the market. However, this strong bullish alignment for a new long is directly conflicted by an elevated 11.0% APR funding rate and apparent crowding among longs, posing a significant risk for new entries. HYPE's technical MARKUP phase suggests bullishness, but this contradicts its strong bearish money flow, indicating real selling and long capitulation, further compounded by elevated funding and long crowding that conflicts with a long bias; this setup shows only 1/3 agreement for its long bias. SUI, while in a clear MARKDOWN phase supporting a short bias, faces a direct conflict from strong bullish money flow",
+    "position_actions": [],
+    "new_setups": [],
+    "regime_verdict": "WAIT",
+    "regime_score": -1,
+    "risks": [],
+    "confidence": null,
+    "oi_snapshot": {
+      "BTC": 2830046927.9204,
+      "ETH": 1901984711.23826,
+      "SOL": 641614069.5255003,
+      "HYPE": 2112726010.3143206,
+      "SUI": 32156484.676039997
+    }
+  },
+  {
     "date": "2026-08-27",
     "file": "2026-08-27.md",
     "headline": "Mixed Signals and Crowded Longs Despite Broad Rally; 'WAIT' Regime Dictates Caution",
