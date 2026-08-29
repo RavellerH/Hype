@@ -1,5 +1,41 @@
 [
   {
+    "date": "2026-08-29",
+    "file": "2026-08-29.md",
+    "headline": "Cautious Macro Regime With Conflicting Signals for SUI Short Setup",
+    "market_analysis": "The overarching macro regime is CAUTION, scoring -4/10, suggesting a risk-off environment despite a 'Greed' reading from the Fear & Greed Index. BTC dominance remains high at 58.9%, suppressing altcoin performance, further reinforced by broad alt weakness (25% breadth) and falling total market cap. For SUI, a SHORT bias is technically supported by a strong MARKDOWN phase (5/6 bearish consensus) and elevated funding rates indicating crowded longs, which could fuel a downside move. However, the money flow for SUI presents a direct conflict: it's 'SPOT DRIVEN' with rising CVD and decreasing OI, indicating genuine spot demand driving recent price increases, potentially from short covering. This divergence between bearish technicals/funding and bullish spot-driven money flow makes the SUI short setup lower conviction. SOL is explicitly noted as a conflicted setup, with signals disagreeing, meriting a sidestep.",
+    "sentiment_summary": "The Fear & Greed Index is at 68 (Greed), indicating prevalent market optimism. This stands in direct conflict with the macro regime score of CAUTION and broader market metrics like falling market cap and alt weakness, suggesting retail sentiment may be overextended. Funding across tracked coins shows no crowded longs but HYPE is crowded SHORT, indicating some bearish sentiment on that specific asset. No significant Hyperliquid-relevant headlines were found, leaving the narrative largely driven by on-chain metrics and overall market sentiment indicators.",
+    "money_flow_summary": "SUI exhibits 'SPOT DRIVEN' money flow, characterized by rising CVD and decreasing Open Interest despite a slight price increase. This signifies that recent price action is being supported by genuine spot accumulation and potentially short covering rather than new leverage. This underlying demand acts as a counter-signal to a technically bearish MARKDOWN phase, suggesting a fundamental buying interest that could absorb sell pressure. No other specific money flow insights are available for other coins.",
+    "consensus_summary": "Today's analysis reveals no high-conviction setups where all directional signals agree. SUI presents a notable conflict between its technical MARKDOWN phase and crowded long funding (bearish) against strong spot-driven money flow (bullish). SOL is explicitly identified as a conflicted setup due to signal disagreement. This indicates a challenging environment where sizing down or waiting for clearer signal alignment is prudent.",
+    "position_actions": [],
+    "new_setups": [
+      {
+        "coin": "SUI",
+        "direction": "SHORT",
+        "conviction": "medium",
+        "rationale": "The MARKDOWN phase and elevated long funding rates suggest a short opportunity. However, the 'SPOT DRIVEN' money flow, indicated by rising CVD and falling OI, points to genuine spot buying which directly conflicts with the bearish technicals and reduces the conviction for a short trade."
+      }
+    ],
+    "regime_verdict": "CAUTION",
+    "regime_score": -4,
+    "regime_note": "The macro regime is 'CAUTION' with a score of -4/10, reinforced by broad alt weakness and falling market cap. This implies that today's trading should prioritize reduced sizing, tighter risk management, and a higher bar for entry, especially for new setups.",
+    "risks": [
+      "Divergence between the 'Greed' sentiment and the 'CAUTION' macro regime, potentially leading to increased volatility or unexpected reversals.",
+      "Conflicting signals on SUI where spot-driven buying might negate bearish technicals and funding pressure.",
+      "Broad altcoin weakness and BTC dominance suppressing alt performance, increasing risk for alt-focused trades.",
+      "Falling overall market capitalization indicating general outflows from the market."
+    ],
+    "confidence": "medium",
+    "takeaway": "Maintain a cautious stance and prioritize risk management, particularly for setups with conflicting signals. Monitor for clearer alignment before committing significant capital.",
+    "oi_snapshot": {
+      "BTC": 2836901543.30822,
+      "ETH": 1845331637.4800806,
+      "SOL": 600849655.7720159,
+      "HYPE": 1964826807.4221578,
+      "SUI": 30295785.08579
+    }
+  },
+  {
     "date": "2026-08-28",
     "file": "2026-08-28.md",
     "headline": "Conflicting Signals Dominate Hyperliquid, Warrants Selective Approach Amidst Macro WAIT Regime",
