@@ -1,5 +1,16 @@
 [
   {
+    "week": "2026-W35",
+    "file": "2026-W35.md",
+    "week_start": "2026-08-23",
+    "week_end": "2026-08-30",
+    "title": "Hyperliquid HYPE Token: Persistent Long Bias Navigates Volatile Week Amidst High Open Interest and Growing Ecosystem TVL",
+    "summary": "The HYPE token experienced a volatile week, marked by an initial significant price surge followed by fluctuating dips and recoveries. Throughout these price movements, Open Interest (OI) consistently remained high, frequently positioned as the second-largest asset on the Hyperliquid platform. Funding rates demonstrated a shift from an initial aggressive long conviction to a more normalized, low positive bias, at times decoupling from immediate price action. The underlying HyperEVM Total Value Locked (TVL) showed a consistent increase, complemented by robust platform trading volumes, indicating sustained ecosystem health against a backdrop of consistently 'Greed'-rated broader market sentiment.",
+    "risks": [],
+    "opportunities": [],
+    "confidence": null
+  },
+  {
     "week": "2026-W34",
     "file": "2026-W34.md",
     "week_start": "2026-08-16",
