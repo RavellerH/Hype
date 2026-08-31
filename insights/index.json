@@ -1,5 +1,58 @@
 [
   {
+    "date": "2026-08-31",
+    "file": "2026-08-31.md",
+    "headline": "SUI Short Offers High Conviction Amidst Broad Market Caution and Conflicting Signals",
+    "market_analysis": "The market operates under a 'CAUTION' macro regime today, reflected in broad alt weakness and falling market capitalization, advising a risk-off approach. Our existing BTC long faces conflicting signals: a 'DISTRIBUTION' technical phase and elevated long crowding funding suggest bearish pressure, while 'SPOT DRIVEN' money flow shows underlying spot demand or short covering. This 2/3 bearish agreement against the long position warrants heightened risk management. For new setups, both SOL and HYPE present bearish technical phases ('MARKDOWN' and 'DISTRIBUTION' respectively) but are contradicted by 'SPOT DRIVEN' money flow and crowded longs, indicating rallies driven by spot buying or short covering rather than genuine weakness, reducing conviction for new short entries. In contrast, SUI stands out with a clear alignment across all three signals: a 'MARKDOWN' technical phase, 'SUSPECT PUMP' money flow signaling an unsustainable short squeeze, and elevated funding from crowded longs. This strong consensus makes SUI the highest conviction short setup, aligning perfectly with the 'CAUTION' macro environment.",
+    "sentiment_summary": "The Fear & Greed Index at 62 reflects a 'Greed' sentiment, typically a contrarian indicator suggesting potential for market pullbacks, which aligns with the overall 'CAUTION' macro regime. Despite this, aggregate funding across tracked coins shows no widespread crowding, though individual coin funding is elevated in specific instances. The absence of specific Hyperliquid headlines means sentiment is primarily driven by internal market metrics. The 'Greed' reading, coupled with declining market cap and broad alt weakness, suggests a divergence where sentiment is high but underlying market conditions are deteriorating, reinforcing the need for caution.",
+    "money_flow_summary": "Money flow analysis reveals distinct patterns today. For BTC, SOL, and HYPE, the 'SPOT DRIVEN' read indicates that recent price increases are accompanied by rising CVD and flat or decreasing OI, signifying that spot buyers or short covering are fueling these moves rather than new leverage. This suggests some underlying strength or absence of strong selling pressure, making these rallies potentially more organic in the short term. Conversely, SUI exhibits a 'SUSPECT PUMP' where price rises despite selling pressure in CVD and increasing OI. This strongly implies a short squeeze is driving the price action, rather than genuine demand, which is typically unsustainable and precedes a reversal, confirming the bearish outlook.",
+    "consensus_summary": "Today's signal consensus highlights SUI as the only high-conviction setup, with all three directional signals (technical phase, money flow, funding) agreeing on a bear bias. All other tracked coins, including our BTC open position and new setups for SOL and HYPE, present conflicting signals, suggesting lower conviction or a need for caution. This indicates a selective trading environment where clear opportunities are scarce.",
+    "position_actions": [
+      {
+        "coin": "BTC",
+        "action": "tighten_stop",
+        "reason": "The BTC long position faces conflicting signals, with technicals in a 'DISTRIBUTION' phase and funding elevated from crowded longs, both bearish factors against the position. While money flow indicates bullish spot buying/short covering, the 2/3 bearish agreement and the macro 'CAUTION' regime reduce overall conviction, making tighter risk management prudent despite favorable cumulative funding."
+      }
+    ],
+    "new_setups": [
+      {
+        "coin": "SUI",
+        "direction": "SHORT",
+        "conviction": "high",
+        "rationale": "SUI presents a high-conviction short setup as all three signals align. The technical phase is 'MARKDOWN', money flow is a 'SUSPECT PUMP' indicating a short squeeze rather than true demand, and funding is elevated from crowded longs. This complete agreement across technicals, flow, and sentiment points to an imminent reversal, confirming the bearish bias."
+      },
+      {
+        "coin": "SOL",
+        "direction": "SHORT",
+        "conviction": "low",
+        "rationale": "SOL's 'MARKDOWN' technical phase supports a short bias, but this is conflicted by 'SPOT DRIVEN' money flow, suggesting rallies are from spot buying or short covering. Elevated funding from crowded longs also works against a new short. The conflicting money flow signal reduces conviction for entering a new short despite the bearish technicals."
+      },
+      {
+        "coin": "HYPE",
+        "direction": "SHORT",
+        "conviction": "low",
+        "rationale": "HYPE's 'DISTRIBUTION' phase aligns with a short bias, but similar to SOL, 'SPOT DRIVEN' money flow indicates underlying strength from spot buyers or short covering. Combined with crowded long funding, this creates a conflict that diminishes the conviction for a new short entry, suggesting patience or a pass on this setup."
+      }
+    ],
+    "regime_verdict": "CAUTION",
+    "regime_score": -4,
+    "regime_note": "The 'CAUTION' macro regime, scoring -4/10, advises a conservative approach to sizing and risk today. This indicates an environment where broad market weakness, falling capitalization, and BTC dominance suppressing alts necessitate smaller position sizes and tighter stops to mitigate potential downside.",
+    "risks": [
+      "Macro regime is 'CAUTION' with broad alt weakness (19% breadth) and falling market cap (-3.0%), increasing overall market risk.",
+      "Fear & Greed Index at 62 ('Greed') suggests a potential for market pullback despite current positive sentiment.",
+      "Elevated funding rates across most tracked coins (11.0% APR) indicate long crowding, making them susceptible to deleveraging events or squeezes."
+    ],
+    "confidence": "medium",
+    "takeaway": "Today's market demands selective engagement, with SUI presenting the most coherent short setup amidst conflicting signals elsewhere and an overall cautious macro backdrop.",
+    "oi_snapshot": {
+      "BTC": 2853934610.5312,
+      "ETH": 2065129443.2086415,
+      "SOL": 648850101.9803998,
+      "HYPE": 1913222989.2942426,
+      "SUI": 34085411.036976
+    }
+  },
+  {
     "date": "2026-08-30",
     "file": "2026-08-30.md",
     "headline": "Low Conviction Day: Macro 'WAIT' Regime with Conflicting Signals Across Key Assets",
