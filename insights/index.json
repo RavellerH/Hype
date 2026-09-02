@@ -1,5 +1,40 @@
 [
   {
+    "date": "2026-09-02",
+    "file": "2026-09-02.md",
+    "headline": "Signal Conflict Dominates: Macro Caution Warrants Reduced Exposure and No New Setups",
+    "market_analysis": "Today's market is marked by pervasive signal conflict across all tracked assets, reinforcing the prevailing CAUTION macro regime. BTC's existing short position faces neutral technicals, strong bullish spot-driven money flow, and favorable funding for shorts, creating a clear disagreement between fundamental demand and funding dynamics. This conflict, coupled with the overall macro caution, suggests the short position carries increased risk despite the favorable funding tailwind. For potential new setups, ETH, SOL, and HYPE all present significant internal contradictions; ETH's markdown phase is directly contradicted by strong bull money flow, while SOL's markdown phase and short bias are at odds with both bullish spot-driven flow and negative funding favorable to longs. HYPE's promising markup phase is undermined by a weak rally money flow and elevated funding, making any long setup highly questionable. The absence of any high-conviction setups today, as noted by the consensus, underscores the need for extreme selectivity and risk reduction.",
+    "sentiment_summary": "The Fear & Greed Index is at 63 (Greed), which, counter-intuitively, conflicts with the broader 'CAUTION' macro regime and signs of broad alt weakness. There are no crowded long positions across tracked coins, but SOL is notably crowded short, creating a potential squeeze risk. With no relevant Hyperliquid headlines, market sentiment appears driven by internal dynamics, but the 'Greed' reading alongside falling market cap and alt weakness suggests a potential divergence where retail optimism might be misaligned with underlying market structure.",
+    "money_flow_summary": "Money flow data reveals distinct patterns: BTC and SOL are experiencing 'SPOT DRIVEN' moves, indicating real demand with shorts likely covering, rather than leverage-driven rallies. ETH shows 'STRONG BULL' flow, signaling genuine demand and new long interest, which typically supports price continuation. In contrast, HYPE's 'WEAK RALLY' indicates price increases are occurring despite net selling CVD and falling Open Interest, suggesting a fragile move prone to reversal due to lack of conviction and potential smart money distribution. The prevalence of bullish money flow signals, especially for BTC and ETH, stands in direct conflict with prevailing bearish technical phases or short biases, highlighting a complex market structure.",
+    "consensus_summary": "Today is characterized by a complete absence of high-conviction setups, with no coin showing agreement across all three directional signals (technical phase, money flow, funding). Instead, BTC, ETH, SOL, and HYPE are all flagged as conflicted or low-conviction. This lack of clear alignment across signals is a strong directive to either sit out new trades or significantly size down existing exposure, prioritizing capital preservation.",
+    "position_actions": [
+      {
+        "coin": "BTC",
+        "action": "close",
+        "reason": "The existing BTC short, while enjoying favorable funding, is contradicted by a neutral technical phase and strong 'SPOT DRIVEN' money flow, indicating genuine buying and potential short covering. This conflicting money flow, combined with the overall macro CAUTION regime and the signal consensus flagging BTC as low-conviction, suggests closing the position to avoid fighting real demand and reduce risk."
+      }
+    ],
+    "new_setups": [],
+    "regime_verdict": "CAUTION",
+    "regime_score": -4,
+    "regime_note": "The 'CAUTION' macro regime, scoring -4/10, indicates an environment where risk-off behavior is prudent. This is reinforced by broad alt weakness and falling market cap. Today's pervasive signal conflict aligns with this caution, suggesting that aggressive trading or larger sizing is inappropriate; instead, focus should be on capital preservation and waiting for clearer signals.",
+    "risks": [
+      "Pervasive signal conflict reduces trade conviction across the board, increasing the likelihood of whipsaws.",
+      "Bullish spot-driven money flow for BTC and SOL could lead to short squeezes, despite bearish technical structures.",
+      "The 'Greed' sentiment with concurrent market cap decline and alt weakness indicates potential for market exhaustion or a false sense of security.",
+      "Elevated funding rates for ETH, BTC, and HYPE could lead to rapid deleveraging events if price turns against crowded long positions."
+    ],
+    "confidence": "medium",
+    "takeaway": "Conflicting signals dominate the market, necessitating a highly cautious approach with no clear high-conviction opportunities. Prioritize risk management and capital preservation by avoiding new entries and reducing exposure in existing conflicted positions.",
+    "oi_snapshot": {
+      "BTC": 2992456731.68616,
+      "ETH": 2197876201.2581577,
+      "SOL": 597741383.3309999,
+      "HYPE": 1912592192.355841,
+      "SUI": 31595041.145992003
+    }
+  },
+  {
     "date": "2026-09-01",
     "file": "2026-09-01.md",
     "headline": "Macro WAIT Regime with Mixed Coin-Specific Signals and Crowded Longs",
