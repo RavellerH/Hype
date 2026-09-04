@@ -1,5 +1,60 @@
 [
   {
+    "date": "2026-09-04",
+    "file": "2026-09-04.md",
+    "headline": "Conflicting Signals Persist Amidst Greed and 'WAIT' Regime; BTC Short Faces Strong Technical Headwinds",
+    "market_analysis": "The macro regime remains in a 'WAIT' state, signaling caution. Our existing BTC short position is under significant pressure, as the technical phase is a clear MARKUP (bullish with 6/7 consensus), directly conflicting with the short. While funding provides a tailwind, the money flow is neutral, offering no defensive edge. This setup is highly conflicted (1/3 agreement), suggesting a need to reduce risk. For new setups, ETH and SOL present bullish technicals and healthy money flow (STRONG BULL for ETH, SPOT DRIVEN for SOL), which would typically be high-conviction. However, both face elevated funding rates due to long crowding, which conflicts with the long bias and reduces overall conviction to medium-to-low (2/3 agreement). HYPE exhibits strong MARKUP technicals but is undermined by a 'SUSPECT PUMP' money flow, where price rises despite CVD selling, indicating a short squeeze rather than genuine demand. This conflict, combined with high funding, makes a long setup for HYPE particularly risky.",
+    "sentiment_summary": "The Fear & Greed Index is at 74 (Greed), typically a signal to tighten stops and exercise caution. Despite this elevated sentiment, there is no widespread funding-based crowding across the tracked coins, which is a positive divergence, suggesting speculation isn't at extreme, systemic levels. However, elevated funding for individual altcoins like ETH, SOL, and HYPE indicates localized crowding. The absence of specific Hyperliquid-relevant headlines means market sentiment is primarily driven by broader macro factors and on-chain metrics, rather than specific news events.",
+    "money_flow_summary": "ETH shows 'STRONG BULL' flow, a high-conviction signal where price, CVD, and OI are all rising, confirming robust real demand supported by new leverage. SOL's 'SPOT DRIVEN' flow is also constructive, indicating genuine buying by spot participants with limited new leverage, suggesting a healthier, less speculative price appreciation. In contrast, BTC's 'NEUTRAL' flow provides no clear directional advantage. HYPE's 'SUSPECT PUMP' flow is a significant red flag, as price gains are occurring alongside net selling pressure (CVD decreasing), implying the move is likely a short squeeze and not sustainable real demand.",
+    "consensus_summary": "Today lacks any high-conviction setups with full directional signal agreement. BTC is explicitly identified as conflicted with only 1/3 signals aligning, primarily due to strong technical divergence from the short position. ETH, SOL, and HYPE also fall into the conflicted/low-conviction category (2/3 agreement each), mainly because elevated funding rates signal long crowding, which introduces risk despite otherwise bullish technicals and money flow.",
+    "position_actions": [
+      {
+        "coin": "BTC",
+        "action": "tighten_stop",
+        "reason": "The current short position is severely challenged by a strong MARKUP technical phase (6bull/1bear consensus) and neutral money flow. Although funding provides a tailwind, the overall signal agreement is only 1/3 and P&L is negative. Tightening the stop is prudent to manage risk against significant technical headwinds and the prevailing 'Greed' sentiment, in line with the 'WAIT' macro regime."
+      }
+    ],
+    "new_setups": [
+      {
+        "coin": "ETH",
+        "direction": "LONG",
+        "conviction": "low",
+        "rationale": "Technicals (MARKUP) and money flow (STRONG BULL) align for a long bias, indicating real demand. However, elevated funding (11.0% APR) points to long crowding, conflicting with the setup and introducing higher risk of unwinds despite underlying strength."
+      },
+      {
+        "coin": "SOL",
+        "direction": "LONG",
+        "conviction": "low",
+        "rationale": "The ACCUMULATION phase is supported by 'SPOT DRIVEN' money flow, a healthy sign of genuine buying. Despite this, elevated funding (11.0% APR) indicates long crowding, conflicting with the long bias and making the setup lower conviction in the current 'WAIT' regime."
+      },
+      {
+        "coin": "HYPE",
+        "direction": "LONG",
+        "conviction": "low",
+        "rationale": "While technicals show a strong MARKUP, the 'SUSPECT PUMP' money flow (CVD selling, OI expanding with price up) suggests a short squeeze rather than sustainable demand. This significant conflict, coupled with elevated funding, makes a long setup low conviction and high risk."
+      }
+    ],
+    "regime_verdict": "WAIT",
+    "regime_score": 0,
+    "regime_note": "The macro regime is 'WAIT' (score 0/10, confidence 40%), signifying a low-conviction environment. This mandates a highly cautious approach: avoid aggressive sizing, prioritize capital preservation, and wait for setups with clearer, multi-signal alignment before initiating new positions or increasing exposure.",
+    "risks": [
+      "Macro regime 'WAIT' with low confidence (40%) suggests market unpredictability.",
+      "Elevated funding rates across several altcoins indicate potential for long squeezes or rapid unwinds if sentiment shifts.",
+      "BTC dominance suppressing alts could negatively impact altcoin long setups.",
+      "Overall 'Greed' sentiment (74) typically precedes market pullbacks, warranting caution.",
+      "HYPE's 'SUSPECT PUMP' money flow signals potential for an unsustainable price move."
+    ],
+    "confidence": "medium",
+    "takeaway": "Today calls for a highly disciplined and cautious approach, focusing on risk management rather than aggressive new positioning.",
+    "oi_snapshot": {
+      "BTC": 2904626060.4708996,
+      "ETH": 2255788077.635675,
+      "SOL": 599732785.5006001,
+      "HYPE": 2069250889.030815,
+      "SUI": 31800067.544351995
+    }
+  },
+  {
     "date": "2026-09-03",
     "file": "2026-09-03.md",
     "headline": "HYPE Signals High Conviction Long; BTC Short Critically Conflicted Amidst Cautious Macro",
