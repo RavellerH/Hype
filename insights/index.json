@@ -1,5 +1,59 @@
 [
   {
+    "date": "2026-09-05",
+    "file": "2026-09-05.md",
+    "headline": "Macro Caution and Divergent Signals Point to Selective Trading Opportunities",
+    "market_analysis": "The macro regime of 'CAUTION' is underlined by falling market cap, broad alt weakness, and increasing BTC dominance, suggesting a risk-off environment despite the prevailing 'Greed' sentiment. For BTC, the open short position sees its technical phase in DISTRIBUTION, aligning with a bearish outlook. However, money flow is neutral, and funding is low/uncrowded, indicating limited immediate momentum, resulting in only 1 of 3 signals agreeing for continued downside. ETH presents a potential short opportunity with its technical phase in DISTRIBUTION and elevated funding with longs crowding; while money flow is neutral, the agreement between technicals and funding provides a medium-conviction bearish setup. SOL's long bias is hindered by only 1 of 3 signals aligning; its ACCUMULATION phase conflicts with bearish structural TA signals and neutral money flow/funding, making it a low-conviction trade. SUI shows strong technicals in a MARKUP phase and confirmed spot-driven money flow, but this bullish confluence is significantly conflicted by elevated funding and longs crowding, which suggests a potential for a reversal or liquidation flush, reducing its overall conviction to medium. HYPE stands out as the only high-conviction bearish setup based on the consensus summary, implying full alignment across its technicals, money flow, and funding.",
+    "sentiment_summary": "The Fear & Greed Index at 73 (Greed) suggests widespread market exuberance. However, this sentiment sharply conflicts with broader macro indicators: a 3.9% market cap drop, 38% alt breadth (indicating broad weakness), and 59.1% BTC dominance (suppressing alts). There is no funding-based crowding across the tracked coins, which typically dampens extreme sentiment, further highlighting the divergence between retail 'Greed' and actual market outflows/weakness. No specific Hyperliquid-relevant headlines influence today's sentiment.",
+    "money_flow_summary": "Money flow reads are predominantly neutral, indicating a lack of strong conviction from buyers or sellers in most assets. BTC, ETH, and SOL all exhibit 'NEUTRAL' money flow, characterized by CVD selling with mixed or sideways OI/price action, suggesting quiet distribution or absorption without clear directional edge. In contrast, SUI stands out with 'SPOT DRIVEN' flow, showing price and CVD rising while OI is flat to down; this confirms genuine spot demand driving the current MARKUP phase, implying real buying rather than leverage-driven speculation.",
+    "consensus_summary": "Only HYPE is identified as a high-conviction bearish setup, with all three directional signals (phase, money flow, funding) in agreement. BTC and SOL are explicitly flagged as conflicted or low-conviction, having 1 or fewer of the three signals aligned directionally. ETH and SUI fall into a medium-conviction category, with 2 of 3 signals aligning, though SUI's setup has a significant counter-signal from funding.",
+    "position_actions": [
+      {
+        "coin": "BTC",
+        "action": "tighten_stop",
+        "reason": "The technical phase aligns with the short, and funding offers a tailwind. However, money flow is neutral, indicating limited immediate directional conviction. With the macro Greed score advising tightening stops and the position currently underwater, prudent risk management dictates reducing exposure to potential whipsaws."
+      }
+    ],
+    "new_setups": [
+      {
+        "coin": "ETH",
+        "direction": "SHORT",
+        "conviction": "medium",
+        "rationale": "The technical phase is DISTRIBUTION, aligning with a bearish bias. Critically, funding is elevated with longs crowding, which acts as potential fuel for a short squeeze downwards. Money flow is currently neutral, preventing a high conviction rating, but the confluence of technicals and funding is compelling."
+      },
+      {
+        "coin": "SOL",
+        "direction": "LONG",
+        "conviction": "low",
+        "rationale": "While the technical phase is ACCUMULATION, this bullish signal is severely undercut by neutral money flow and uncrowded funding. Furthermore, the top TA signals indicate bearish structure (below EMA 20 & 50), directly conflicting with the accumulation phase. This weak directional agreement (1/3 signals) makes it a low-conviction setup."
+      },
+      {
+        "coin": "SUI",
+        "direction": "LONG",
+        "conviction": "medium",
+        "rationale": "SUI is in a strong MARKUP phase with confirmed spot-driven money flow, indicating genuine demand. However, the elevated funding rate with longs crowding presents a significant counter-signal, suggesting the potential for a liquidation event or reversal. This conflict reduces overall conviction from high to medium, warranting cautious sizing."
+      }
+    ],
+    "regime_verdict": "CAUTION",
+    "regime_score": -4,
+    "regime_note": "The macro regime is 'CAUTION' with a score of -4/10, reinforced by broad alt weakness and falling market cap. This implies that today's trading should prioritize smaller position sizing, conservative leverage, and a focus on high-conviction setups with favorable risk profiles. Defensive strategies are advised.",
+    "risks": [
+      "Divergence between 'Greed' sentiment and negative macro market metrics (falling MCap, alt weakness).",
+      "Potential for long liquidations in SUI due to elevated funding and crowding, despite strong spot demand.",
+      "BTC's short position could experience whipsaws given neutral money flow and conflicted overall signals.",
+      "High BTC dominance (59.1%) continues to suppress altcoin performance and recovery."
+    ],
+    "confidence": "medium",
+    "takeaway": "Prioritize high-conviction trades that align with the cautious macro regime, and reduce size on setups with conflicting signals, especially where funding is against the desired directional move.",
+    "oi_snapshot": {
+      "BTC": 2916280932.04356,
+      "ETH": 2203499724.3734393,
+      "SOL": 585330266.4342563,
+      "HYPE": 1950655981.85412,
+      "SUI": 31455112.464533996
+    }
+  },
+  {
     "date": "2026-09-04",
     "file": "2026-09-04.md",
     "headline": "Conflicting Signals Persist Amidst Greed and 'WAIT' Regime; BTC Short Faces Strong Technical Headwinds",
