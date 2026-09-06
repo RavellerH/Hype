@@ -1,5 +1,17 @@
 [
   {
+    "week": "2026-W36",
+    "file": "2026-W36.md",
+    "week_start": "2026-08-30",
+    "week_end": "2026-09-06",
+    "title": "Hyperliquid's HYPE Token: Price Volatility and Nuanced Funding Amidst Sustained Platform Growth",
+    "summary": "HYPE token experienced significant price volatility this week, concluding with a net appreciation despite substantial daily swings. Funding rates for HYPE frequently diverged from its immediate price action, oscillating between a consistent minor positive bias and one instance of negative funding, complicating a straightforward read of futures sentiment. Nevertheless, Open Interest remained consistently high, and the broader Hyperliquid platform demonstrated robust activity and steady HyperEVM TVL growth, underpinning a resilient ecosystem.",
+    "market_structure": "HYPE token price exhibited substantial fluctuation across the week",
+    "risks": [],
+    "opportunities": [],
+    "confidence": null
+  },
+  {
     "week": "2026-W35",
     "file": "2026-W35.md",
     "week_start": "2026-08-23",
