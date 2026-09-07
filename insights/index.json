@@ -1,5 +1,34 @@
 [
   {
+    "date": "2026-09-07",
+    "file": "2026-09-07.md",
+    "headline": "Macro Caution Dominates as Per-Coin Signals Remain Conflicted",
+    "market_analysis": "Today's market is characterized by a prevailing sense of caution, reflected in the negative macro regime score and falling market capitalization. All tracked coins – BTC, SOL, and SUI – are explicitly flagged as 'conflicted / low-conviction' due to a disagreement among their technical phase, money flow, and funding signals, with one or fewer signals aligning directionally. This broad lack of internal signal consensus across major assets indicates an absence of clear directional edge and necessitates a restrained approach to positioning. Despite a 'Greed' reading from the Fear & Greed Index, the -3.1% 24h market cap fall and broad altcoin weakness suggest underlying selling pressure or profit-taking is active, creating a divergence between perceived sentiment and actual price action. With no high-conviction setups identified, the market lacks strong catalysts or clear trends for immediate exploitation.",
+    "sentiment_summary": "The Fear & Greed Index registers at 71 (Greed), which appears to conflict with the observed -3.1% decline in overall market cap and the broad weakness across altcoins. This suggests that while retail sentiment might be optimistic, institutional flows or larger participants are either taking profits or reducing exposure. There is no significant funding-based crowding detected across any of the tracked coins, indicating a lack of extreme speculative leverage build-up in either direction, which could typically precede squeezes. No recent Hyperliquid-relevant headlines were found, leaving market participants without specific news drivers.",
+    "money_flow_summary": "The aggregate market data points to outflows, with the overall market capitalization down 3.1% in the last 24 hours. This implies general distribution or profit-taking rather than broad accumulation. Unfortunately, specific CVD and OI derived money-flow reads for individual coins (BTC, SOL, SUI) were not provided, making it impossible to distinguish between real demand/supply, leverage-driven squeezes, or quiet accumulation/distribution at the asset-specific level. However, the macro observation of falling market cap strongly suggests that net capital is exiting the broader crypto ecosystem.",
+    "consensus_summary": "Currently, no tracked coin displays high-conviction signals, meaning all three directional indicators (technical phase, money flow, funding) fail to align for any asset. Conversely, all actively tracked coins—BTC, SOL, and SUI—are explicitly categorized as conflicted or low-conviction, with their signals largely disagreeing. This lack of internal consensus across the board advises against aggressive directional bets on these assets.",
+    "position_actions": [],
+    "new_setups": [],
+    "regime_verdict": "CAUTION",
+    "regime_score": -4,
+    "regime_note": "The macro regime is rated 'CAUTION' with a score of -4/10, signaling an environment where risk should be managed conservatively. This score is driven by tightening stops due to 'Greed' sentiment, broad altcoin weakness, falling market cap, and BTC dominance suppressing alts. It implies a need for smaller position sizing and potentially higher cash allocation.",
+    "risks": [
+      "Macro environment is in a 'CAUTION' regime, suggesting elevated overall market risk.",
+      "A -3.1% decline in market cap over 24h indicates active outflows across the market.",
+      "Broad altcoin weakness (38% breadth) suggests poor conditions for alt-long strategies.",
+      "BTC dominance at 59.2% further suppresses potential for altcoin outperformance."
+    ],
+    "confidence": "medium",
+    "takeaway": "Maintain a cautious stance with no high-conviction opportunities identified and all tracked coins showing conflicted signals. Focus on capital preservation given the prevailing macro risks and market outflows.",
+    "oi_snapshot": {
+      "BTC": 2805933198.5687523,
+      "ETH": 2389767734.40808,
+      "SOL": 621646194.7933998,
+      "HYPE": 2028973789.7071998,
+      "SUI": 35453891.394944
+    }
+  },
+  {
     "date": "2026-09-06",
     "file": "2026-09-06.md",
     "headline": "Conflicting Signals Dominant: BTC Short Against Bullish Technicals, Alt Longs Face Crowded Funding Risks",
