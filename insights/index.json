@@ -1,5 +1,53 @@
 [
   {
+    "date": "2026-09-08",
+    "file": "2026-09-08.md",
+    "headline": "Caution Advised Amidst Broad Weakness; HYPE Short is High Conviction, BTC & SOL Present Conflicts",
+    "market_analysis": "The macro regime's 'CAUTION' score (minus 4/10) aligns with the observed broad weakness and falling market cap, suggesting a defensive posture. For BTC, the MARKDOWN technical phase and STRONG BEAR money flow signals (real selling, longs exiting) are in agreement, indicating downward pressure. However, the significantly negative funding rate creates a conflict, as shorts are paying longs, making a short less attractive from a carry perspective and potentially vulnerable to a squeeze. SOL also presents a MARKDOWN technical phase, but this is strongly conflicted by an 'ACCUMULATION' money flow (dip buying, longs reducing exposure) and deeply negative funding, which implies shorts are crowded and could face a squeeze. Only HYPE demonstrates strong signal alignment across all three vectors: a clear MARKDOWN technical phase, STRONG BEAR money flow, and elevated funding that favors shorts, creating a high-conviction setup. The divergence between the 'Greed' sentiment and the actual market action (falling MCap, broad weakness) suggests a potential for continued downside as reality catches up to sentiment.",
+    "sentiment_summary": "The Fear & Greed Index at 69 ('Greed') presents a notable divergence from the prevailing 'CAUTION' macro regime and the broad market weakness evidenced by a -3.4% MCap and 45% Alt Breadth. While funding across tracked coins shows no immediate crowding on either side for existing positions, the overall sentiment is elevated compared to the underlying market action, potentially indicating complacency or a 'buy the dip' mentality that isn't supported by falling prices and outflows. This conflict between high sentiment and bearish market conditions is a key divergence to monitor.",
+    "money_flow_summary": "BTC and HYPE both exhibit 'STRONG BEAR' money flow, characterized by falling prices accompanied by active CVD selling and decreasing Open Interest. This signifies genuine distribution and longs capitulating, suggesting a continuation of downward price action for these assets. In contrast, SOL shows 'ACCUMULATION' money flow, where price declines are met with CVD buying and a reduction in Open Interest. This pattern implies that while the price is falling, real buyers are stepping in to absorb supply, possibly indicating quiet accumulation despite bearish technicals, even as leveraged longs reduce exposure.",
+    "consensus_summary": "HYPE stands out with high conviction, as its MARKDOWN technical phase, STRONG BEAR money flow, and elevated funding all align for a short setup. Conversely, ETH is explicitly noted as conflicted, and both BTC and SOL present conflicting signals, with their bearish technical phases clashing with either unfavorable funding or counter-directional money flow, significantly reducing their conviction for directional trades.",
+    "position_actions": [],
+    "new_setups": [
+      {
+        "coin": "BTC",
+        "direction": "SHORT",
+        "conviction": "medium",
+        "rationale": "The MARKDOWN phase and STRONG BEAR money flow strongly support a short bias. However, the negative funding rate (-2.5% APR) is unfavorable for shorts, introducing a carry cost and risk of short squeeze, conflicting with the short direction and reducing conviction."
+      },
+      {
+        "coin": "SOL",
+        "direction": "SHORT",
+        "conviction": "low",
+        "rationale": "While the technical phase is MARKDOWN, the 'ACCUMULATION' money flow (price falling but CVD buying) and the deeply negative funding rate (-8.4% APR) strongly conflict with a short bias. These conflicting signals make a short highly speculative and low conviction."
+      },
+      {
+        "coin": "HYPE",
+        "direction": "SHORT",
+        "conviction": "high",
+        "rationale": "All three directional signals align: MARKDOWN technical phase, STRONG BEAR money flow (real selling), and elevated funding (longs crowding). This strong agreement across technicals, flow, and sentiment-driven funding provides high conviction for a short setup."
+      }
+    ],
+    "regime_verdict": "CAUTION",
+    "regime_score": -4,
+    "regime_note": "The 'CAUTION' macro regime, scoring -4/10, dictates a defensive stance today. This implies prioritizing smaller position sizing, setting tighter stops on any new or existing trades, and being highly selective with setups, favoring only those with strong signal agreement.",
+    "risks": [
+      "Persistent 'Greed' sentiment (F&G 69) could lead to capitulation rallies against prevailing bearish technicals.",
+      "Significant negative funding rates on BTC and SOL (-2.5% and -8.4% APR respectively) suggest short crowding and could trigger squeezes, especially given 'ACCUMULATION' on SOL.",
+      "The overall 'CAUTION' macro regime with 'Broad weakness' and 'Falling' MCap indicates general market instability and heightened risk of sudden, sharp moves.",
+      "BTC dominance at 59% suggests alts may underperform BTC, even if BTC finds support, posing additional risk for SOL shorts."
+    ],
+    "confidence": "medium",
+    "takeaway": "The market shows a prevailing bearish bias with significant signal conflicts on BTC and SOL, making HYPE the highest conviction short setup. A cautious approach is warranted due to the 'CAUTION' macro regime and divergences in sentiment.",
+    "oi_snapshot": {
+      "BTC": 2690750117.9892797,
+      "ETH": 2400896461.7599993,
+      "SOL": 587398242.7499998,
+      "HYPE": 1989935749.4163208,
+      "SUI": 38792472.481419995
+    }
+  },
+  {
     "date": "2026-09-07",
     "file": "2026-09-07.md",
     "headline": "Macro Caution Dominates as Per-Coin Signals Remain Conflicted",
