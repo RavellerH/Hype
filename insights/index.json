@@ -1,5 +1,64 @@
 [
   {
+    "date": "2026-09-09",
+    "file": "2026-09-09.md",
+    "headline": "Bullish Technicals Emerge in 'WAIT' Regime; Funding Divergence Noted for Key Long Setups",
+    "market_analysis": "Today's market analysis reveals multiple LONG setups across BTC, ETH, SOL, HYPE, and SUI, all exhibiting MARKUP phases with strong technical consensus. Critically, all these setups show bullish money flow, indicating either real demand with expanding open interest (BTC, ETH) or spot-driven buying with potential short covering (SOL, HYPE, SUI). However, a key divergence appears in funding rates: BTC, ETH, and SUI show elevated funding, indicating longs are crowding, which conflicts with an unadulterated bullish signal. In contrast, SOL and HYPE present low, uncrowded funding rates, aligning more consistently with their bullish technical and money flow signals. While the technical and money flow signals generally agree on bullish continuation, the funding aspect for BTC, ETH, and SUI introduces a moderating factor, preventing these from being high-conviction plays due to the inherent risk of a funding-driven flush. This conflict suggests a need for selective engagement, prioritizing setups with cleaner signal alignment.",
+    "sentiment_summary": "The Fear & Greed Index currently sits at 66, signaling 'Greed' in the broader market. Despite this, funding across the tracked coins shows no significant crowding, with only BTC, ETH, and SUI having elevated rates. This presents a nuanced picture: while general sentiment is bullish, the *lack* of widespread crowding suggests market participants aren't universally overleveraged in these specific assets, which is a potential positive. However, the 'Greed' sentiment with several assets in MARKUP phases, yet some showing elevated funding, indicates a potential conflict where a general bullish outlook might be attracting leveraged positions in specific names, even if not globally 'crowded'.",
+    "money_flow_summary": "Money flow data categorizes assets into two distinct types of buying pressure. BTC and ETH exhibit 'STRONG BULL' flow, characterized by rising prices, significant CVD buying, and expanding Open Interest, signaling genuine demand and new leveraged long participation. Conversely, SOL, HYPE, and SUI display 'SPOT DRIVEN' flow, where price and CVD are rising, but Open Interest is flat or declining, suggesting that spot buyers are the primary drivers and shorts might be covering, indicating a less leveraged, perhaps more sustainable, albeit slower, upward move.",
+    "consensus_summary": "No coins today present high-conviction setups where all three directional signals (technical phase, money flow, funding) are in complete agreement. Similarly, no coins are in a highly conflicted or low-conviction state (1 or fewer signals aligned). All identified new setups consistently show 2 out of 3 signals aligning directionally, primarily with funding rates introducing the sole point of contention or neutrality.",
+    "position_actions": [],
+    "new_setups": [
+      {
+        "coin": "BTC",
+        "direction": "LONG",
+        "conviction": "medium",
+        "rationale": "BTC is in a MARKUP phase with strong bullish money flow, indicating real demand. However, the elevated funding rate suggests longs are crowding, introducing a conflict and reducing conviction for a pure long play."
+      },
+      {
+        "coin": "ETH",
+        "direction": "LONG",
+        "conviction": "medium",
+        "rationale": "ETH shows a strong MARKUP phase with robust bullish money flow from expanding OI. The elevated funding rate, similar to BTC, poses a conflict due to long crowding, meriting a medium conviction despite strong technicals."
+      },
+      {
+        "coin": "SOL",
+        "direction": "LONG",
+        "conviction": "medium",
+        "rationale": "SOL is in a MARKUP phase driven by spot demand and potential short covering (SPOT DRIVEN money flow). Its low, uncrowded funding rate provides a neutral/supportive signal, leading to a more consistent, but not fully confirmed (2/3), bullish setup."
+      },
+      {
+        "coin": "HYPE",
+        "direction": "LONG",
+        "conviction": "medium",
+        "rationale": "HYPE presents a strong MARKUP phase with spot-driven buying. The uncrowded funding environment aligns well with the bullish technicals and flow, making it a relatively clean, albeit not fully 3/3 agreed upon, medium-conviction long setup."
+      },
+      {
+        "coin": "SUI",
+        "direction": "LONG",
+        "conviction": "medium",
+        "rationale": "SUI is in a MARKUP phase with spot-driven demand. However, the elevated funding rate suggests crowding longs, creating a conflict with the otherwise bullish technicals and money flow, thus lowering conviction to medium."
+      }
+    ],
+    "regime_verdict": "WAIT",
+    "regime_score": -1,
+    "regime_note": "The macro regime is 'WAIT' with a negative score and low confidence. This suggests an environment of heightened uncertainty and calls for a cautious approach to sizing and risk, despite individual bullish setups. Traders should prioritize smaller position sizes and tighter risk management.",
+    "risks": [
+      "Macro regime 'WAIT' (score -1/10) indicates underlying market uncertainty, potentially undermining individual bullish setups.",
+      "Elevated funding rates for BTC, ETH, and SUI could lead to a 'long squeeze' if prices reverse, despite underlying bullish demand.",
+      "BTC dominance suppressing alts (58.4%) could cap upside for ETH, SOL, HYPE, and SUI if BTC strengthens disproportionately."
+    ],
+    "confidence": "medium",
+    "takeaway": "While several assets are showing strong individual bullish technicals and money flow, the 'WAIT' macro regime and conflicting funding signals for some suggest a need for selective entries and careful risk management.",
+    "oi_snapshot": {
+      "BTC": 2742360858.7973404,
+      "ETH": 2468221284.53532,
+      "SOL": 586970259.165,
+      "HYPE": 2012123626.8857193,
+      "SUI": 38789970.922032
+    }
+  },
+  {
     "date": "2026-09-08",
     "file": "2026-09-08.md",
     "headline": "Caution Advised Amidst Broad Weakness; HYPE Short is High Conviction, BTC & SOL Present Conflicts",
