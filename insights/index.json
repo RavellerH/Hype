@@ -1,5 +1,58 @@
 [
   {
+    "date": "2026-09-10",
+    "file": "2026-09-10.md",
+    "headline": "Macro Caution Diverges from Sentiment; SUI Short High Conviction, Others Conflicted by Spot Flow",
+    "market_analysis": "The macro regime is flagged as 'CAUTION' due to broad alt weakness, falling market capitalization, and BTC dominance suppressing alts. This clashes with a 'Greed' reading from the Fear & Greed Index, suggesting a potential divergence where market sentiment is more optimistic than underlying market structure. For BTC and SOL, despite bearish technical phases (DISTRIBUTION and MARKDOWN, respectively) and technical structures below key EMAs aligning with macro caution, their money flow is 'SPOT DRIVEN' (rising CVD, flat/falling OI). This actively *conflicts* with a short bias, indicating underlying spot buying or short covering. Funding for both is neutral, resulting in low conviction due to the signal disagreement. HYPE shows a MARKDOWN phase and elevated long crowding in funding, both bearish signals. However, its 'SPOT DRIVEN' money flow *conflicts* by suggesting spot strength, leading to reduced conviction for a short. SUI stands out as the only high-conviction setup; its MARKDOWN phase and bearish technicals align perfectly with a 'WEAK RALLY' money flow (selling CVD into a price rise with falling OI) and elevated long crowding funding. All three signals *agree* on a bearish outlook, making it a strong candidate in this 'CAUTION' environment.",
+    "sentiment_summary": "The Fear & Greed Index is at 69 ('Greed'), indicating optimistic market psychology. However, this sentiment *conflicts* with the broader macro signals such as broad alt weakness, falling market cap, and BTC dominance, which collectively point to a 'CAUTION' regime. Crucially, there's no significant funding-based crowding across the tracked coins, nor any specific Hyperliquid headlines to influence sentiment, suggesting that while 'Greed' is present, it lacks broader confirmation from market positioning or specific news, warranting vigilance.",
+    "money_flow_summary": "BTC, SOL, and HYPE all exhibit 'SPOT DRIVEN' money flow, characterized by rising price and CVD alongside flat or decreasing Open Interest. This signifies that recent price increases are likely driven by genuine spot buying or short covering activity rather than new leveraged positions, which is fundamentally a bullish underlying signal, even if technicals are bearish. In contrast, SUI shows a 'WEAK RALLY' money flow where price is up, but CVD indicates net selling and OI is decreasing. This suggests the price movement is fragile and unsustainable, possibly due to thin liquidity or passive buying, rather than strong demand, making it a bearish flow signal.",
+    "consensus_summary": "SUI presents the highest conviction setup, with its bearish technical phase, money flow, and funding all in agreement for a short. Conversely, BTC and SOL are highly conflicted, as their bearish technical phases are contradicted by bullish 'SPOT DRIVEN' money flow, making short setups low conviction. HYPE also faces conflict, as its bearish technicals and funding are mitigated by a 'SPOT DRIVEN' money flow, leading to medium conviction at best.",
+    "position_actions": [],
+    "new_setups": [
+      {
+        "coin": "SUI",
+        "direction": "SHORT",
+        "conviction": "high",
+        "rationale": "All three directional signals – a strong MARKDOWN technical phase, a 'WEAK RALLY' money flow (CVD selling into price rise), and elevated funding with longs crowding – are in full agreement for a short. This strong consensus provides high conviction, especially aligning with the 'CAUTION' macro regime."
+      },
+      {
+        "coin": "HYPE",
+        "direction": "SHORT",
+        "conviction": "medium",
+        "rationale": "The MARKDOWN technical phase and elevated long crowding in funding provide two strong bearish signals. However, the 'SPOT DRIVEN' money flow, indicating underlying spot buying or short covering, *conflicts* with this bearish outlook, reducing overall conviction despite the two aligned bearish factors."
+      },
+      {
+        "coin": "BTC",
+        "direction": "SHORT",
+        "conviction": "low",
+        "rationale": "While the technical phase is DISTRIBUTION and aligns with a 'CAUTION' macro regime, the 'SPOT DRIVEN' money flow (rising CVD and flat/falling OI) strongly *conflicts* with a short bias. With only 1 out of 3 signals aligning, conviction for this short setup is low and it should be avoided."
+      },
+      {
+        "coin": "SOL",
+        "direction": "SHORT",
+        "conviction": "low",
+        "rationale": "The MARKDOWN technical phase presents a clear bearish signal. However, the 'SPOT DRIVEN' money flow, indicating active spot buying or short covering, directly *conflicts* with the technical phase. This significant signal divergence results in low conviction for a short trade."
+      }
+    ],
+    "regime_verdict": "CAUTION",
+    "regime_score": -4,
+    "regime_note": "The 'CAUTION' macro regime score, driven by broad alt weakness and falling market cap, indicates a heightened risk environment. This suggests prioritizing high-conviction short setups and conservative sizing, or generally reducing overall market exposure, to mitigate risk today.",
+    "risks": [
+      "The 'Greed' Fear & Greed Index reading diverges from other risk-off macro signals, potentially leading to unexpected market resilience.",
+      "The 'SPOT DRIVEN' money flow in BTC, SOL, and HYPE indicates genuine buying interest that could override technical bearishness if it persists.",
+      "A lack of specific Hyperliquid-relevant headlines means market sentiment could shift rapidly without clear catalysts."
+    ],
+    "confidence": "medium",
+    "takeaway": "Focus on high-conviction setups where signals align, such as SUI short, and exercise extreme caution or avoid setups with conflicting technical and money flow signals, given the overarching macro caution.",
+    "oi_snapshot": {
+      "BTC": 2781382234.8376,
+      "ETH": 2339742004.9448,
+      "SOL": 554706895.6200001,
+      "HYPE": 1896246585.9549608,
+      "SUI": 34361146.470419995
+    }
+  },
+  {
     "date": "2026-09-09",
     "file": "2026-09-09.md",
     "headline": "Bullish Technicals Emerge in 'WAIT' Regime; Funding Divergence Noted for Key Long Setups",
