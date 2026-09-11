@@ -1,5 +1,53 @@
 [
   {
+    "date": "2026-09-11",
+    "file": "2026-09-11.md",
+    "headline": "Conflicting Signals Across Short Setups Amidst Cautionary Macro Regime",
+    "market_analysis": "Today's market presents a challenging landscape with a prevailing 'CAUTION' macro regime, characterized by broad alt weakness and falling market cap. Across the new setups, a critical conflict emerges between the intended short bias, bearish technical phases, and distinctly bullish money flow. For SOL, the technicals indicate a DISTRIBUTION phase (bearish), but money flow is spot-driven (bullish), with shorts covering into rising CVD, directly contradicting the short thesis. Similarly for HYPE and SUI, both in a MARKDOWN phase, the elevated funding rates with crowded longs initially support a short thesis, yet the money flow for both also shows strong spot buying and short covering, a significant bullish counter-signal. This pervasive disagreement between technical structure and underlying demand makes conviction low across all identified short opportunities, suggesting a cautious approach.",
+    "sentiment_summary": "The Fear & Greed Index at 56 indicates a 'Greed' sentiment, which stands in contrast to the 'CAUTION' macro regime score (-4/10) showing broad market weakness and outflows. This divergence suggests underlying market fragility despite positive sentiment. Funding rates across tracked coins show no significant crowding, implying a lack of extreme speculative positioning, which is a neutral factor. No relevant Hyperliquid-specific headlines were found, leaving overall sentiment primarily informed by the conflicting Fear & Greed vs. macro regime read.",
+    "money_flow_summary": "A consistent pattern in today's money flow across SOL, HYPE, and SUI is 'SPOT DRIVEN' buying. For all three, price and CVD are rising while Open Interest (OI) is flat or decreasing. This indicates that real spot buyers are active and current price moves are supported by genuine demand, with shorts likely covering. This is a robust bullish signal, and it fundamentally conflicts with the proposed short biases for these assets, suggesting underlying strength despite bearish technical phases or crowded funding.",
+    "consensus_summary": "No high-conviction setups are identified today, as none of the tracked coins show agreement across all three directional signals (technical phase, money flow, funding). All potential short setups—SOL, HYPE, and SUI—are classified as conflicted, primarily due to strong bullish spot-driven money flow directly contradicting their bearish technical phases and intended short directions, making conviction low.",
+    "position_actions": [],
+    "new_setups": [
+      {
+        "coin": "SOL",
+        "direction": "SHORT",
+        "conviction": "low",
+        "rationale": "The technical phase is DISTRIBUTION (bearish), aligning with a short bias. However, money flow is bullish, indicating strong spot-driven buying and short covering. This direct conflict between technicals and underlying demand, coupled with a neutral funding rate and a 'CAUTION' macro regime, significantly lowers conviction for a short position."
+      },
+      {
+        "coin": "HYPE",
+        "direction": "SHORT",
+        "conviction": "low",
+        "rationale": "The technical phase is MARKDOWN (bearish) and elevated funding with crowded longs could support a short. Yet, money flow is distinctly bullish due to spot buying and short covering, creating a strong counter-signal. Furthermore, the extremely poor R:R of 0.17 makes this setup fundamentally unviable from a risk management perspective, irrespective of other signals."
+      },
+      {
+        "coin": "SUI",
+        "direction": "SHORT",
+        "conviction": "low",
+        "rationale": "Similar to HYPE, SUI is in a MARKDOWN phase with elevated funding from crowded longs. However, the money flow is strongly bullish, driven by spot buying and short covering. This direct conflict between the bearish technical outlook and bullish demand flow significantly compromises the conviction for initiating a short position."
+      }
+    ],
+    "regime_verdict": "CAUTION",
+    "regime_score": -4,
+    "regime_note": "The 'CAUTION' macro regime (-4/10) with indicators like falling market cap, broad alt weakness, and BTC dominance suppressing alts, dictates a conservative approach. This environment calls for smaller position sizing, tighter stop losses, and a strong preference for high-conviction setups, which are notably absent today.",
+    "risks": [
+      "Pervasive conflict between bearish technical phases and bullish spot-driven money flow across all identified short setups.",
+      "A 'Greed' sentiment (56) diverges from a 'CAUTION' macro regime, indicating potential for whipsaws or unexpected moves.",
+      "The extremely poor R:R (0.17) for the HYPE setup makes it an invalid trading candidate.",
+      "Potential for short squeezes given the 'SPOT DRIVEN' flow implying shorts are already covering."
+    ],
+    "confidence": "low",
+    "takeaway": "Today's market is characterized by conflicting signals, particularly strong bullish spot flow against bearish technicals in a cautionary macro environment. Exercising extreme selectivity and patience is warranted, with a strong preference to wait for higher conviction setups.",
+    "oi_snapshot": {
+      "BTC": 2859545323.9978323,
+      "ETH": 2286955128.91392,
+      "SOL": 532928941.7219202,
+      "HYPE": 1710011904.0595822,
+      "SUI": 31227506.128671996
+    }
+  },
+  {
     "date": "2026-09-10",
     "file": "2026-09-10.md",
     "headline": "Macro Caution Diverges from Sentiment; SUI Short High Conviction, Others Conflicted by Spot Flow",
