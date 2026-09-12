@@ -1,5 +1,52 @@
 [
   {
+    "date": "2026-09-12",
+    "file": "2026-09-12.md",
+    "headline": "Conflicted Signals Amidst 'WAIT' Regime: Cautious Approach Recommended for Short Setups",
+    "market_analysis": "The overall macro regime remains in a 'WAIT' state, signaling caution and a need for reduced risk sizing with a low confidence score of 45%. Despite a general sentiment of 'Greed', the market capitalization has seen a slight decline, and BTC dominance is suppressing alts, further reinforcing the conservative 'WAIT' posture. Reviewing potential short setups, BTC presents a MARKDOWN phase with bearish structure but is diluted by neutral money flow and uncrowded funding, resulting in low conviction. HYPE, while in a MARKDOWN phase, shows a critical conflict: accumulation money flow (net buying despite falling price) and negative funding (favorable for longs), directly opposing a short bias. This makes HYPE a very low conviction or even invalid short setup. SUI offers a relatively better-aligned short setup, with a MARKDOWN phase and elevated funding indicating crowded longs vulnerable to a squeeze, despite a neutral money flow. The consensus across tracked coins shows no high-conviction trades, with BTC, ETH, and SOL all exhibiting conflicted signals, aligning with the 'WAIT' regime's cautious outlook.",
+    "sentiment_summary": "The Fear & Greed Index is at 63, indicating 'Greed,' which contrasts with the current 'WAIT' macro regime and the bearish technicals seen in some setups, suggesting potential for an unexpected downside move. However, crowding across tracked coins is notably absent, indicating that despite the overall 'Greed,' leverage on individual assets is not yet extreme. This lack of crowding provides a neutral counterpoint to the 'Greed' sentiment, implying that while some are optimistic, positions are not overly extended on Hyperliquid, which could prevent immediate squeeze scenarios, though SUI's elevated funding shows some localized crowding.",
+    "money_flow_summary": "Money flow analysis reveals varied underlying dynamics. BTC and SUI both exhibit 'NEUTRAL' flow, with price declines accompanied by selling pressure and decreasing Open Interest, indicating a lack of clear directional conviction or sustained real demand/supply beyond price action. In contrast, HYPE's 'ACCUMULATION' read is significant: price is falling, but net buying activity is observed with decreasing Open Interest. This suggests real demand absorbing supply on dips, while longs reduce exposure, fundamentally contradicting a short thesis by implying underlying strength despite price weakness.",
+    "consensus_summary": "No high-conviction setups are identified today, with signals failing to align perfectly across phase, money flow, and funding. BTC, ETH, and SOL are explicitly noted as conflicted or low-conviction, reinforcing the 'WAIT' macro regime. Specifically, HYPE's signals are highly conflicted for a short, while SUI shows stronger directional agreement for a short, albeit with a neutral money flow.",
+    "position_actions": [],
+    "new_setups": [
+      {
+        "coin": "BTC",
+        "direction": "SHORT",
+        "conviction": "low",
+        "rationale": "The MARKDOWN phase indicates a bearish technical structure. However, money flow is neutral and funding is low/uncrowded, failing to confirm the short bias with real demand/supply or crowding signals, leading to low conviction."
+      },
+      {
+        "coin": "HYPE",
+        "direction": "SHORT",
+        "conviction": "low",
+        "rationale": "While technically in a MARKDOWN phase, the 'ACCUMULATION' money flow (dip buying) and negative funding (favorable for longs) directly conflict with a short direction. This strong disagreement across core signals necessitates avoiding this setup or reversing bias if the phase were to shift."
+      },
+      {
+        "coin": "SUI",
+        "direction": "SHORT",
+        "conviction": "medium",
+        "rationale": "The MARKDOWN phase combined with elevated funding and crowded longs provides two reinforcing bearish signals (technical structure and vulnerability to a squeeze). Money flow is neutral, but the phase and funding alignment offer a medium-conviction short setup."
+      }
+    ],
+    "regime_verdict": "WAIT",
+    "regime_score": -1,
+    "regime_note": "The 'WAIT' macro regime (score -1/10) with 45% confidence strongly advises a cautious trading approach today. Prioritize highly-aligned, medium-to-high conviction setups and consider smaller position sizing to mitigate risk, especially given the prevalence of conflicted signals.",
+    "risks": [
+      "The 'WAIT' macro regime, combined with low confidence, suggests higher market uncertainty and potential for whipsaws.",
+      "Conflicting signals on setups like HYPE indicate a high risk of being on the wrong side of a move if underlying market dynamics are misjudged.",
+      "A 'Greed' sentiment amidst bearish technicals could lead to sharp reversals or unexpected strength if buying momentum were to materialize."
+    ],
+    "confidence": "medium",
+    "takeaway": "Maintain disciplined risk management and selective engagement; the market signals suggest a period requiring patience over aggression.",
+    "oi_snapshot": {
+      "BTC": 2762254328.526202,
+      "ETH": 2461758416.7710004,
+      "SOL": 540319292.9903998,
+      "HYPE": 1662001503.43602,
+      "SUI": 30818823.167774
+    }
+  },
+  {
     "date": "2026-09-11",
     "file": "2026-09-11.md",
     "headline": "Conflicting Signals Across Short Setups Amidst Cautionary Macro Regime",
