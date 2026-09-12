@@ -1,5 +1,23 @@
 [
   {
+    "date": "2026-09-12",
+    "file": "2026-09-12.md",
+    "headline": "HYPE Price Posts Modest Gain Amidst Negative Funding Rate and High Open Interest",
+    "market_analysis": "HYPE's price recorded a marginal gain of +0.33% to 78.93 over the last 24 hours. This slight upward movement occurred concurrently with a negative 8-hour funding rate of -0.0029%, indicating a potential divergence where short positions are paying longs despite the spot price increase, or a general short bias. HYPE's Open Interest (OI) stands at a substantial 1.68B, positioning it as a significant asset on the platform, though trailing BTC's 2.76B and ETH's 2.47B OI. The Hyperliquid platform demonstrated robust trading, with total perp volume reaching 8.67B in the last 24 hours, suggesting active participation across its markets. The negative funding against a positive price move for HYPE is the most notable observation, implying cautious or bearish sentiment among perpetual futures traders. HyperEVM's TVL also remains strong at 1.37B, providing a foundation for ecosystem health.",
+    "risks": [
+      "The negative 8-hour funding rate for HYPE (-0.0029%) despite a marginal price increase (+0.33%) suggests a bearish bias among perpetual futures traders, which could cap further upside or signal potential for a price reversal if selling pressure intensifies.",
+      "A Fear & Greed Index reading of 63 ('Greed') suggests elevated market sentiment across the broader crypto landscape, which historically can precede periods of increased volatility or corrections if sentiment becomes overextended.",
+      "The absence of HYPE-specific volume data makes it challenging to accurately assess the liquidity and true conviction behind its reported Open Interest of 1.68B, potentially masking underlying market dynamics."
+    ],
+    "opportunities": [
+      "HyperEVM's Total Value Locked (TVL) at 1.37B demonstrates significant ecosystem health and user engagement, which could underpin HYPE's long-term value and utility.",
+      "HYPE's Open Interest of 1.68B reflects substantial trader interest and activity in the asset on Hyperliquid, indicating active market participation and potential for price discovery."
+    ],
+    "news_summary": "The provided context does not include any specific news headlines or market-moving events. Consequently, no synthesis of news sentiment can be performed, nor can its agreement or conflict with current price and funding data be assessed.",
+    "confidence": "medium",
+    "takeaway": "HYPE experienced a marginal price increase accompanied by a negative funding rate, indicating a potential divergence between its spot price action and perpetual futures sentiment, while overall platform activity remains robust."
+  },
+  {
     "date": "2026-09-11",
     "file": "2026-09-11.md",
     "headline": "HYPE Drops 6.45% Amidst Neutral Funding and Broader Market Greed",
