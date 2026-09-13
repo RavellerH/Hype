@@ -1,5 +1,47 @@
 [
   {
+    "date": "2026-09-13",
+    "file": "2026-09-13.md",
+    "headline": "SUI Presents High-Conviction Short as HYPE Signals Conflict Amidst Broader Market Caution",
+    "market_analysis": "Today's market presents a bifurcated landscape for potential short setups. SUI exhibits strong bearish alignment, with its technical phase in clear MARKDOWN, money flow indicating 'LEVERAGED SELL' through falling price/CVD with rising OI, and elevated funding rates favoring shorts by indicating overextended long positioning. This agreement across technicals, real demand/supply, and market positioning provides a high-conviction short thesis, though the leveraged nature of current selling flags potential short squeeze risk. In contrast, HYPE displays significant signal conflict: while its technical phase is MARKDOWN with strong bearish consensus from TA factors, money flow is 'NEUTRAL' and funding is distinctly negative, which generally favors long positions. This disagreement between bearish technicals and neutral/bullish flow/funding indicates low conviction for a short trade, suggesting a 'wait and see' approach or reduced sizing if considering any action. The macro regime 'CAUTION' further reinforces the need for high-conviction setups and cautious sizing, especially given the broad alt weakness and falling total market cap.",
+    "sentiment_summary": "The Fear & Greed Index at 61 signifies 'Greed,' yet this contrasts with a falling overall market cap and broad altcoin weakness (Alt Breadth 40%). This divergence between buoyant sentiment and negative price action suggests potential for disappointment or indicates that current market negativity is not yet reflected in overall emotional positioning, warranting caution. Funding-based crowding shows no coins crowded long, but SOL is crowded short, which implies a potential for short squeezes in SOL if not otherwise indicated by other signals. No relevant Hyperliquid headlines currently impact sentiment.",
+    "money_flow_summary": "SUI's money flow indicates 'LEVERAGED SELL,' meaning real selling pressure is evident from falling price and CVD, amplified by increasing open interest (OI), suggesting shorts are adding to positions. While this confirms bearish momentum, it inherently carries short-squeeze risk if price reverses. HYPE's money flow is categorized as 'NEUTRAL,' indicating that observed price action is not clearly supported by either genuine demand/supply (CVD) or leverage trends (OI), suggesting a lack of clear directional conviction from participants and making price movements less reliable.",
+    "consensus_summary": "SUI stands out as a high-conviction short opportunity, with all three directional signals (technical phase, money flow, and funding) in agreement for a bearish outlook. Conversely, HYPE is categorized as conflicted/low-conviction, where its technical markdown phase is undermined by neutral money flow and funding that actually favors long positions, making any short attempt significantly higher risk.",
+    "position_actions": [],
+    "new_setups": [
+      {
+        "coin": "SUI",
+        "direction": "SHORT",
+        "conviction": "high",
+        "rationale": "All signals align for a short trade: technical phase is MARKDOWN, money flow shows genuine leveraged selling, and funding is elevated, favoring shorts. This strong agreement provides high conviction, though the 'LEVERAGED SELL' flags potential short-squeeze risk."
+      },
+      {
+        "coin": "HYPE",
+        "direction": "SHORT",
+        "conviction": "low",
+        "rationale": "While the technical phase is MARKDOWN, money flow is neutral and funding is significantly negative, which generally favors long positions. This clear conflict across key signals makes the short setup low conviction and warrants caution or no entry."
+      }
+    ],
+    "regime_verdict": "CAUTION",
+    "regime_score": -4,
+    "regime_note": "The macro regime is 'CAUTION' (-4/10), driven by broad alt weakness, falling market cap, and BTC dominance suppressing alts. This dictates a more selective approach, smaller sizing, and a preference for only the highest-conviction setups, or sitting out if signals are mixed.",
+    "risks": [
+      "Divergence between 'Greed' sentiment and negative market action (falling MCap, alt weakness) could lead to sharper reversals.",
+      "SUI's 'LEVERAGED SELL' money flow, while bearish, implies increasing short positioning which carries inherent short-squeeze risk.",
+      "Broad altcoin weakness (40% breadth) and BTC dominance (58.7%) suppress alt performance, increasing downside risk for leveraged alt positions.",
+      "Macro regime 'CAUTION' with 60% confidence suggests potential for shifts, requiring constant vigilance."
+    ],
+    "confidence": "high",
+    "takeaway": "Focus on high-conviction setups like SUI where signals align, and exercise extreme caution or avoid conflicted setups like HYPE under the current 'CAUTION' macro regime.",
+    "oi_snapshot": {
+      "BTC": 2764077464.8975997,
+      "ETH": 2480224218.4797,
+      "SOL": 547343783.3526001,
+      "HYPE": 1668986318.1584005,
+      "SUI": 32560615.529285993
+    }
+  },
+  {
     "date": "2026-09-12",
     "file": "2026-09-12.md",
     "headline": "Conflicted Signals Amidst 'WAIT' Regime: Cautious Approach Recommended for Short Setups",
