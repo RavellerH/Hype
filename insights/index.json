@@ -1,5 +1,65 @@
 [
   {
+    "date": "2026-09-18",
+    "file": "2026-09-18.md",
+    "headline": "Cautious Long Bias for BTC, Alts Face Crowding Risk Amid 'WAIT' Regime",
+    "market_analysis": "The prevailing macro regime is 'WAIT' with low confidence, urging caution despite numerous individual bullish technical setups. Bitcoin shows a clear MARKUP phase with strong spot-driven money flow, and crucially, its funding rate is low and uncrowded, presenting a strong agreement between all three signals for a LONG bias. In contrast, ETH, SOL, HYPE, and SUI also exhibit strong MARKUP phases supported by either spot-driven or robust strong bull money flow. However, for all these altcoins, elevated funding rates and noted long crowding introduce a significant conflict. While technicals and money flow align for upward movement, the funding situation acts as a potential drag or reversal catalyst, limiting conviction. The overall market shows broad risk appetite, but BTC dominance may suppress alt performance, reinforcing the need for selective positioning and careful sizing, especially given the macro 'WAIT' signal.",
+    "sentiment_summary": "The Fear & Greed Index is at 56, indicating Greed, which aligns with the prevailing MARKUP technical phases observed across all tracked coins, suggesting sentiment is supportive of current price action. No overall funding-based crowding is detected across the tracked coins, however, specific altcoins (ETH, SOL, HYPE, SUI) show elevated funding rates and localized long crowding, indicating a divergence between the aggregate lack of crowding and coin-specific speculative interest. No relevant Hyperliquid-specific headlines were found, leaving the market to react to internal dynamics and broader crypto sentiment.",
+    "money_flow_summary": "Money flow analysis reveals a bifurcated market. BTC and ETH are characterized by 'SPOT DRIVEN' flow, where rising prices and CVD are accompanied by flat or decreasing Open Interest. This suggests demand is genuine, coming from spot buyers or short covering, rather than being fueled by new leveraged long positions, which implies a more organic and potentially sustainable climb. Conversely, SOL, HYPE, and SUI are experiencing 'STRONG BULL' flow, marked by rising prices, CVD, and expanding Open Interest. This indicates real demand coupled with significant new leverage entering the market, suggesting high current momentum but also potential for sharper pullbacks if sentiment shifts or funding costs become prohibitive.",
+    "consensus_summary": "While the overall market consensus indicates no high-conviction or conflicted setups, the individual analysis reveals all tracked coins (BTC, ETH, SOL, HYPE, SUI) show a medium level of conviction with 2 out of 3 directional signals aligned. BTC stands out with bull-phase, bull-money flow, and neutral-funding agreement, making it the highest conviction setup. For ETH, SOL, HYPE, and SUI, the strong bullish technicals and money flow are partially offset by elevated funding rates and long crowding, creating a conflict that warrants cautious sizing.",
+    "position_actions": [],
+    "new_setups": [
+      {
+        "coin": "BTC",
+        "direction": "LONG",
+        "conviction": "high",
+        "rationale": "BTC is in a strong MARKUP phase supported by 6 bullish technical factors, and money flow is spot-driven, indicating genuine demand. Funding is low and uncrowded, providing strong agreement across all signals for a high-conviction long setup."
+      },
+      {
+        "coin": "ETH",
+        "direction": "LONG",
+        "conviction": "medium",
+        "rationale": "ETH is in a MARKUP phase with spot-driven money flow, suggesting real buying. However, elevated funding and long crowding introduce conflict, making this a medium-conviction long setup despite strong technicals."
+      },
+      {
+        "coin": "SOL",
+        "direction": "LONG",
+        "conviction": "medium",
+        "rationale": "SOL exhibits a robust MARKUP phase with strong bull money flow, indicating significant demand and new leverage. The elevated funding and long crowding, however, temper conviction to medium due to increased risk of unwinding or funding drag."
+      },
+      {
+        "coin": "HYPE",
+        "direction": "LONG",
+        "conviction": "medium",
+        "rationale": "HYPE is in a MARKUP phase with strong bull money flow, signifying real demand and expanding Open Interest. The elevated funding rate and observed long crowding create a conflicting signal, reducing overall conviction to medium."
+      },
+      {
+        "coin": "SUI",
+        "direction": "LONG",
+        "conviction": "medium",
+        "rationale": "SUI shows a strong MARKUP phase with strong bull money flow and significant OI expansion. While technicals are bullish, the elevated funding rate and long crowding introduce a notable risk, leading to a medium conviction rating."
+      }
+    ],
+    "regime_verdict": "WAIT",
+    "regime_score": 0,
+    "regime_note": "The macro regime 'WAIT' with a score of 0/10 and only 40% confidence indicates high uncertainty. This suggests today is not a day for aggressive sizing or high-risk entries. Prioritize smaller position sizes and tighter risk management, especially with conflicting signals on altcoins.",
+    "risks": [
+      "The macro 'WAIT' regime with low confidence suggests overall market uncertainty.",
+      "Elevated funding rates for ETH, SOL, HYPE, and SUI pose a risk of funding drag or liquidation cascades if price action falters.",
+      "BTC dominance suppressing alts could lead to underperformance even if individual altcoin setups appear bullish.",
+      "High RSI levels for BTC (72) and ETH (68) indicate potential for short-term overbought conditions and pullbacks."
+    ],
+    "confidence": "medium",
+    "takeaway": "Maintain a cautious long bias, prioritizing BTC due to strong signal agreement. For altcoins, acknowledge the conflicting funding signals and size down accordingly.",
+    "oi_snapshot": {
+      "BTC": 2713371972.00048,
+      "ETH": 2443052648.468538,
+      "SOL": 566147289.8931998,
+      "HYPE": 1860176138.0400004,
+      "SUI": 39642647.44517
+    }
+  },
+  {
     "date": "2026-09-14",
     "file": "2026-09-14.md",
     "headline": "Wait Regime with Mixed Signals on Potential Longs; Caution Advised on Crowded Funding",
