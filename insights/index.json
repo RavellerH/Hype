@@ -1,5 +1,24 @@
 [
   {
+    "date": "2026-09-19",
+    "file": "2026-09-19.md",
+    "headline": "Pervasive Signal Conflicts Dominate: Caution Advised Amidst Leveraged Shorting and Bullish Technicals",
+    "market_analysis": "Today's market presents a complex picture with strong bullish technical phases frequently conflicting with bearish money flow and elevated funding rates. For BTC, while our short position benefits from favorable funding and current leveraged selling, the underlying technical phase is a clear MARKUP with 7/8 bullish consensus, indicating strong bullish structure. This direct conflict implies significant short-squeeze risk if the market turns. Similarly, new long setups for ETH, SOL, and HYPE all show robust MARKUP phases, yet are undercut by 'LEVERAGED SELL' money flow. This pattern of price and CVD declining while OI rises suggests shorts",
+    "position_actions": [],
+    "new_setups": [],
+    "regime_verdict": "WAIT",
+    "regime_score": 0,
+    "risks": [],
+    "confidence": null,
+    "oi_snapshot": {
+      "BTC": 3507380159.01516,
+      "ETH": 2908650903.8319216,
+      "SOL": 642751902.6447998,
+      "HYPE": 1996201951.7159812,
+      "SUI": 44294168.874956
+    }
+  },
+  {
     "date": "2026-09-18",
     "file": "2026-09-18.md",
     "headline": "Cautious Long Bias for BTC, Alts Face Crowding Risk Amid 'WAIT' Regime",
