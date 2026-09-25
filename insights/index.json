@@ -1,5 +1,59 @@
 [
   {
+    "date": "2026-09-25",
+    "file": "2026-09-25.md",
+    "headline": "BTC Long Faces Bearish Alignment; SOL Presents High-Conviction Short Opportunity Amidst WAIT Macro",
+    "market_analysis": "The macro regime is categorized as 'WAIT' (-1/10), indicating a cautious environment suitable for reduced sizing and focusing on high-conviction setups. BTC's existing long position is critically challenged, with its technical phase (DISTRIBUTION), money flow (LEVERAGED SELL), and funding (longs crowded at 11% APR) all aligning on a bearish outlook. This represents a rare 3/3 signal agreement for a bearish move directly against the current long position. Conversely, SOL presents a strong short opportunity, where its DISTRIBUTION phase, STRONG BEAR money flow, and elevated funding (11% APR) all agree on a bearish bias, making it a high-conviction setup. HYPE also shows a potential short setup with a MARKDOWN phase and elevated funding, though its neutral money flow reduces overall conviction to medium. SUI, despite being in a MARKUP phase, faces significant conflict as its money flow is LEVERAGED SELL and funding is elevated with longs crowding, directly contradicting a long bias and lowering conviction to low. The overall market sentiment is 'Greed' (71), which appears to diverge from the growing bearish alignment seen in BTC and SOL, potentially setting up for a sentiment-driven correction.",
+    "sentiment_summary": "The Fear & Greed Index is at 71 (Greed), suggesting market exuberance. While the aggregate funding across tracked coins shows no widespread crowding, individual coins like BTC, SOL, HYPE, and SUI exhibit elevated funding rates (11% APR) and specific long crowding. This creates a divergence where the general 'Greed' sentiment *conflicts* with the specific bearish technical and money flow signals for BTC and SOL, indicating potential for a sentiment-driven market flush or a period of consolidation where risk assets may face headwinds.",
+    "money_flow_summary": "Money flow analysis reveals distinct patterns. BTC and SUI both exhibit 'LEVERAGED SELL' flow, where price and CVD are down, but Open Interest is rising. This indicates shorts are aggressively adding leverage, creating potential for a short squeeze if price reverses, but currently driving price lower. SOL shows a 'STRONG BEAR' flow, with price, CVD, and OI all falling, signifying genuine selling pressure and long exits, which typically supports trend continuation. HYPE's money flow is 'NEUTRAL,' with mixed signals (price slightly up, CVD/OI down), indicating no clear demand or supply edge.",
+    "consensus_summary": "High-conviction setups with all three directional signals aligning are present for BTC (bearish) and SOL (bearish). Conflicted or low-conviction setups include HYPE, where neutral money flow detracts from an otherwise bearish phase and funding, and SUI, where a bullish technical phase is directly contradicted by bearish money flow and funding signals.",
+    "position_actions": [
+      {
+        "coin": "BTC",
+        "action": "close",
+        "reason": "The existing BTC long position is in direct conflict with all three directional signals: technicals are in DISTRIBUTION, money flow indicates LEVERAGED SELL, and funding shows longs are crowded at an elevated 11% APR. This 3/3 bearish alignment against a marginal profit makes holding the long a high-risk proposition, especially given the 'WAIT' macro regime."
+      }
+    ],
+    "new_setups": [
+      {
+        "coin": "SOL",
+        "direction": "SHORT",
+        "conviction": "high",
+        "rationale": "SOL exhibits a high-conviction short setup, with its DISTRIBUTION phase aligning perfectly with STRONG BEAR money flow and elevated funding (11% APR) indicating long crowding. All three signals agree on a bearish outlook, supporting a short position."
+      },
+      {
+        "coin": "HYPE",
+        "direction": "SHORT",
+        "conviction": "medium",
+        "rationale": "HYPE presents a medium-conviction short opportunity, with its MARKDOWN technical phase and elevated funding (11% APR) aligning bearishly. However, the money flow is neutral, introducing some uncertainty and reducing the overall conviction compared to SOL."
+      },
+      {
+        "coin": "SUI",
+        "direction": "LONG",
+        "conviction": "low",
+        "rationale": "Despite a bullish MARKUP technical phase, SUI's long bias is significantly conflicted by bearish money flow (LEVERAGED SELL) and elevated funding (11% APR) with longs crowding. The strong disagreement across key signals makes this a low-conviction setup for a long position."
+      }
+    ],
+    "regime_verdict": "WAIT",
+    "regime_score": -1,
+    "regime_note": "The macro 'WAIT' regime (score -1/10) with 45% confidence suggests a period of market uncertainty and reduced clarity. This implies a strategy of sizing down on positions, prioritizing only high-conviction setups with multi-signal agreement, and exercising extreme caution with conflicted or low-conviction plays.",
+    "risks": [
+      "Potential short squeeze on BTC and SUI due to leveraged short positioning indicated by 'LEVERAGED SELL' money flow.",
+      "Macro 'WAIT' regime (score -1/10) indicates low overall market confidence, increasing general trading risk and volatility.",
+      "BTC dominance at 58.6% could suppress altcoin performance, impacting potential long setups (like SUI) and reinforcing bearish altcoin outlooks (SOL, HYPE).",
+      "Divergence between 'Greed' sentiment and bearish technicals/money flow for key assets may lead to unexpected market reactions."
+    ],
+    "confidence": "high",
+    "takeaway": "Prioritize high-conviction short opportunities and critically re-evaluate existing positions that contradict strong multi-signal alignments, especially within the current 'WAIT' macro regime.",
+    "oi_snapshot": {
+      "BTC": 3305694819.8131204,
+      "ETH": 2853618591.6960015,
+      "SOL": 696711008.1162002,
+      "HYPE": 1916764737.7632027,
+      "SUI": 70578341.79101202
+    }
+  },
+  {
     "date": "2026-09-24",
     "file": "2026-09-24.md",
     "headline": "Mixed Signals and Funding Conflicts Persist Amidst Macro Caution",
