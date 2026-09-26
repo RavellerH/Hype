@@ -1,5 +1,24 @@
 [
   {
+    "date": "2026-09-26",
+    "file": "2026-09-26.md",
+    "headline": "Conflicting Signals Prevail Amidst 'WAIT' Macro Regime and Greed Sentiment",
+    "market_analysis": "The overall market is characterized by conflicting signals and a 'WAIT' macro regime, suggesting caution. For BTC, our open long position shows a completely neutral picture: the technical phase is undecided, money flow indicates quiet distribution or lack of clear directional edge with falling CVD and OI, and funding is low and uncrowded. All three key signals are either neutral or in conflict, offering no strong conviction. In contrast, HYPE presents a high-conviction short setup, with its technical phase squarely in DISTRIBUTION and money flow showing strong bearish action driven by real selling and longs exiting. The low, uncrowded funding further supports this bearish outlook by",
+    "position_actions": [],
+    "new_setups": [],
+    "regime_verdict": "WAIT",
+    "regime_score": 0,
+    "risks": [],
+    "confidence": null,
+    "oi_snapshot": {
+      "BTC": 3166439616.78254,
+      "ETH": 2968841091.48256,
+      "SOL": 683759880.055,
+      "HYPE": 1879825812.008701,
+      "SUI": 83237853.60455999
+    }
+  },
+  {
     "date": "2026-09-25",
     "file": "2026-09-25.md",
     "headline": "BTC Long Faces Bearish Alignment; SOL Presents High-Conviction Short Opportunity Amidst WAIT Macro",
