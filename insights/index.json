@@ -1,5 +1,24 @@
 [
   {
+    "date": "2026-09-27",
+    "file": "2026-09-27.md",
+    "headline": "Macro Wait Signals Persist Amidst Conflicted Long Setups and Crowded Funding",
+    "market_analysis": "The current macro regime is in a 'WAIT' state with low conviction, indicating a need for caution. For BTC, while it is technically in a MARKUP phase, money flow is neutral with observed selling, and elevated funding coupled with crowded longs creates a significant conflict, eroding conviction in the existing long position. Similarly, ETH, HYPE, and SUI all display bullish MARKUP phases, yet consistently face headwinds from either neutral money flow (ETH) or 'LEVERAGED SELL' signals (HYPE, SUI), where shorts are actively adding leverage. Furthermore, all prospective long setups (ETH, HYPE, SUI)",
+    "position_actions": [],
+    "new_setups": [],
+    "regime_verdict": "WAIT",
+    "regime_score": -1,
+    "risks": [],
+    "confidence": null,
+    "oi_snapshot": {
+      "BTC": 3131627804.8700404,
+      "ETH": 2990262307.088556,
+      "SOL": 681367967.1773518,
+      "HYPE": 1932039534.1359608,
+      "SUI": 90901167.52611999
+    }
+  },
+  {
     "date": "2026-09-26",
     "file": "2026-09-26.md",
     "headline": "Conflicting Signals Prevail Amidst 'WAIT' Macro Regime and Greed Sentiment",
