@@ -1,5 +1,52 @@
 [
   {
+    "date": "2026-09-29",
+    "file": "2026-09-29.md",
+    "headline": "Mixed Signals Persist: Macro Wait Regime Dictates Caution Despite Spot-Driven BTC Demand",
+    "market_analysis": "Today's market analysis reveals a prevailing 'WAIT' macro regime (-1/10), indicating an environment favoring caution and reduced sizing. For our existing BTC long, technicals suggest an ACCUMULATION phase, aligning with a bullish read. Money flow, characterized by CVD buying and declining OI, also signals a bullish, spot-driven demand, likely fueled by short covering. These two signals strongly agree with our long bias, providing conviction despite the slightly negative P&L. Funding for BTC is low and uncrowded, acting as a tailwind, creating a 2/3 directional agreement. However, the macro 'WAIT' regime and 'Greed' sentiment suggest vigilance. For new setups, HYPE presents a strong conflict: while the technical phase is MARKDOWN (bearish), money flow is 'SPOT DRIVEN' with CVD buying and negative funding, both bullish signals that directly contradict a short bias. This makes the HYPE short setup highly low conviction, despite an attractive R:R. SUI also shows a MARKDOWN phase and elevated funding favoring shorts, creating a 2/3 agreement, but its money flow is neutral, and crucially, the R:R is very poor (0.66). Overall, a lack of high-conviction signals across the board, coupled with the 'WAIT' regime, advises significant selectivity.",
+    "sentiment_summary": "The Fear & Greed Index at 73 signifies 'Greed,' which typically warrants caution, especially when combined with a 'WAIT' macro regime. Interestingly, funding rates across tracked coins show no signs of crowding, neither long nor short, indicating that despite general market exuberance, professional positioning on Hyperliquid is not overextended. This lack of crowding somewhat mitigates the risk associated with extreme greed, but the overall sentiment still conflicts with a cautious stance from the macro regime perspective.",
+    "money_flow_summary": "Money flow analysis indicates distinct dynamics across coins. For BTC and HYPE, we observe 'SPOT DRIVEN' flow, where rising CVD and flat/down OI suggest genuine spot buying interest rather than leverage-driven speculation. In BTC's case, this supports the long position as shorts are likely covering into spot demand. For HYPE, this spot-driven buying directly conflicts with its bearish technical phase, undermining any short thesis. SUI's money flow is 'NEUTRAL,' implying no clear directional edge from CVD or OI, leaving its price action largely untethered to significant spot or leverage-driven movements.",
+    "consensus_summary": "Today's analysis reveals no high-conviction setups with all three directional signals in agreement. The BTC long exhibits 2/3 agreement, driven by supportive technicals and money flow. HYPE, however, is significantly conflicted, with its bearish technical phase clashing with bullish money flow and funding signals, rendering it a low-conviction trade. This general lack of strong consensus reinforces the cautious stance dictated by the macro 'WAIT' regime.",
+    "position_actions": [
+      {
+        "coin": "BTC",
+        "action": "hold",
+        "reason": "The BTC long position shows strong agreement between its ACCUMULATION technical phase and bullish spot-driven money flow. Favorable funding also provides a tailwind. While P&L is slightly negative, the fundamental signals remain supportive, suggesting holding despite the overarching 'WAIT' macro regime."
+      }
+    ],
+    "new_setups": [
+      {
+        "coin": "HYPE",
+        "direction": "SHORT",
+        "conviction": "low",
+        "rationale": "The HYPE short setup faces significant signal conflict: a bearish MARKDOWN technical phase is directly contradicted by strong bullish money flow (spot-driven CVD buying) and negative funding, which favors longs. Despite an attractive R:R, the fundamental disagreement makes this a low-conviction trade best avoided or sized down significantly."
+      },
+      {
+        "coin": "SUI",
+        "direction": "SHORT",
+        "conviction": "low",
+        "rationale": "SUI's MARKDOWN technical phase and elevated long funding support a short bias, but its money flow is neutral, and the setup's R:R of 0.66 is highly unfavorable. Despite some signal agreement, the poor risk-to-reward ratio, especially in a 'WAIT' macro regime, makes this a low-conviction and unattractive short opportunity."
+      }
+    ],
+    "regime_verdict": "WAIT",
+    "regime_score": -1,
+    "regime_note": "The 'WAIT' macro regime, with a score of -1/10 and moderate confidence, suggests a period of heightened caution. It implies that market conditions are not conducive to aggressive positioning or taking on high-risk trades, advocating for reduced sizing and increased selectivity on new setups.",
+    "risks": [
+      "The 'Greed' sentiment (73) could precede a market correction, conflicting with the macro 'WAIT' regime's cautious stance.",
+      "BTC dominance at 58.4% is noted as suppressing alts, which could negatively impact potential HYPE and SUI setups even if their internal signals were clearer.",
+      "The 45% confidence in the macro regime score indicates potential for rapid shifts in market conditions, requiring constant re-evaluation."
+    ],
+    "confidence": "medium",
+    "takeaway": "Maintain caution in the prevailing 'WAIT' regime; prioritize existing positions with strong signal agreement and strictly avoid new setups with conflicting signals or poor risk-to-reward profiles.",
+    "oi_snapshot": {
+      "BTC": 2799118605.5391,
+      "ETH": 3021784925.871681,
+      "SOL": 660173992.0115998,
+      "HYPE": 1781286456.7296004,
+      "SUI": 81174232.48808004
+    }
+  },
+  {
     "date": "2026-09-28",
     "file": "2026-09-28.md",
     "headline": "Bearish Momentum Dominates Across Majors and Alts Amidst Cautionary Macro",
