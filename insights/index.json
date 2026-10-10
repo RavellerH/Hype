@@ -1,5 +1,53 @@
 [
   {
+    "date": "2026-10-10",
+    "file": "2026-10-10.md",
+    "headline": "Mixed Signals and Conflicting Flows in a Cautious 'WAIT' Macro Regime",
+    "market_analysis": "The 'WAIT' macro regime, scored at -1/10 with 45% confidence, advises a cautious approach today, suggesting reduced sizing and tighter stops across the board. BTC presents a MARKUP phase, strongly supported by spot-driven buying where CVD is rising and OI is decreasing, indicating genuine demand and short covering. Funding is low and uncrowded, aligning with the bullish phase and money flow, offering a medium-conviction long setup despite the broader 'WAIT' regime. HYPE, conversely, is in a DISTRIBUTION phase, which, combined with elevated funding and crowded longs, suggests a short bias. However, its money flow is also 'SPOT DRIVEN' with CVD buying and decreasing OI, a signal that directly *conflicts* with a bearish distribution and proposed short, as it implies underlying demand. This strong conflict between technicals/funding and money flow severely reduces conviction. SUI also shows a promising MARKUP phase, reinforced by spot-driven buying, but, similar to HYPE, it faces elevated funding and long crowding. This funding dynamic *conflicts* with the bullish technicals and money flow, introducing significant squeeze risk for a long position. ETH is explicitly noted as a low-conviction, conflicted setup with insufficient signal alignment for a directional trade.",
+    "sentiment_summary": "The Fear & Greed Index at 64 signals 'Greed' in the market, a condition that the macro analysis ties to tightening stops, suggesting increased caution is warranted despite perceived market strength. While sentiment leans bullish, there is no widespread funding-based crowding across the tracked coins, mitigating the immediate risk of a broad market-wide funding squeeze. The absence of specific Hyperliquid-relevant headlines means market dynamics are primarily internal. Overall, sentiment is optimistic ('Greed') but lacks strong directional conviction from broad funding metrics, creating an environment where technical setups should be scrutinized for underlying demand and supply flows.",
+    "money_flow_summary": "All three analyzed coins (BTC, HYPE, SUI) exhibit 'SPOT DRIVEN' money flow, characterized by rising price and CVD, coupled with flat or decreasing Open Interest. This pattern is a strong indicator of genuine demand originating from spot buyers, rather than speculative leverage. The concurrent decline in OI suggests that short covering is also contributing to price increases. For BTC and SUI, this money flow robustly supports their respective MARKUP phases, indicating real accumulation. However, for HYPE, this same 'SPOT DRIVEN' buying *conflicts* directly with its DISTRIBUTION phase, implying that despite bearish technicals, there's active underlying buying interest.",
+    "consensus_summary": "No coins today demonstrate high-conviction alignment across all three directional signals (technical phase, money flow, and funding). BTC, HYPE, and SUI each show 2/3 directional agreement, resulting in medium conviction for BTC but lower conviction for HYPE and SUI due to strong conflicting signals. ETH is explicitly classified as a conflicted/low-conviction setup, rendering it unsuited for trading.",
+    "position_actions": [],
+    "new_setups": [
+      {
+        "coin": "BTC",
+        "direction": "LONG",
+        "conviction": "medium",
+        "rationale": "The MARKUP phase and strong spot-driven money flow align well, indicating genuine demand. Funding is neutral and uncrowded. The 'WAIT' regime and 'Greed' sentiment suggest cautious sizing and tight stops are essential despite the bullish outlook."
+      },
+      {
+        "coin": "HYPE",
+        "direction": "SHORT",
+        "conviction": "low",
+        "rationale": "While the DISTRIBUTION phase and elevated, crowded funding suggest a short, the 'SPOT DRIVEN' money flow with CVD buying directly *conflicts* this bias by indicating underlying demand and short covering. This significant divergence reduces conviction, making this a high-risk setup despite initial bearish signals."
+      },
+      {
+        "coin": "SUI",
+        "direction": "LONG",
+        "conviction": "medium",
+        "rationale": "SUI is in a MARKUP phase with supporting spot-driven money flow. However, elevated funding and crowded longs introduce a significant conflict, posing a risk of a long squeeze. Careful entry, smaller sizing, and tight stops are imperative given this funding dynamic."
+      }
+    ],
+    "regime_verdict": "WAIT",
+    "regime_score": -1,
+    "regime_note": "The 'WAIT' macro regime with a score of -1/10 and 45% confidence strongly dictates a cautious trading approach today. This implies that reduced position sizing and exceptionally tight stop losses should be applied to all potential trades, aligning with the 'Greed' Fear & Greed index's recommendation to tighten stops.",
+    "risks": [
+      "Conflicting signals across technicals, money flow, and funding for all proposed setups (HYPE, SUI) reduce conviction and increase trade risk.",
+      "Elevated funding rates and long crowding for HYPE and SUI pose a significant squeeze risk, particularly for SUI's proposed long.",
+      "BTC dominance at 59.1% may suppress independent upward movement for alts, adding a headwind for SUI despite its Markup phase.",
+      "The 'Greed' sentiment within a 'WAIT' regime suggests potential for rapid shifts and emphasizes the need for disciplined risk management."
+    ],
+    "confidence": "medium",
+    "takeaway": "Today's market presents nuanced setups; conflicting signals require a highly selective approach, cautious sizing, and disciplined risk management across all potential trades.",
+    "oi_snapshot": {
+      "BTC": 3149094364.9017596,
+      "ETH": 2795074180.4907217,
+      "SOL": 621429844.4308002,
+      "HYPE": 1685372911.2199616,
+      "SUI": 69324995.33119999
+    }
+  },
+  {
     "date": "2026-10-09",
     "file": "2026-10-09.md",
     "headline": "Caution Regime Dominates: No High-Conviction Setups, SOL Short Shows Moderate Agreement Amidst Mixed Signals",
