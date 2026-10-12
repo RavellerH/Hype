@@ -1,5 +1,66 @@
 [
   {
+    "date": "2026-10-12",
+    "file": "2026-10-12.md",
+    "headline": "Mixed Signals Persist in 'WAIT' Regime: Alts Show Bullish Flow But Crowding Concerns Emerge",
+    "market_analysis": "Today's market is characterized by a 'WAIT' macro regime, indicating caution, yet several altcoins are in a technical MARKUP phase. BTC, despite a MARKUP phase, presents a conflicted outlook with neutral money flow and neutral funding, leading to low directional agreement. ETH shows better alignment, with a strong MARKUP phase and spot-driven money flow supporting the bullish bias; its low, uncrowded funding reinforces this, making it the most coherent setup among the longs. Conversely, SOL, HYPE, and SUI all display strong technical MARKUP phases and robust bullish money flow (STRONG BULL or SPOT DRIVEN), which would typically suggest high conviction. However, their elevated and crowded funding rates introduce a significant conflict, flagging potential short-term tops or increased risk for new long entries. This dynamic indicates that while there's underlying demand, the market may be getting overheated in these specific assets, especially considering the broader BTC dominance which typically suppresses altcoin performance.",
+    "sentiment_summary": "The Fear & Greed Index registers 69 (Greed), suggesting elevated market enthusiasm. However, the macro regime is 'WAIT' with only 40% confidence, indicating this general greed might not translate into a strong, sustained rally, especially with BTC dominance suppressing alts. While the general summary states no significant funding crowding across tracked coins, a direct conflict arises as SOL, HYPE, and SUI explicitly show 'elevated, longs crowding' in their individual breakdowns. This granular data points to localized exuberance for these specific assets, which contradicts the broader 'no crowding' sentiment and warrants increased caution.",
+    "money_flow_summary": "The money flow analysis reveals varied dynamics. BTC's 'NEUTRAL' money flow, with rising CVD but only marginal OI expansion, suggests no clear directional edge despite its technical MARKUP. ETH and SUI exhibit 'SPOT DRIVEN' flow, where rising prices and CVD, coupled with flat/down OI, imply genuine spot demand and potential short covering, indicating cleaner buying pressure. In contrast, SOL and HYPE demonstrate 'STRONG BULL' flow, characterized by rising prices, net buying CVD, and expanding OI, which points to strong real demand attracting new leveraged longs, suggesting continuation but also highlighting the associated funding risk.",
+    "consensus_summary": "No tracked coin today meets the criteria for 'high-conviction' with all three directional signals (phase, money flow, funding) in agreement. BTC is explicitly identified as 'conflicted / low-conviction' due to its neutral money flow. While ETH shows two bullish signals (phase, money flow) and one neutral (funding), providing moderate agreement, SOL, HYPE, and SUI face a critical conflict: their strong bullish technicals and money flow are directly offset by elevated and crowded funding rates, reducing overall conviction for new long positions.",
+    "position_actions": [],
+    "new_setups": [
+      {
+        "coin": "BTC",
+        "direction": "LONG",
+        "conviction": "low",
+        "rationale": "Despite a MARKUP phase, BTC's money flow is neutral, showing no clear directional edge from real demand or leverage. With only one out of three signals aligning bullish, conviction remains low, aligning with the explicit 'conflicted' consensus."
+      },
+      {
+        "coin": "ETH",
+        "direction": "LONG",
+        "conviction": "medium",
+        "rationale": "ETH shows a strong MARKUP phase and 'SPOT DRIVEN' money flow, indicating genuine demand. Its low, uncrowded funding further supports the long bias, providing two bullish signals with the third being neutral. This offers a more aligned setup compared to other alts."
+      },
+      {
+        "coin": "SOL",
+        "direction": "LONG",
+        "conviction": "low",
+        "rationale": "SOL exhibits a strong MARKUP phase and 'STRONG BULL' money flow, but its elevated and crowded funding rate creates a significant conflict. This counter-signal from funding reduces conviction for new long entries despite otherwise bullish indicators."
+      },
+      {
+        "coin": "HYPE",
+        "direction": "LONG",
+        "conviction": "low",
+        "rationale": "HYPE is in a strong MARKUP phase with 'STRONG BULL' money flow, suggesting real demand. However, the elevated and crowded funding rate introduces a bearish element, conflicting with the otherwise bullish signals and lowering conviction for new longs."
+      },
+      {
+        "coin": "SUI",
+        "direction": "LONG",
+        "conviction": "low",
+        "rationale": "SUI displays a MARKUP phase and 'SPOT DRIVEN' money flow, indicative of underlying demand. Nevertheless, the elevated and crowded funding acts as a notable bearish divergence, diminishing the overall conviction for initiating a long position at current levels."
+      }
+    ],
+    "regime_verdict": "WAIT",
+    "regime_score": 0,
+    "regime_note": "The macro regime is 'WAIT' (score 0/10, confidence 40%), signaling extreme caution. This dictates a strategy of reduced sizing, heightened patience, and prioritizing setups with strong signal agreement while avoiding those with significant conflicts. Focus should be on preserving capital until clearer directional conviction emerges.",
+    "risks": [
+      "The 'WAIT' macro regime with low confidence suggests an environment prone to chop or reversals, despite individual bullish signals.",
+      "BTC dominance (59.5%) is suppressing alts, which could cap upside for ETH, SOL, HYPE, and SUI even with favorable individual setups.",
+      "Elevated and crowded funding rates for SOL, HYPE, and SUI pose a risk of long squeezes or profit-taking, particularly in a cautious market regime.",
+      "MACD is fading on all tracked coins despite bullish structure, indicating potential loss of momentum.",
+      "ETH, SOL, and SUI are trading below their EMA 200, signaling a long-term bearish structure that conflicts with short-term bullish technicals."
+    ],
+    "confidence": "medium",
+    "takeaway": "Maintain a cautious stance as the 'WAIT' macro regime suggests limited conviction; prioritize setups with strong signal alignment like ETH while being wary of crowding in other altcoins.",
+    "oi_snapshot": {
+      "BTC": 3197288852.48682,
+      "ETH": 2836320744.9236007,
+      "SOL": 660530760.2399998,
+      "HYPE": 1772127168.524703,
+      "SUI": 69460821.99844
+    }
+  },
+  {
     "date": "2026-10-10",
     "file": "2026-10-10.md",
     "headline": "Mixed Signals and Conflicting Flows in a Cautious 'WAIT' Macro Regime",
