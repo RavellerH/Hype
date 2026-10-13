@@ -1,5 +1,52 @@
 [
   {
+    "date": "2026-10-13",
+    "file": "2026-10-13.md",
+    "headline": "Spot-Driven Long Setups Emerge Amidst Macro Wait Regime",
+    "market_analysis": "The macro regime currently signals a 'WAIT' environment (-2/10), advocating for caution despite specific setups. BTC is in a MARKUP phase with strong bullish consensus, further validated by spot-driven money flow and uncrowded funding. These two signals align strongly, indicating a high-quality move. ETH, while in an ACCUMULATION phase, also exhibits spot-driven buying and uncrowded funding, showing similar bullish conviction, though its long-term structure is less robust (below EMA 200). SUI presents the highest conviction long setup, with its ACCUMULATION phase, spot-driven flow, and significantly negative funding (shorts paying longs) all aligning perfectly. The overall market, however, shows broad alt weakness and BTC dominance, which conflicts with aggressive altcoin positioning and suggests a need for careful sizing even with these strong individual signals.",
+    "sentiment_summary": "The Fear & Greed Index is at 57, indicating 'Greed,' which typically warrants caution or tightening stops. However, this general sentiment conflicts with the specific funding data, which shows no crowding in either long or short positions across the tracked coins. The absence of explicit Hyperliquid-relevant headlines keeps a neutral backdrop for news. This suggests that while retail sentiment might be leaning greedy, institutional or leveraged positioning is not overly extended, potentially reducing the risk of a swift deleveraging event, especially for the identified spot-driven moves.",
+    "money_flow_summary": "All identified setups (BTC, ETH, SUI) exhibit 'SPOT DRIVEN' money flow. This crucial signal means that price increases are accompanied by rising Cumulative Volume Delta (CVD) and either flat or declining Open Interest (OI). Such a pattern indicates genuine demand from spot buyers, with existing short positions likely covering, rather than price action being fueled by new leveraged long entries or a short squeeze. This type of flow is generally considered healthier and more sustainable for a bullish trend.",
+    "consensus_summary": "SUI stands out as a high-conviction setup, with its technical phase, money flow, and funding all perfectly aligning for a long bias. BTC and ETH also demonstrate strong directional agreement (2 out of 3 signals), providing medium-high conviction for their long setups, as their funding is neutral rather than explicitly bullish. There are no conflicted or low-conviction coins among the monitored setups today, suggesting clear signals where they exist.",
+    "position_actions": [],
+    "new_setups": [
+      {
+        "coin": "BTC",
+        "direction": "LONG",
+        "conviction": "medium-high",
+        "rationale": "BTC is in a strong MARKUP phase, supported by significant spot-driven buying, and uncrowded, low funding rates. The technicals show a bullish structure with EMAs aligned and expanding MACD."
+      },
+      {
+        "coin": "ETH",
+        "direction": "LONG",
+        "conviction": "medium",
+        "rationale": "ETH shows an ACCUMULATION phase with clear spot-driven demand and favorable uncrowded funding. While technically bullish on shorter timeframes, its long-term structure is below the EMA 200, suggesting some underlying weakness."
+      },
+      {
+        "coin": "SUI",
+        "direction": "LONG",
+        "conviction": "high",
+        "rationale": "SUI's ACCUMULATION phase is strongly validated by spot-driven money flow and highly favorable negative funding, where shorts are paying longs. This complete agreement across all three signals provides high conviction for a long position despite mixed EMA alignment."
+      }
+    ],
+    "regime_verdict": "WAIT",
+    "regime_score": -2,
+    "regime_note": "The 'WAIT' macro regime score (-2/10) signals a period of uncertainty and reduced overall market conviction. This implies that while individual setups may look strong, it is prudent to size down positions or adopt stricter risk management strategies. The confidence score of 50% for this regime further underscores the need for caution.",
+    "risks": [
+      "The macro 'WAIT' regime score (-2/10) indicates prevailing market uncertainty and warrants caution in overall market exposure.",
+      "Broad alt breadth at 27% (weakness) combined with BTC dominance at 59.2% suggests a challenging environment for altcoin performance if BTC fails to sustain its rally.",
+      "A 'Greed' sentiment (57) could precede a market pullback, despite the current lack of leveraged crowding, indicating potential for retail overextension."
+    ],
+    "confidence": "medium",
+    "takeaway": "High-conviction, spot-driven long setups are present for selected coins, but the overarching 'WAIT' macro regime and signs of alt weakness demand disciplined sizing and risk management.",
+    "oi_snapshot": {
+      "BTC": 3185363044.7502,
+      "ETH": 2823863853.5247,
+      "SOL": 631884431.8100001,
+      "HYPE": 1671904732.32306,
+      "SUI": 69080507.80532
+    }
+  },
+  {
     "date": "2026-10-12",
     "file": "2026-10-12.md",
     "headline": "Mixed Signals Persist in 'WAIT' Regime: Alts Show Bullish Flow But Crowding Concerns Emerge",
