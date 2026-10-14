@@ -1,5 +1,46 @@
 [
   {
+    "date": "2026-10-14",
+    "file": "2026-10-14.md",
+    "headline": "BTC Spot-Driven Markup and HYPE Distribution with Crowded Longs Emerge Amidst WAIT Regime",
+    "market_analysis": "The overarching macro 'WAIT' regime (score -1/10) dictates a cautious approach, reinforced by BTC dominance suppressing alts. For Bitcoin, a clear MARKUP phase (bullish) aligns strongly with 'SPOT DRIVEN' money flow, where rising CVD despite flat/decreasing OI indicates genuine demand and likely short covering. Furthermore, low, uncrowded funding for BTC confirms the technical and flow-driven bullish setup, exhibiting a strong 2/3 signal agreement for a long bias. In contrast, HYPE shows a DISTRIBUTION phase (bearish) which is supported by elevated funding indicating crowded long positions, creating a potential contrarian short opportunity. While HYPE's money flow is 'NEUTRAL,' it does not contradict the bearish phase or funding signal, leading to a 2/3 agreement for a short bias. No high-conviction (3/3 agreement) setups were identified across the board, underscoring the 'WAIT' regime's implications for cautious sizing, especially for 'conflicted' coins like SOL and SUI.",
+    "sentiment_summary": "The broader market currently registers 'Greed' (62 on F&G), indicating a generally optimistic sentiment among participants. Despite this optimism, funding-based crowding across tracked coins remains low, suggesting that market participants are not broadly overextended in leveraged positions. This implies that while sentiment is bullish, it is not currently accompanied by widespread leverage traps, making specific crowded positions (like HYPE's longs) more isolated risks rather than systemic ones.",
+    "money_flow_summary": "BTC's money flow is distinctly 'SPOT DRIVEN,' characterized by a rising CVD alongside flat or decreasing Open Interest. This pattern strongly suggests authentic demand from spot buyers, indicating genuine accumulation rather than a move primarily fueled by leverage or short squeezes. Conversely, HYPE exhibits a 'NEUTRAL' money flow, with price action moving sideways and mixed CVD/OI signals. This lack of clear directional conviction from underlying demand or supply, when coupled with elevated funding, implies that existing leveraged long positions for HYPE are not backed by strong spot interest, making them potentially vulnerable.",
+    "consensus_summary": "No coins currently achieve high-conviction status with all three directional signals (technical phase, money flow, funding) in agreement. However, both BTC and HYPE present medium-conviction setups, each demonstrating 2 out of 3 signals in alignment for their respective biases. In contrast, coins like SOL and SUI are explicitly identified as conflicted or low-conviction due to signal disagreement, advising caution or avoidance.",
+    "position_actions": [],
+    "new_setups": [
+      {
+        "coin": "BTC",
+        "direction": "LONG",
+        "conviction": "medium",
+        "rationale": "The MARKUP phase is strongly supported by 'SPOT DRIVEN' money flow, indicating genuine demand rather than leverage. Uncrowded funding further validates the bullish setup. Technically, BTC is positioned above key EMAs (20, 50, 200), reinforcing the underlying strength for a long bias."
+      },
+      {
+        "coin": "HYPE",
+        "direction": "SHORT",
+        "conviction": "medium",
+        "rationale": "HYPE is in a DISTRIBUTION phase with bearish technical structure, trading below key EMAs. Elevated funding, indicating crowded long positions, provides a contrarian edge for a short, especially given the neutral money flow which offers no counter-argument for bullish conviction."
+      }
+    ],
+    "regime_verdict": "WAIT",
+    "regime_score": -1,
+    "regime_note": "The 'WAIT' macro regime (score -1/10) signals a period of general market uncertainty or lack of strong conviction. This necessitates a cautious approach to position sizing and a strict adherence to risk management, favoring only setups with clear signal agreement, such as the medium-conviction opportunities identified today.",
+    "risks": [
+      "The macro regime 'WAIT' and BTC dominance (59.3%) suppressing alts introduce broader market uncertainty and potential headwinds for altcoin performance.",
+      "Both BTC and HYPE show 'MACD bullish fading', which could signal a deceleration of momentum in their respective directional biases.",
+      "General 'Greed' (62) in the sentiment index can sometimes precede sharp market reversals if not supported by strong underlying structure and liquidity."
+    ],
+    "confidence": "medium",
+    "takeaway": "The market navigates a 'WAIT' regime, with specific medium-conviction opportunities identified in BTC's spot-driven markup and HYPE's distribution phase amidst crowded long interest.",
+    "oi_snapshot": {
+      "BTC": 3170033444.25576,
+      "ETH": 2705814203.4814014,
+      "SOL": 626683576.9638001,
+      "HYPE": 1667734429.1171799,
+      "SUI": 67962519.5415
+    }
+  },
+  {
     "date": "2026-10-13",
     "file": "2026-10-13.md",
     "headline": "Spot-Driven Long Setups Emerge Amidst Macro Wait Regime",
