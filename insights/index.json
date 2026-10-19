@@ -1,5 +1,27 @@
 [
   {
+    "date": "2026-10-19",
+    "file": "2026-10-19.md",
+    "headline": "Alts Show Mixed Signals Despite Broad Markup Phase; BTC Leads with Cleaner Flow",
+    "market_analysis": "All tracked coins are currently in a MARKUP phase, indicating short-term bullish technicals with rising EMAs and expanding MACD for most. This general bullish technical alignment suggests upside potential across the board. However, money flow and funding introduce nuance. BTC and SOL exhibit strong underlying demand with 'SPOT DRIVEN' or 'STRONG BULL' money flow and uncrowded, low funding rates. For these, the technical phase, money flow, and funding are largely in agreement, signaling higher conviction for long setups. In contrast, ETH, HYPE, and SUI also show strong money flow ('STRONG BULL' or 'SPOT DRIVEN') aligning with their MARKUP phases, but their elevated funding rates (11% APR) indicate growing long crowding. This creates a conflict: while technicals and immediate demand suggest continuation, the crowded funding introduces downside risk from potential long squeezes or profit-taking, reducing conviction. The macro regime is 'WAIT', emphasizing caution. With BTC dominance suppressing alts, the stronger signal agreement in BTC positions it as a potentially safer long over alts with conflicting funding signals. The 'Greed' sentiment alongside a 'WAIT' regime and mixed alt signals suggests that while there's appetite for risk, it's not universally supported by clean market dynamics, warranting selective engagement and tighter risk management.",
+    "sentiment_summary": "The Fear & Greed Index at 59 (Greed) indicates a broadly optimistic market mood, which aligns with the observed MARKUP phases across all tracked coins. However, the macro regime being in 'WAIT' suggests this optimism warrants caution. While the aggregate funding summary across tracked coins reports no overall crowding, specific coins like ETH, HYPE, and SUI show elevated funding rates and noted long crowding. This creates a divergence between the general market perception of uncrowded conditions and the reality of localized leverage buildup in certain assets, which could introduce volatility. No Hyperliquid-specific headlines were found.",
+    "money_flow_summary": "BTC, HYPE, and SUI are showing 'SPOT DRIVEN' money flow, where price and CVD are rising while Open Interest is either flat or declining. This typically indicates strong spot buying pressure pushing prices up, often accompanied by shorts covering, suggesting a less leverage-reliant, more organic upward movement. ETH and SOL, conversely, exhibit 'STRONG BULL' money flow, characterized by rising price and CVD alongside expanding Open Interest. This signifies real demand with new long positions entering the market, implying a more robust continuation for their respective rallies, albeit with the caveat of potential leverage buildup.",
+    "consensus_summary": "The provided context explicitly states that there are no high-conviction (all 3 signals agree) nor low-conviction/conflicted (1 or fewer signals aligned) setups today. All new setups presented show 2/3 directional agreement. This places them in a medium-conviction category, indicating positive signals but",
+    "position_actions": [],
+    "new_setups": [],
+    "regime_verdict": "WAIT",
+    "regime_score": -1,
+    "risks": [],
+    "confidence": null,
+    "oi_snapshot": {
+      "BTC": 3273333383.97408,
+      "ETH": 2578986692.262962,
+      "SOL": 577788062.0613,
+      "HYPE": 1589779939.4114392,
+      "SUI": 55396609.96142
+    }
+  },
+  {
     "date": "2026-10-18",
     "file": "2026-10-18.md",
     "headline": "Conflicting Signals and Weak Macro Drive Caution; ETH Spot-Driven Strength Stands Out",
