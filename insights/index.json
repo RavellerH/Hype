@@ -1,5 +1,59 @@
 [
   {
+    "date": "2026-10-21",
+    "file": "2026-10-21.md",
+    "headline": "Conflicting Signals and 'WAIT' Regime Suggest Caution for New Longs Today",
+    "market_analysis": "The current market environment presents significant signal conflict across all tracked coins. ETH is in an ACCUMULATION phase, but this bullish technical read is contradicted by 'LEVERAGED SELL' money flow, indicating shorts are adding leverage, and elevated funding from crowded longs. This disagreement suggests a potential squeeze risk but also vulnerability. Similarly, SOL's ACCUMULATION phase faces conflict from neutral money flow and crowded long funding, yielding low conviction. HYPE, despite being in a MARKUP phase, shows 'LEVERAGED SELL' money flow, meaning price action is not supported by real demand and shorts are positioning aggressively, creating a conflict between phase and flow, even with uncrowded funding. Lastly, SUI's MARKUP phase is undermined by neutral money flow and elevated funding due to long crowding, indicating a lack of clear demand and potential for a reversal. Across the board, bullish technical phases are largely unconfirmed or actively conflicted by money flow and funding dynamics, reinforcing a cautious stance.",
+    "sentiment_summary": "The Fear & Greed Index at 63 points to 'Greed' in the broader market, typically a signal to exercise caution. However, funding-based crowding across the tracked coins is absent, suggesting this greed isn't translating into excessive leveraged positioning on Hyperliquid itself, which could be seen as a nuanced conflict or divergence. No recent Hyperliquid-specific headlines were found, keeping local sentiment neutral. The general 'Greed' sentiment also conflicts with BTC dominance suppressing alts, implying that while overall market participants are greedy, altcoins may struggle to perform.",
+    "money_flow_summary": "ETH and HYPE exhibit a 'LEVERAGED SELL' money flow pattern, characterized by declining price and CVD while Open Interest rises. This signifies that short positions are actively being added, creating a potential for a short squeeze if price reverses against these leveraged shorts, but currently indicating bearish pressure. In contrast, SOL and SUI display 'NEUTRAL' money flow, where signals from price, CVD, and Open Interest are mixed or lack clear direction. This implies a period of indecision or quiet activity rather than strong, conviction-backed buying or selling, suggesting a lack of organic demand or supply driving price.",
+    "consensus_summary": "Today's analysis shows a complete absence of high-conviction setups, with no coins exhibiting agreement across all three directional signals (technical phase, money flow, and funding). All tracked coins – BTC, SOL, HYPE, and SUI – are classified as conflicted or low-conviction, aligning with only one or fewer of the three key indicators. This broad lack of signal consensus strongly advises against aggressive directional plays.",
+    "position_actions": [],
+    "new_setups": [
+      {
+        "coin": "ETH",
+        "direction": "LONG",
+        "conviction": "medium",
+        "rationale": "While the ACCUMULATION phase is bullish (consensus 4bull/1bear), money flow shows 'LEVERAGED SELL' and funding is elevated due to longs crowding. These conflicting signals (2/3 agreement) significantly reduce the conviction for a long setup, despite a bullish underlying technical structure, as the bearish momentum from shorts adding leverage presents risk."
+      },
+      {
+        "coin": "SOL",
+        "direction": "LONG",
+        "conviction": "low",
+        "rationale": "The ACCUMULATION phase (consensus 3bull/1bear) is bullish, yet money flow is 'NEUTRAL' and funding is elevated with longs crowding. With only 1/3 signals aligning, this setup lacks strong conviction. The bullish phase is not confirmed by market activity, making a long entry speculative."
+      },
+      {
+        "coin": "HYPE",
+        "direction": "LONG",
+        "conviction": "low",
+        "rationale": "Despite being in a MARKUP phase (consensus 4bull/0bear), money flow indicates 'LEVERAGED SELL', where price and CVD are down while OI is rising. This strong conflict between the bullish phase and bearish money flow, with only 1/3 signals agreeing, reduces conviction for a long, even with uncrowded funding."
+      },
+      {
+        "coin": "SUI",
+        "direction": "LONG",
+        "conviction": "low",
+        "rationale": "The MARKUP phase (consensus 5bull/1bear) suggests bullish potential, but money flow is 'NEUTRAL' and funding is elevated due to longs crowding. This significant disagreement among signals, with only 1/3 aligned, results in a low-conviction long, as market activity does not confirm the technical phase."
+      }
+    ],
+    "regime_verdict": "WAIT",
+    "regime_score": 0,
+    "regime_note": "The 'WAIT' macro regime, scoring 0/10 with only 40% confidence, signals a period of high market uncertainty and unpredictability. This regime dictates a highly cautious approach, suggesting either sitting on the sidelines or significantly reducing position sizing to mitigate risk, as directional conviction is low across the board.",
+    "risks": [
+      "Conflicting signals across technicals, money flow, and funding for all potential setups, leading to low conviction.",
+      "Potential for short squeezes in ETH and HYPE if leveraged shorts are caught wrong, but current leveraged selling indicates downside pressure.",
+      "Elevated funding rates for ETH, SOL, and SUI indicate crowded long positions, making them vulnerable to price reversals.",
+      "Overall 'Greed' sentiment with BTC dominance suppressing alts, which could lead to altcoin underperformance despite any individual bullish signals."
+    ],
+    "confidence": "low",
+    "takeaway": "Given the 'WAIT' macro regime and prevalent conflicting signals across all potential setups, a highly cautious approach is warranted, favoring observation over aggressive positioning.",
+    "oi_snapshot": {
+      "BTC": 3400309373.5670404,
+      "ETH": 2637714544.4432516,
+      "SOL": 570816010.9790962,
+      "HYPE": 1642821801.2640002,
+      "SUI": 55279053.839279994
+    }
+  },
+  {
     "date": "2026-10-19",
     "file": "2026-10-19.md",
     "headline": "Alts Show Mixed Signals Despite Broad Markup Phase; BTC Leads with Cleaner Flow",
