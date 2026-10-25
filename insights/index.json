@@ -1,5 +1,40 @@
 [
   {
+    "date": "2026-10-25",
+    "file": "2026-10-25.md",
+    "headline": "Cautious Stance Amidst 'WAIT' Regime: SUI Short Setup Faces Funding Conflict",
+    "market_analysis": "The macro regime is firmly in a 'WAIT' state, signaling uncertainty and a need for caution. BTC dominance is suppressing alts, and overall market breadth indicates weakness. Today, no coins present high-conviction setups where technical phase, money flow, and funding align. SUI, a potential short setup, shows a strong MARKDOWN phase and robust 'STRONG BEAR' money flow with real selling and longs exiting. These two signals decisively agree with a short thesis. However, the negative funding rate (-27.9% APR) and the 'crowded SHORT' read for SUI present a significant conflict. While the phase and money flow scream 'bear', the funding suggests potential for a short squeeze or at least an increased cost/risk for initiating a short position at current levels, thereby reducing conviction. Other tracked coins like BTC, SOL, and HYPE are explicitly flagged as conflicted or low-conviction, providing no clear directional edge today.",
+    "sentiment_summary": "The Fear & Greed Index is neutral at 54, reflecting a lack of extreme sentiment. Across tracked coins, no assets are crowded long, but SUI stands out as crowded SHORT. The absence of recent Hyperliquid-relevant headlines means no external sentiment drivers. For SUI, the 'crowded SHORT' sentiment derived from funding conflicts with its strong bearish technical phase and money flow, suggesting a potential divergence where robust downside signals are present, but market positioning is already aggressive on the short side, increasing squeeze risk.",
+    "money_flow_summary": "Money flow analysis reveals 'STRONG BEAR' for SUI, characterized by a falling price, clear CVD selling, and decreasing Open Interest. This combination indicates real selling pressure and longs actively exiting, rather than just leverage-driven squeezes. This is a high-quality bearish signal, suggesting genuine distribution and continuation likely. For other coins, specific money flow details are not provided, but the overall lack of 'STRONG BULL' signals suggests real demand is currently subdued across the board.",
+    "consensus_summary": "Today offers no high-conviction setups where all three directional signals (phase, money flow, funding) agree. SUI, despite strong technical and money flow alignment for a short, is conflicted by its crowded negative funding, making it a medium-conviction setup at best. BTC, SOL, and HYPE are explicitly noted as conflicted, reinforcing a cautious market posture.",
+    "position_actions": [],
+    "new_setups": [
+      {
+        "coin": "SUI",
+        "direction": "SHORT",
+        "conviction": "medium",
+        "rationale": "SUI is in a strong MARKDOWN phase with 'STRONG BEAR' money flow (real selling, longs exiting), strongly supporting a short. However, the negative funding rate and 'crowded SHORT' read introduce a significant short squeeze risk, conflicting with a clean short entry and reducing overall conviction to medium."
+      }
+    ],
+    "regime_verdict": "WAIT",
+    "regime_score": -1,
+    "regime_note": "The 'WAIT' macro regime (score -1/10) dictates a cautious approach to sizing and risk. This implies reducing position sizes, potentially widening stops, and prioritizing capital preservation until clearer directional signals emerge across the broader market. Aggressive entries are not warranted today.",
+    "risks": [
+      "SUI short squeeze potential due to negative funding and crowded short positioning.",
+      "Macro 'WAIT' regime indicates heightened uncertainty, increasing general market risk for all positions.",
+      "Lack of high-conviction setups today, leading to less reliable trading opportunities."
+    ],
+    "confidence": "low",
+    "takeaway": "Maintain a cautious approach given the 'WAIT' macro regime and conflicting signals; SUI offers a potential short but with notable funding-related risks.",
+    "oi_snapshot": {
+      "BTC": 3446296544.83014,
+      "ETH": 2621913159.16288,
+      "SOL": 565602715.3471999,
+      "HYPE": 1613925652.7586408,
+      "SUI": 44002056.55599601
+    }
+  },
+  {
     "date": "2026-10-24",
     "file": "2026-10-24.md",
     "headline": "Pervasive Signal Conflict and Spot-Driven Reversals Limit Conviction in WAIT Regime",
