@@ -29,6 +29,7 @@ bawah diberi sumbernya, dan klaim yang **belum terbukti** ditandai.*
 | Mainnet | **9 November 2026** (ditetapkan 19 Okt) | TokenPost, Bankless, TechFlow |
 | Token / poin Elysium | **Tidak ada** token Elysium maupun program poin resmi | Bankless |
 | Testnet | Live, chain ID 99801, RPC `testnet-rpc.elysium.kinetiq.xyz` | repo riset testnet |
+| Chain pra-rilis | Chain ID **99901** sudah berjalan (deploy Conduit, belum diumumkan Kinetiq). Bridge/RPC/token di sana **pihak ketiga** — lihat [validasi ekosistem](elysium-ecosystem.md) | DRPC PR #291, Alchemy, elysp.com |
 | KNTQ | ATH **$0,4547** (28 Okt); ±280 jt beredar dari 1 M max → mcap ±$117–127 jt | TokenPost, DefiLlama, X |
 | kHYPE | TVL ±$0,93–1,04 M; model exchange-rate (non-rebasing); fee performa 10%, sejak 9 Apr 2026 **70% fee itu buyback KNTQ** | DefiLlama, yearn, Yellow |
 
