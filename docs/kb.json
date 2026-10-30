@@ -1,5 +1,22 @@
 [
   {
+    "id": "jagent-bsc",
+    "title": "JAGENT (BSC) — early minters & top wallets",
+    "summary": "Fair-mint meme coin for Binance .ai Agent IDs (> $8M mcap). 4,942 minters → 153 funded/active; top 100 analysed: 77% hold no JAGENT, likely sybil clusters, high-nonce wallets to watch.",
+    "date": "2026-10-30",
+    "tags": [
+      "BSC",
+      "fair mint",
+      "wallets",
+      "sybil"
+    ],
+    "coins": [
+      "JAGENT",
+      "BNB"
+    ],
+    "path": "docs/jagent-bsc.md"
+  },
+  {
     "id": "elysium-ecosystem",
     "title": "Elysium ecosystem — project validation & opportunities",
     "summary": "108 accounts from the ecosystem PDF checked against independent sources. Pre-launch chain 99901 with unofficial bridges (avoid), Pump.fun/fomo day-one, Ascend audit claim unconfirmed, ranked opportunities.",
