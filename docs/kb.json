@@ -1,0 +1,20 @@
+[
+  {
+    "id": "elysium",
+    "title": "Elysium (Kinetiq) — L2 Hyperliquid",
+    "summary": "Mainnet 9 Nov 2026. Verified facts, corrections to circulating claims, KNTQ burn math, and ranked opportunities: kHYPE, KNTQ, early LP/PropAMM, builder bots.",
+    "date": "2026-10-30",
+    "tags": ["L2", "HyperEVM", "Kinetiq", "launch"],
+    "coins": ["HYPE", "KNTQ", "kHYPE"],
+    "path": "docs/elysium.md"
+  },
+  {
+    "id": "purr-mnav",
+    "title": "PURR mNAV as a HYPE rotation signal",
+    "summary": "Hyperliquid Strategies (NASDAQ: PURR) premium/discount vs. its HYPE treasury — sourced data, why readings differ, reflexivity, backtest design.",
+    "date": "2026-10-30",
+    "tags": ["treasury", "mNAV", "signal"],
+    "coins": ["HYPE", "PURR"],
+    "path": "docs/purr-mnav.md"
+  }
+]

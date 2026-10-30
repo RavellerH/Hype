@@ -1,5 +1,5 @@
 /* ============================================================
-   kb.js — Knowledge Base: Wiki · Journal
+   kb.js — Knowledge Base: Research · Wiki · Journal
    ============================================================ */
 
 'use strict';
@@ -12,7 +12,7 @@ const _kbDb    = (window.supabase && window.supabase.createClient)
   : null;
 
 // ── State ────────────────────────────────────────────────────
-let _kbTab          = 'wiki';
+let _kbTab          = 'research';
 let _kbWiki         = [];
 let _kbTrades       = [];
 let _kbWikiFilter   = 'all';
@@ -20,6 +20,10 @@ let _kbLoaded       = false;
 let _activeEntryId  = null;  // trade currently showing entry questions
 let _kbCloseId      = null;  // trade currently being closed
 let _kbFormOpen     = false; // wiki add form toggle
+let _kbDocs         = [];    // curated research index (docs/kb.json)
+let _kbDocHtml      = {};    // rendered markdown cache, by doc id
+let _kbOpenDoc      = null;  // research doc currently open
+let _kbQuery        = '';    // search across research + wiki
 
 // ── HTML escape ───────────────────────────────────────────────
 function kbEsc(s) {
@@ -59,7 +63,25 @@ function kbConvictionDots(n) {
 }
 
 // ── Data loading ──────────────────────────────────────────────
+async function _kbFetchText(path) {
+  const bust = `?t=${Math.floor(Date.now() / 600000)}`;
+  for (const base of ['', 'https://raw.githubusercontent.com/RavellerH/Hype/gh-pages/']) {
+    try {
+      const r = await fetch(base + path + bust);
+      if (r.ok) return await r.text();
+    } catch (_) {}
+  }
+  return null;
+}
+
+async function _kbLoadDocs() {
+  const txt = await _kbFetchText('docs/kb.json');
+  try { _kbDocs = txt ? JSON.parse(txt) : []; } catch (_) { _kbDocs = []; }
+  _kbDocs.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+}
+
 async function _kbLoadData() {
+  await _kbLoadDocs();
   if (!_kbDb) return;
   try {
     const [wr, tr] = await Promise.all([
@@ -87,11 +109,6 @@ function renderKBShell() {
   const el = document.getElementById('kb-content');
   if (!el) return;
 
-  if (!_kbDb) {
-    el.innerHTML = '<div class="chat-empty" style="margin-top:60px;">⚠️ Supabase not connected.</div>';
-    return;
-  }
-
   const openTrades   = _kbTrades.filter(t => t.status === 'OPEN'  || t.status === 'open');
   const closedTrades = _kbTrades.filter(t => t.status === 'CLOSED' || t.status === 'closed');
   const wins         = closedTrades.filter(t => (t.pnl_usd || 0) > 0).length;
@@ -103,6 +120,10 @@ function renderKBShell() {
 
   const statsHTML = `
   <div class="ai-stat-strip">
+    <div class="ai-stat-cell">
+      <div class="ai-stat-label">Research Docs</div>
+      <div class="ai-stat-val">${_kbDocs.length}</div>
+    </div>
     <div class="ai-stat-cell">
       <div class="ai-stat-label">Wiki Entries</div>
       <div class="ai-stat-val">${_kbWiki.length}</div>
@@ -122,9 +143,12 @@ function renderKBShell() {
   </div>`;
 
   const tabBar = `
-  <div class="filter-bar" style="margin:12px 0 0;">
+  <div class="filter-bar" style="margin:12px 0 0;align-items:center;">
+    <button class="chip${_kbTab === 'research' ? ' chip-active' : ''}" onclick="kbSetTab('research')">Research</button>
     <button class="chip${_kbTab === 'wiki' ? ' chip-active' : ''}" onclick="kbSetTab('wiki')">Wiki</button>
     <button class="chip${_kbTab === 'journal' ? ' chip-active' : ''}" onclick="kbSetTab('journal')">Journal</button>
+    <input class="input" id="kb-search" placeholder="Search research + wiki…" value="${kbEsc(_kbQuery)}"
+      oninput="kbSearch(this.value)" style="flex:1;min-width:160px;max-width:320px;margin-left:auto;font-size:12px;" />
   </div>`;
 
   el.innerHTML = statsHTML + tabBar + '<div id="kb-tab-body"></div>';
@@ -132,6 +156,7 @@ function renderKBShell() {
 }
 
 function kbSetTab(tab) {
+  if (tab === 'research' && _kbTab === 'research') _kbOpenDoc = null;
   _kbTab = tab;
   const el = document.getElementById('kb-tab-body');
   if (!el) { renderKBShell(); return; }
@@ -141,8 +166,101 @@ function kbSetTab(tab) {
 function _kbRenderActiveTab() {
   const el = document.getElementById('kb-tab-body');
   if (!el) return;
+  if (_kbTab === 'research') { el.innerHTML = renderResearchTab(); return; }
+  if (!_kbDb) {
+    el.innerHTML = '<div class="chat-empty" style="margin-top:40px;">⚠️ Supabase not connected — Wiki and Journal need it. Research still works.</div>';
+    return;
+  }
   if (_kbTab === 'wiki')    el.innerHTML = renderWikiTab();
   if (_kbTab === 'journal') el.innerHTML = renderJournalTab();
+}
+
+function kbSearch(q) {
+  _kbQuery = q;
+  if (_kbTab === 'journal') _kbTab = 'research';
+  _kbRenderActiveTab();
+}
+
+function _kbMatches(fields) {
+  const q = _kbQuery.trim().toLowerCase();
+  if (!q) return true;
+  const hay = fields.flat().filter(Boolean).join(' ').toLowerCase();
+  return q.split(/\s+/).every(t => hay.includes(t));
+}
+
+// ══════════════════════════════════════════════════════════════
+//  RESEARCH TAB — curated, repo-stored docs (docs/kb.json + docs/*.md)
+// ══════════════════════════════════════════════════════════════
+
+function renderResearchTab() {
+  if (_kbOpenDoc) return _kbDocViewHTML(_kbOpenDoc);
+
+  const docs = _kbDocs.filter(d => _kbMatches([d.title, d.summary, d.tags || [], d.coins || [], _kbDocHtml[d.id] ? _kbDocText(d.id) : '']));
+  const cards = docs.length
+    ? docs.map(d => `
+      <div class="note-card" style="margin-bottom:10px;cursor:pointer;" onclick="kbOpenDoc('${kbEsc(d.id)}')">
+        <div class="note-header" style="flex-wrap:wrap;gap:6px;">
+          <span class="mvrv-zone-badge" style="background:#50d2c120;color:#50d2c1;border:1px solid #50d2c140;">research</span>
+          <span style="font-weight:700;color:var(--text);flex:1;min-width:120px;">${kbEsc(d.title)}</span>
+          <span style="font-size:11px;color:var(--text-faint);">${kbEsc(d.date)}</span>
+        </div>
+        <div style="color:var(--text-muted);font-size:13px;margin:4px 0 6px;line-height:1.5;">${kbEsc(d.summary)}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;">
+          ${(d.coins || []).map(c => `<span class="chip" style="font-size:10px;padding:2px 7px;background:var(--accent)15;color:var(--accent);">${kbEsc(c)}</span>`).join('')}
+          ${(d.tags || []).map(t => `<span class="chip" style="font-size:10px;padding:2px 7px;">${kbEsc(t)}</span>`).join('')}
+        </div>
+      </div>`).join('')
+    : `<div class="chat-empty" style="margin-top:30px;">${_kbDocs.length ? 'No research matches.' : 'Could not load docs/kb.json.'}</div>`;
+
+  const wikiHits = (_kbQuery.trim() && _kbWiki.length)
+    ? _kbWiki.filter(w => _kbMatches([w.title, w.summary, w.content, w.coins || [], w.tags || []]))
+    : [];
+  const wikiHTML = wikiHits.length
+    ? `<div class="section-title" style="margin:16px 0 8px;">Wiki matches (${wikiHits.length})</div>${wikiHits.map(w => _wikiCardHTML(w)).join('')}`
+    : '';
+
+  return `<div style="padding-top:8px;">
+    <div style="font-size:11px;color:var(--text-faint);margin-bottom:10px;">Curated research stored in the repo (<code>docs/kb.json</code>). Add a doc by committing a markdown file and an index entry.</div>
+    ${cards}${wikiHTML}</div>`;
+}
+
+function _kbDocText(id) {
+  return String(_kbDocHtml[id] || '').replace(/<[^>]+>/g, ' ');
+}
+
+function _kbDocViewHTML(id) {
+  const d = _kbDocs.find(x => x.id === id);
+  if (!d) return '';
+  const body = _kbDocHtml[id] || '<div class="loading"><div class="spinner"></div> Loading research…</div>';
+  return `<div style="padding-top:8px;min-width:0;max-width:100%;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;padding-right:4px;">
+      <button class="btn btn-ghost btn-sm" onclick="kbCloseDoc()">← All research</button>
+      <span style="flex:1;"></span>
+      <a href="https://github.com/RavellerH/Hype/blob/gh-pages/${kbEsc(d.path)}" target="_blank" rel="noopener" style="font-size:11px;color:var(--accent)">source ↗</a>
+    </div>
+    <div class="card" id="kb-doc-body" style="font-size:13px;color:var(--text-muted);overflow-x:auto;max-width:100%;box-sizing:border-box;">${body}</div>
+  </div>`;
+}
+
+async function kbOpenDoc(id) {
+  const d = _kbDocs.find(x => x.id === id);
+  if (!d) return;
+  _kbOpenDoc = id;
+  _kbRenderActiveTab();
+  if (!_kbDocHtml[id]) {
+    const md = await _kbFetchText(d.path);
+    const render = typeof _prrMarkdown === 'function' ? _prrMarkdown : (t => `<pre style="white-space:pre-wrap">${kbEsc(t)}</pre>`);
+    _kbDocHtml[id] = md ? render(md) : `<div>Could not load ${kbEsc(d.path)}.</div>`;
+  }
+  if (_kbOpenDoc === id) {
+    const el = document.getElementById('kb-doc-body');
+    if (el) el.innerHTML = _kbDocHtml[id];
+  }
+}
+
+function kbCloseDoc() {
+  _kbOpenDoc = null;
+  _kbRenderActiveTab();
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -193,9 +311,10 @@ function renderWikiTab() {
   </div>`;
 
   // filtered entries
-  const filtered = _kbWikiFilter === 'all'
+  const filtered = (_kbWikiFilter === 'all'
     ? _kbWiki
-    : _kbWiki.filter(w => w.category === _kbWikiFilter);
+    : _kbWiki.filter(w => w.category === _kbWikiFilter))
+    .filter(w => _kbMatches([w.title, w.summary, w.content, w.coins || [], w.tags || []]));
 
   const cardsHTML = filtered.length
     ? filtered.map(w => _wikiCardHTML(w)).join('')

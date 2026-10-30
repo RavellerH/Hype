@@ -28,7 +28,7 @@ A personal trading dashboard for [Hyperliquid](https://hyperliquid.xyz) — live
 | **Indicators** | Fear & Greed, BMSB, Pi Cycle Top |
 | **Smart Money** | On-chain whale tracking (Nansen-style) |
 | **Analytics** | PnL curve, trade statistics |
-| **KB** | Knowledge base / trading notes |
+| **KB** | Knowledge base — curated research library (`docs/kb.json` + markdown, e.g. [Elysium](docs/elysium.md), [PURR mNAV](docs/purr-mnav.md)) with full-text search, plus wiki and trade journal (Supabase) |
 | **Signals** | Multi-factor confluence scanner (funding + CVD + OI + momentum) |
 | **News** | Crypto news from 9 sources (CryptoCompare, Messari, Reddit, 6 RSS feeds) with Fear & Greed |
 | **HL Pulse** | Hyperliquid ecosystem intel — HL-filtered news, HYPE stats, HyperEVM TVL, top protocols, AI content studio (X threads / posts / digests) |
