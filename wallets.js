@@ -25,7 +25,13 @@ const WAL_EVM_CHAINS = [
   { id: 'gno',  name: 'Gnosis',   api: 'https://gnosis.blockscout.com',   native: 'xDAI' },
 ];
 const WAL_HYPEREVM_RPC = 'https://rpc.hyperliquid.xyz/evm';
-const WAL_SOL_RPC_DEFAULT = 'https://api.mainnet-beta.solana.com';
+// The official endpoint answers browser requests with 403, so keyless fallbacks
+// that allow CORS go first. A personal RPC (Helius, QuickNode…) set in the tab wins.
+const WAL_SOL_RPCS = [
+  'https://solana-rpc.publicnode.com',
+  'https://solana.api.onfinality.io/public',
+  'https://api.mainnet-beta.solana.com',
+];
 const WAL_SOL_MINT = 'So11111111111111111111111111111111111111112';
 const WAL_SPL_PROGRAMS = ['TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA', 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'];
 // Symbols for common mints — Jupiter's keyless price API returns prices, not names.
@@ -56,7 +62,11 @@ function _walList() {
   try { return JSON.parse(localStorage.getItem(WAL_LIST_KEY) || '[]'); } catch (_) { return []; }
 }
 function _walSaveList(list) { try { localStorage.setItem(WAL_LIST_KEY, JSON.stringify(list)); } catch (_) {} }
-function _walRpc() { try { return localStorage.getItem(WAL_RPC_KEY) || WAL_SOL_RPC_DEFAULT; } catch (_) { return WAL_SOL_RPC_DEFAULT; } }
+function _walRpcs() {
+  let own = '';
+  try { own = localStorage.getItem(WAL_RPC_KEY) || ''; } catch (_) {}
+  return own ? [own, ...WAL_SOL_RPCS] : WAL_SOL_RPCS;
+}
 function _walHist() { try { return JSON.parse(localStorage.getItem(WAL_HIST_KEY) || '[]'); } catch (_) { return []; } }
 function _walPushHist(total) {
   const h = _walHist();
@@ -75,11 +85,18 @@ const _walEsc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '
 
 // ── Fetchers ──────────────────────────────────────────────────────────────────
 
-async function _walJson(url, opts) {
-  const r = await fetch(url, opts);
-  if (r.status === 404) return null;          // Blockscout: address never seen on this chain
-  if (!r.ok) throw new Error(`${new URL(url).host} ${r.status}`);
-  return r.json();
+// Blockscout instances throw transient 5xx (599 = upstream timeout) under load:
+// retry twice with backoff before giving up on that chain.
+async function _walJson(url, opts, tries = 3) {
+  for (let i = 0; ; i++) {
+    let r;
+    try { r = await fetch(url, opts); }
+    catch (e) { if (i + 1 >= tries) throw new Error(`${new URL(url).host} unreachable`); await new Promise(res => setTimeout(res, 800 * 2 ** i)); continue; }
+    if (r.status === 404) return null;          // Blockscout: address never seen on this chain
+    if (r.ok) return r.json();
+    if ((r.status < 500 && r.status !== 429) || i + 1 >= tries) throw new Error(`${new URL(url).host} ${r.status}`);
+    await new Promise(res => setTimeout(res, 800 * 2 ** i));
+  }
 }
 
 async function _walEvmChain(addr, c) {
@@ -205,10 +222,14 @@ async function walFetchAll() {
     ...(w.hl !== false ? [{ name: 'Hyperliquid', run: () => _walHyperliquid(w.address, spotMeta, mids) }] : []),
   ])));
 
-  const rpc = _walRpc();
+  const rpcs = _walRpcs();
   const solRaw = await Promise.all(sol.map(async w => {
-    try { return { w, h: await _walSolHoldings(w.address, rpc) }; }
-    catch (e) { return { w, h: {}, err: `Solana: ${e.message}` }; }
+    const tried = [];
+    for (const rpc of rpcs) {
+      try { return { w, h: await _walSolHoldings(w.address, rpc) }; }
+      catch (e) { tried.push(`${new URL(rpc).host} ${e.message.replace(/^solana rpc:? ?/, '')}`); }
+    }
+    return { w, h: {}, err: `Solana: all RPCs failed (${tried.join('; ')}) — set your own RPC below` };
   }));
   const prices = await _walJupPrices([...new Set(solRaw.flatMap(s => Object.keys(s.h)))]);
   const solOut = solRaw.map(({ w, h, err }) => {
@@ -396,14 +417,14 @@ function _walRender() {
         <td style="text-align:right">${w.total > 0 ? (a.usd / w.total * 100).toFixed(1) : '—'}</td></tr>`).join('')}
     </tbody></table></div>` : '<div style="font-size:12px;color:var(--text-muted);margin-top:8px">No priced balances found.</div>'}
     ${w.hidden ? `<div style="font-size:10px;color:var(--text-faint);margin-top:4px">${w.hidden} unpriced token(s) hidden (likely spam or illiquid)</div>` : ''}
-    ${w.errors.length ? `<div style="font-size:10px;color:var(--red);margin-top:4px">⚠ ${w.errors.map(_walEsc).join(' · ')}</div>` : ''}
+    ${w.errors.length ? `<div style="font-size:10px;color:var(--yellow, #e3b341);margin-top:4px">⚠ couldn't read: ${w.errors.map(_walEsc).join(' · ')} — total may be incomplete, retried automatically on next refresh</div>` : ''}
   </div>`).join('');
 
   const settings = `<div class="card">
     <div class="card-title">Settings & Telegram alerts</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:12px">
       <span>Solana RPC</span>
-      <input class="input" id="wal-rpc" value="${_walEsc(localStorage.getItem(WAL_RPC_KEY) || '')}" placeholder="${WAL_SOL_RPC_DEFAULT} (default) — a free Helius URL is more reliable" style="flex:1;min-width:220px;font-family:var(--mono);font-size:11px">
+      <input class="input" id="wal-rpc" value="${_walEsc(localStorage.getItem(WAL_RPC_KEY) || '')}" placeholder="optional — e.g. https://mainnet.helius-rpc.com/?api-key=… (free); default uses public RPCs" style="flex:1;min-width:220px;font-family:var(--mono);font-size:11px">
       <button class="btn btn-ghost btn-sm" onclick="walSaveRpc()">Save</button>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px;font-size:12px">

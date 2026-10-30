@@ -20,8 +20,11 @@ Solana native stake accounts, NFTs.
 
 Add addresses in the tab (stored in this browser's localStorage only). It
 refreshes every 5 minutes while open and keeps a local net-worth history.
-Optional: set a Solana RPC (e.g. a free Helius URL) — the public RPC is
-rate-limited.
+Solana reads try your own RPC (if set in the tab) first, then PublicNode,
+OnFinality and the official endpoint — the official one returns 403 to browsers.
+A free Helius key is the most reliable option. Blockscout 5xx/429 responses
+(599 = upstream timeout) are retried twice; a chain that still fails is shown
+as a warning and the total is marked incomplete.
 
 ## Telegram alerts — bot worker
 

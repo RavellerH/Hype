@@ -1602,11 +1602,15 @@ function parseWatchWallets(env) {
   }).filter(w => w.type);
 }
 
-async function _walGet(url, opts) {
-  const r = await fetch(url, { ...opts, headers: { 'User-Agent': 'hype-bot', ...(opts?.headers || {}) } });
-  if (r.status === 404) return null;
-  if (!r.ok) throw new Error(`${new URL(url).host} ${r.status}`);
-  return r.json();
+// Retries transient 5xx / 429 (Blockscout returns 599 on upstream timeouts).
+async function _walGet(url, opts, tries = 3) {
+  for (let i = 0; ; i++) {
+    const r = await fetch(url, { ...opts, headers: { 'User-Agent': 'hype-bot', ...(opts?.headers || {}) } });
+    if (r.status === 404) return null;
+    if (r.ok) return r.json();
+    if ((r.status < 500 && r.status !== 429) || i + 1 >= tries) throw new Error(`${new URL(url).host} ${r.status}`);
+    await new Promise(res => setTimeout(res, 800 * 2 ** i));
+  }
 }
 
 async function _walEvm(addr, c) {
@@ -1707,10 +1711,14 @@ async function walletSnapshot(env) {
     { name: 'Hyperliquid', fn: () => _walHL(w.address, spotPx) },
   ])));
 
-  const rpc = env.SOLANA_RPC || 'https://api.mainnet-beta.solana.com';
+  const rpcs = [env.SOLANA_RPC, 'https://solana-rpc.publicnode.com', 'https://solana.api.onfinality.io/public', 'https://api.mainnet-beta.solana.com'].filter(Boolean);
   const solRaw = await Promise.all(sol.map(async w => {
-    try { return { w, h: await _walSolHoldings(w.address, rpc) }; }
-    catch (e) { return { w, h: {}, err: `Solana: ${e.message}` }; }
+    const tried = [];
+    for (const rpc of rpcs) {
+      try { return { w, h: await _walSolHoldings(w.address, rpc) }; }
+      catch (e) { tried.push(`${new URL(rpc).host}: ${e.message}`); }
+    }
+    return { w, h: {}, err: `Solana: ${tried.join('; ')}` };
   }));
   const mints = [...new Set(solRaw.flatMap(s => Object.keys(s.h)))];
   const px = {};
