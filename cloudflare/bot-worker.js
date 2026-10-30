@@ -1044,6 +1044,8 @@ async function handleTgCommand(cmd, arg, env, msg) {
       '                    digest|post|thread',
       '  /snapshot         daily snapshot',
       '  /status           market status',
+      '  /purr             PURR mNAV + zone',
+      '  /purrset k=v ..   update treasury',
       BAR,
       '  AUTO MONITORS',
       '  signal    15m · 4h cooldown',
@@ -1052,6 +1054,7 @@ async function handleTgCommand(cmd, arg, env, msg) {
       '  trend     4h · full TF flip',
       '  reversal  4h · candle patterns',
       '  liq       4h · cascade alert',
+      '  purr mNAV 30m · zone / 1.00x cross',
       '  position  4h · close/hold/add',
       '  snap      00:00 UTC daily',
       '  hl pulse  00:00 UTC daily draft',
@@ -1358,6 +1361,35 @@ async function handleTgCommand(cmd, arg, env, msg) {
     ]);
   }
 
+  if (cmd === '/purr') {
+    try {
+      const d = await computePurr(env);
+      return _hdr('PURR mNAV') + '\n' + purrBlock(d);
+    } catch (e) {
+      return `<pre>purr error: ${e.message}</pre>`;
+    }
+  }
+
+  // /purrset hype=38830000 shares=329400000 cash=133000000 debt=0 | /purrset reset
+  if (cmd === '/purrset') {
+    if (!env.TG_CHAT || String(msg?.chat?.id) !== String(env.TG_CHAT)) return '<pre>  not authorized</pre>';
+    if (arg.trim().toLowerCase() === 'reset') {
+      await env.ALERT_STATE.delete(PURR_CFG_KEY);
+      return '<pre>  PURR treasury override cleared → wrangler vars</pre>';
+    }
+    let ov = {};
+    try { ov = JSON.parse(await env.ALERT_STATE.get(PURR_CFG_KEY) || '{}'); } catch (_) {}
+    const set = [];
+    for (const kv of arg.split(/\s+/)) {
+      const [k, v] = kv.split('=');
+      if (k in PURR_CFG_FIELDS && isFinite(+v) && +v >= 0) { ov[k] = +v; set.push(`${k}=${v}`); }
+    }
+    if (!set.length) return '<pre>  usage: /purrset hype=N shares=N cash=N debt=N\n         /purrset reset</pre>';
+    ov.updated = new Date().toISOString().slice(0, 10);
+    await env.ALERT_STATE.put(PURR_CFG_KEY, JSON.stringify(ov));
+    return `<pre>  saved: ${set.join(' ')}</pre>`;
+  }
+
   if (cmd === '/hl') {
     const style = ['thread', 'post', 'digest'].includes(arg.toLowerCase()) ? arg.toLowerCase() : 'digest';
     try {
@@ -1370,6 +1402,153 @@ async function handleTgCommand(cmd, arg, env, msg) {
   }
 
   return _hdr('ERROR') + '\n<pre>  unknown command\n  /help for menu</pre>';
+}
+
+// ── PURR mNAV Monitor — Hyperliquid Strategies (NASDAQ: PURR) ─────────────────
+// mNAV = PURR market cap / (HYPE held × HYPE px + cash − debt)
+// Treasury inputs only change on filings / announcements, so they live in
+// wrangler vars and can be overridden at runtime with /purrset (KV-backed).
+// Zones follow the HYPE rotation rule: < low = accumulate HYPE, > high = trim.
+
+const PURR_CFG_KEY  = 'purr:cfg';
+const PURR_STATE_KEY = 'purr:state';
+const PURR_HIST_KEY = 'purr:hist';
+const PURR_HIST_MAX = 1000;
+const PURR_CFG_FIELDS = { hype: 'PURR_HYPE_HOLDINGS', shares: 'PURR_SHARES_OUT', cash: 'PURR_CASH_USD', debt: 'PURR_DEBT_USD' };
+
+async function purrConfig(env) {
+  let ov = {};
+  try { ov = JSON.parse(await env.ALERT_STATE.get(PURR_CFG_KEY) || '{}'); } catch (_) {}
+  const cfg = {};
+  for (const [k, v] of Object.entries(PURR_CFG_FIELDS)) cfg[k] = +(ov[k] ?? env[v] ?? 0);
+  cfg.updated = ov.updated || null;
+  const z = (env.PURR_ZONES || '0.95,1.05,1.20').split(',').map(Number);
+  cfg.zones = { acc: z[0], hold: z[1], trim: z[2] };
+  return cfg;
+}
+
+// Yahoo chart API, Stooq CSV as fallback. Returns { px, prevClose, ts, src }.
+async function getPurrPrice() {
+  try {
+    const r = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/PURR?interval=1d&range=5d', {
+      headers: { 'User-Agent': 'Mozilla/5.0 hype-bot' },
+    });
+    if (r.ok) {
+      const m = (await r.json())?.chart?.result?.[0]?.meta;
+      if (m?.regularMarketPrice) {
+        return { px: m.regularMarketPrice, prevClose: m.chartPreviousClose ?? m.previousClose ?? null, ts: (m.regularMarketTime || 0) * 1000, src: 'yahoo' };
+      }
+    }
+  } catch (_) {}
+  try {
+    const r = await fetch('https://stooq.com/q/l/?s=purr.us&f=sd2t2ohlcv&h&e=csv');
+    if (r.ok) {
+      const [, row] = (await r.text()).trim().split('\n');
+      const c = row?.split(',');
+      const px = +c?.[6];
+      if (px > 0) return { px, prevClose: +c[3] || null, ts: Date.parse(`${c[1]}T${c[2]}Z`) || Date.now(), src: 'stooq' };
+    }
+  } catch (_) {}
+  return null;
+}
+
+function purrZone(mnav, z) {
+  if (mnav < z.acc)  return { id: 'ACCUMULATE', tag: '[▲ACCUM]', note: 'PURR below NAV — accumulate HYPE in tranches' };
+  if (mnav < z.hold) return { id: 'HOLD',       tag: '[◈HOLD]',  note: 'near NAV — hold, wait for confirmation' };
+  if (mnav < z.trim) return { id: 'TRIM',       tag: '[▼TRIM]',  note: 'premium — consider trimming part of HYPE' };
+  return               { id: 'REDUCE',     tag: '[▼▼REDUCE]', note: 'high premium — reduce exposure, esp. if momentum fades' };
+}
+
+async function computePurr(env) {
+  const [cfg, purr, mids] = await Promise.all([purrConfig(env), getPurrPrice(), hlPost({ type: 'allMids' })]);
+  const hypePx = +mids?.HYPE;
+  if (!purr || !hypePx) throw new Error(`price unavailable (purr=${purr?.px ?? 'n/a'} hype=${hypePx || 'n/a'})`);
+  if (!cfg.hype || !cfg.shares) throw new Error('PURR_HYPE_HOLDINGS / PURR_SHARES_OUT not set');
+  const nav      = cfg.hype * hypePx + cfg.cash - cfg.debt;
+  const navPs    = nav / cfg.shares;
+  const mnav     = purr.px / navPs;
+  const hypePerShare = cfg.hype / cfg.shares;
+  // HYPE price at which PURR would sit exactly at 1.00x (at current PURR px)
+  const breakevenHype = (purr.px * cfg.shares - cfg.cash + cfg.debt) / cfg.hype;
+  return {
+    ts: Date.now(), purrPx: purr.px, purrPrev: purr.prevClose, purrTs: purr.ts, src: purr.src,
+    hypePx, nav, navPs, mnav, hypePerShare, breakevenHype,
+    zone: purrZone(mnav, cfg.zones), cfg,
+  };
+}
+
+function purrBlock(d) {
+  const prem = (d.mnav - 1) * 100;
+  const z = d.cfg.zones;
+  return _blk([
+    _row('PURR',   `$${d.purrPx.toFixed(2)}`, d.purrPrev ? `${d.purrPx >= d.purrPrev ? '+' : ''}${((d.purrPx / d.purrPrev - 1) * 100).toFixed(2)}%` : ''),
+    _row('HYPE',   `$${d.hypePx.toFixed(2)}`),
+    _row('NAV/SH', `$${d.navPs.toFixed(2)}`, `${d.hypePerShare.toFixed(4)} HYPE`),
+    _row('mNAV',   `${d.mnav.toFixed(3)}x`, d.zone.tag),
+    _row('PREM',   `${prem >= 0 ? '+' : ''}${prem.toFixed(2)}%`),
+    _row('1.00x@', `HYPE $${d.breakevenHype.toFixed(2)}`),
+    BAR,
+    `  ${d.zone.note}`,
+    `  zones <${z.acc} acc · <${z.hold} hold · <${z.trim} trim · else reduce`,
+    `  treasury ${_fmtM(d.cfg.hype)} HYPE · ${_fmtM(d.cfg.shares)} sh${d.cfg.updated ? ` · set ${d.cfg.updated}` : ''}`,
+    `  src ${d.src} · ${new Date(d.purrTs || d.ts).toUTCString().slice(5, 22)}`,
+  ]);
+}
+
+// Runs every 30 min. Alerts on zone change (confirmed on 2 consecutive reads to
+// avoid flip-flopping on one noisy quote) and on every 1.00x cross.
+async function checkPurrMnav(env) {
+  if (!env.ALERT_STATE) return;
+  let d;
+  try { d = await computePurr(env); } catch (e) { console.log('purr:', e.message); return; }
+
+  let st = {};
+  try { st = JSON.parse(await env.ALERT_STATE.get(PURR_STATE_KEY) || '{}'); } catch (_) {}
+  const side = d.mnav < 1 ? 'below' : 'above';
+  const msgs = [];
+
+  if (st.zone && d.zone.id !== st.zone) {
+    if (st.pending === d.zone.id) {
+      msgs.push(`zone ${st.zone} → ${d.zone.id}`);
+      st.zone = d.zone.id; st.pending = null;
+    } else {
+      st.pending = d.zone.id;
+    }
+  } else {
+    st.zone = d.zone.id; st.pending = null;
+  }
+  if (st.side && side !== st.side) msgs.push(`mNAV crossed ${side === 'below' ? 'BELOW' : 'ABOVE'} 1.00x`);
+  st.side = side;
+  st.last = { ts: d.ts, mnav: d.mnav, purrPx: d.purrPx, hypePx: d.hypePx };
+  await env.ALERT_STATE.put(PURR_STATE_KEY, JSON.stringify(st));
+
+  if (msgs.length && env.TG_TOKEN && env.TG_CHAT) {
+    await tgSend(env.TG_TOKEN, env.TG_CHAT, _hdr('PURR mNAV ALERT') + '\n' + `<b>${msgs.join(' · ')}</b>\n` + purrBlock(d));
+  }
+}
+
+// Daily close record → KV history (+ Supabase purr_mnav if configured).
+async function recordPurrDaily(env) {
+  if (!env.ALERT_STATE) return;
+  let d;
+  try { d = await computePurr(env); } catch (e) { console.log('purr daily:', e.message); return; }
+  const row = {
+    date: new Date(d.purrTs || d.ts).toISOString().slice(0, 10),
+    purr: +d.purrPx.toFixed(4), hype: +d.hypePx.toFixed(4),
+    nav_ps: +d.navPs.toFixed(4), mnav: +d.mnav.toFixed(4),
+    hype_holdings: d.cfg.hype, shares: d.cfg.shares, cash: d.cfg.cash,
+  };
+  let hist = [];
+  try { hist = JSON.parse(await env.ALERT_STATE.get(PURR_HIST_KEY) || '[]'); } catch (_) {}
+  hist = hist.filter(h => h.date !== row.date).concat(row).slice(-PURR_HIST_MAX);
+  await env.ALERT_STATE.put(PURR_HIST_KEY, JSON.stringify(hist));
+  if (env.SUPABASE_URL && env.SUPABASE_KEY) {
+    await sbUpsert(env.SUPABASE_URL, env.SUPABASE_KEY, 'purr_mnav', [row]).catch(() => {});
+  }
+}
+
+async function purrHistory(env) {
+  try { return JSON.parse(await env.ALERT_STATE.get(PURR_HIST_KEY) || '[]'); } catch (_) { return []; }
 }
 
 // ── HL Pulse — Hyperliquid ecosystem news digest (Workers AI) ─────────────────
@@ -1493,6 +1672,7 @@ export default {
         ctx.waitUntil(checkPriceAlerts(env));
       } else {
         ctx.waitUntil(checkFundingArb(env));
+        ctx.waitUntil(checkPurrMnav(env));
       }
     } else if (cron === '0 */4 * * *') {
       ctx.waitUntil(checkReversals(env));
@@ -1503,6 +1683,7 @@ export default {
     } else if (cron === '0 0 * * *') {
       ctx.waitUntil(dailySnapshot(env));
       ctx.waitUntil(hlDailyDigest(env));
+      ctx.waitUntil(recordPurrDaily(env));
       // Sunday (getDay() === 0) → also run weekly review
       if (new Date().getDay() === 0) {
         ctx.waitUntil(weeklyReview(env));
@@ -1555,6 +1736,29 @@ export default {
     if (url.pathname === '/run-trend')    { ctx.waitUntil(checkTrendAlignment(env)); return new Response('Trend alignment check triggered', { status: 202 }); }
     if (url.pathname === '/run-weekly')   { ctx.waitUntil(weeklyReview(env));        return new Response('Weekly review triggered', { status: 202 }); }
     if (url.pathname === '/run-hl-digest'){ ctx.waitUntil(hlDailyDigest(env));       return new Response('HL digest triggered', { status: 202 }); }
+    if (url.pathname === '/run-purr')     { ctx.waitUntil(checkPurrMnav(env));       return new Response('PURR mNAV check triggered', { status: 202 }); }
+
+    // ── PURR mNAV — JSON for the dashboard, CSV history for scripts/purr-backtest.mjs
+    if (url.pathname === '/purr' || url.pathname === '/purr-history') {
+      const cors = { 'Access-Control-Allow-Origin': '*' };
+      if (url.pathname === '/purr-history') {
+        const hist = await purrHistory(env);
+        if (url.searchParams.get('format') === 'json') {
+          return new Response(JSON.stringify(hist), { headers: { ...cors, 'Content-Type': 'application/json' } });
+        }
+        const cols = ['date', 'purr', 'hype', 'nav_ps', 'mnav', 'hype_holdings', 'shares', 'cash'];
+        const csv = [cols.join(','), ...hist.map(h => cols.map(c => h[c] ?? '').join(','))].join('\n');
+        return new Response(csv, { headers: { ...cors, 'Content-Type': 'text/csv' } });
+      }
+      try {
+        const d = await computePurr(env);
+        const hist = await purrHistory(env);
+        return new Response(JSON.stringify({ ...d, history: hist.slice(-90) }), { headers: { ...cors, 'Content-Type': 'application/json' } });
+      } catch (e) {
+        return new Response(JSON.stringify({ error: e.message }), { status: 502, headers: { ...cors, 'Content-Type': 'application/json' } });
+      }
+    }
+
     if (url.pathname === '/health') {
       return new Response(JSON.stringify({ ok: true, ts: Date.now() }), {
         headers: { 'Content-Type': 'application/json' },

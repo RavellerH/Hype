@@ -231,6 +231,7 @@ A separate cron Worker (`cloudflare/bot-worker.js`) runs autonomously on Cloudfl
 | Every 15 min | Signal check: EMA20/50 + MACD cross + RSI + funding gate → Telegram alert per coin (4h cooldown) |
 | Every 15 min | Funding arb check: HL vs Binance/Bybit spread > threshold → Telegram alert |
 | Midnight UTC | Daily snapshot → Supabase `hype_snapshots` + Telegram portfolio summary |
+| Every 30 min | PURR mNAV monitor: Hyperliquid Strategies (NASDAQ: PURR) premium/discount vs. its HYPE treasury → Telegram alert on zone change or 1.00x cross; daily close logged at midnight UTC ([docs/purr-mnav.md](docs/purr-mnav.md)) |
 
 **One-time setup:**
 ```bash
@@ -260,6 +261,8 @@ npx wrangler deploy --config wrangler-bot.toml
 | `/arb` | Funding arb check now |
 | `/hl [digest\|post\|thread]` | AI draft of a Hyperliquid ecosystem update |
 | `/status` | Bot health + BTC funding |
+| `/purr` | PURR mNAV, NAV/share, zone (accumulate / hold / trim / reduce) |
+| `/purrset hype=N shares=N cash=N debt=N` | Update PURR treasury inputs after a filing (owner chat only) |
 | `/help` | Show command menu |
 
 **Register webhook** (one-time, open in browser after deploy):
@@ -293,6 +296,12 @@ Env vars in `wrangler-bot.toml [vars]`: `SIGNAL_COINS`, `ARB_THRESHOLD`, `MAX_FU
 ---
 
 ## Changelog
+
+### 2026-10-30 (PURR mNAV monitor)
+- **PURR mNAV monitor + alerts** — the bot worker computes Hyperliquid Strategies' mNAV every 30 min (PURR from Yahoo/Stooq, HYPE from Hyperliquid) and sends a Telegram alert when the zone changes (confirmed on two reads) or mNAV crosses 1.00x. Daily closes are logged to KV (+ optional Supabase `purr_mnav`) and served at `/purr-history`.
+- **HL Pulse card** — mNAV, premium, NAV/share, HYPE/share, the HYPE price for 1.00x, and a 90-day sparkline (needs `hype_bot_url`).
+- **Backtest** — `scripts/purr-backtest.mjs` tests whether mNAV leads or lags HYPE (incl. partial correlation controlling for HYPE's own past return) and compares the mNAV rotation to buy & hold.
+- **Research** — `docs/purr-mnav.md`: sourced data, why mNAV readings differ (0.66x–1.08x), reflexivity, PURR vs. Assistance Fund demand, risks.
 
 ### 2026-08-03 (latest — Daily Insight)
 - **New Daily Insight tab** — actionable daily report distinct from the macro-only Daily Brief:

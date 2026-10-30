@@ -246,12 +246,59 @@ function _hlpRender() {
       <span style="font-size:11px;color:var(--text-faint)">updated ${new Date(_hlpTs).toLocaleTimeString()} · <a href="javascript:hlpRefresh()" style="color:var(--accent)">↺ refresh</a></span>
     </div>
     ${statsRow}
+    <div id="hlp-purr"></div>
     ${studio}
     <div class="card">
       <div class="card-title">Hyperliquid headlines — last ${HLP_HISTORY_DAYS} days (${_hlpItems.length})</div>
       ${feed}
     </div>
     ${eco}`;
+  _hlpLoadPurr();
+}
+
+// ── PURR mNAV card — served by the bot worker (/purr), which also sends the
+//    Telegram zone / 1.00x-cross alerts. Hidden when no bot URL is set.
+
+const HLP_PURR_ZONE_CLS = { ACCUMULATE: 'pos', HOLD: '', TRIM: 'neg', REDUCE: 'neg' };
+
+async function _hlpLoadPurr() {
+  const box = document.getElementById('hlp-purr');
+  const botUrl = (localStorage.getItem('hype_bot_url') || '').replace(/\/$/, '');
+  if (!box || !botUrl) return;
+  try {
+    const r = await fetch(`${botUrl}/purr`);
+    const d = await r.json();
+    if (!r.ok || d.error) throw new Error(d.error || r.status);
+    const prem = (d.mnav - 1) * 100;
+    const z = d.cfg.zones;
+    const hist = (d.history || []).filter(h => h.mnav > 0);
+    let spark = '';
+    if (hist.length > 1) {
+      const vals = hist.map(h => h.mnav);
+      const lo = Math.min(...vals, 0.9), hi = Math.max(...vals, 1.1);
+      const y = v => (38 - (v - lo) / (hi - lo) * 36).toFixed(1);
+      const pts = vals.map((v, i) => `${(i / (vals.length - 1) * 300).toFixed(1)},${y(v)}`).join(' ');
+      spark = `<svg viewBox="0 0 300 40" preserveAspectRatio="none" style="width:100%;height:40px;margin-top:8px">
+        <line x1="0" x2="300" y1="${y(1)}" y2="${y(1)}" stroke="var(--text-faint)" stroke-dasharray="3 3" stroke-width="1"/>
+        <polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="1.5"/>
+      </svg><div style="font-size:10px;color:var(--text-faint)">mNAV, last ${hist.length} daily closes · dashed = 1.00x</div>`;
+    }
+    box.innerHTML = `<div class="card">
+      <div class="card-title">PURR mNAV — Hyperliquid Strategies treasury vs. HYPE</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px">
+        ${_hlpStatCell('mNAV', `${d.mnav.toFixed(3)}x`, `<span class="${HLP_PURR_ZONE_CLS[d.zone.id] ?? ''}">${d.zone.id}</span>`)}
+        ${_hlpStatCell('Premium', `<span class="${prem >= 0 ? 'neg' : 'pos'}">${prem >= 0 ? '+' : ''}${prem.toFixed(2)}%</span>`)}
+        ${_hlpStatCell('PURR', `$${d.purrPx.toFixed(2)}`, `NAV/sh $${d.navPs.toFixed(2)}`)}
+        ${_hlpStatCell('HYPE / share', d.hypePerShare.toFixed(4), `${(d.cfg.hype / 1e6).toFixed(2)}M HYPE held`)}
+        ${_hlpStatCell('1.00x at HYPE', `$${d.breakevenHype.toFixed(2)}`, `now $${d.hypePx.toFixed(2)}`)}
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:8px">${d.zone.note} · zones &lt;${z.acc} accumulate · &lt;${z.hold} hold · &lt;${z.trim} trim · else reduce</div>
+      ${spark}
+      <div style="font-size:10px;color:var(--text-faint);margin-top:6px">Treasury inputs ${d.cfg.updated ? `set ${d.cfg.updated}` : 'from wrangler vars'} — update with <code>/purrset</code> after each filing. Research: <code>docs/purr-mnav.md</code></div>
+    </div>`;
+  } catch (e) {
+    box.innerHTML = `<div class="card" style="font-size:11px;color:var(--text-faint)">PURR mNAV unavailable — ${String(e.message || e).replace(/</g, '&lt;')}</div>`;
+  }
 }
 
 // ── Content generator ─────────────────────────────────────────────────────────

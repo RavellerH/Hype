@@ -33,3 +33,15 @@ FG_GREED_GATE = "80"
 OI_SPIKE_PCT = "0.08"
 # Liquidation cascade threshold — total 24h liq in USD to trigger alert
 LIQ_CASCADE_USD = "150000000"
+# PURR mNAV monitor (Hyperliquid Strategies, NASDAQ: PURR) — treasury inputs.
+# These only change on filings/announcements: update here or at runtime via
+# Telegram `/purrset hype=N shares=N cash=N debt=N` (KV override, owner chat only).
+# Defaults: 38.83M HYPE (DefiLlama, 29 Oct 2026), $133M cash (19 Aug 2026 update),
+# shares calibrated so NAV/share ≈ $11.39 at HYPE $93.20 (purrmnav.com, 29 Oct close).
+# Verify against the latest 10-Q / press release before trusting the zones.
+PURR_HYPE_HOLDINGS = "38830000"
+PURR_SHARES_OUT = "329400000"
+PURR_CASH_USD = "133000000"
+PURR_DEBT_USD = "0"
+# mNAV zone edges: < first = ACCUMULATE, < second = HOLD, < third = TRIM, else REDUCE
+PURR_ZONES = "0.95,1.05,1.20"
