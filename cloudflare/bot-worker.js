@@ -1045,6 +1045,7 @@ async function handleTgCommand(cmd, arg, env, msg) {
       '  /snapshot         daily snapshot',
       '  /status           market status',
       '  /purr             PURR mNAV + zone',
+      '  /wallets          Rabby + Phantom value',
       '  /purrset k=v ..   update treasury',
       BAR,
       '  AUTO MONITORS',
@@ -1055,6 +1056,7 @@ async function handleTgCommand(cmd, arg, env, msg) {
       '  reversal  4h · candle patterns',
       '  liq       4h · cascade alert',
       '  purr mNAV 30m · zone / 1.00x cross',
+      '  wallets   1h · value / in-out flows',
       '  position  4h · close/hold/add',
       '  snap      00:00 UTC daily',
       '  hl pulse  00:00 UTC daily draft',
@@ -1361,6 +1363,12 @@ async function handleTgCommand(cmd, arg, env, msg) {
     ]);
   }
 
+  if (cmd === '/wallets') {
+    if (!parseWatchWallets(env).length) return '<pre>  no wallets — set the WATCH_WALLETS secret\n  "Rabby:0x…,Phantom:…"</pre>';
+    const snap = await walletSnapshot(env);
+    return _hdr('WALLETS') + '\n' + walletSummaryBlock(snap);
+  }
+
   if (cmd === '/purr') {
     try {
       const d = await computePurr(env);
@@ -1551,6 +1559,259 @@ async function purrHistory(env) {
   try { return JSON.parse(await env.ALERT_STATE.get(PURR_HIST_KEY) || '[]'); } catch (_) { return []; }
 }
 
+// ── Wallet Monitor — Rabby (EVM) + Phantom (Solana) public addresses ──────────
+// Same sources as wallets.js on the dashboard. WATCH_WALLETS secret:
+//   "Rabby:0xabc…,Phantom:7xyz…"   (label optional, type auto-detected)
+// Hourly: alert when total value moves ≥ WALLET_ALERT_PCT since the last alert,
+// or when a token balance (units, not price) changes ≥ 10% and ≥ WALLET_MIN_USD
+// — i.e. a transfer in/out or a swap. 00:xx UTC run also sends a daily summary.
+// Subrequests: ~15 per EVM wallet (6 Blockscout chains ×2 + HyperEVM + HL ×2),
+// ~3 per Solana wallet + 1 Jupiter — keep well under the Workers limit.
+
+const WAL_STATE_KEY = 'wallets:last';
+const WAL_BASE_KEY  = 'wallets:base';
+const WAL_HIST_KEY  = 'wallets:hist';
+const WAL_EVM_CHAINS = [
+  { name: 'Ethereum', api: 'https://eth.blockscout.com',      native: 'ETH'  },
+  { name: 'Base',     api: 'https://base.blockscout.com',     native: 'ETH'  },
+  { name: 'Arbitrum', api: 'https://arbitrum.blockscout.com', native: 'ETH'  },
+  { name: 'Optimism', api: 'https://optimism.blockscout.com', native: 'ETH'  },
+  { name: 'Polygon',  api: 'https://polygon.blockscout.com',  native: 'POL'  },
+  { name: 'Gnosis',   api: 'https://gnosis.blockscout.com',   native: 'xDAI' },
+];
+const WAL_SOL_MINT = 'So11111111111111111111111111111111111111112';
+const WAL_SOL_SYMBOLS = {
+  [WAL_SOL_MINT]: 'SOL',
+  EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v: 'USDC',
+  Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB: 'USDT',
+  JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN: 'JUP',
+  jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL: 'JTO',
+  DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263: 'BONK',
+  EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm: 'WIF',
+  mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So: 'mSOL',
+  J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn: 'JitoSOL',
+  jupSoLaHXQiZZTSfEWMTRRgpnyFm8f6sZdosWBjx93v: 'JupSOL',
+};
+
+function parseWatchWallets(env) {
+  return (env.WATCH_WALLETS || '').split(',').map(s => s.trim()).filter(Boolean).map(s => {
+    const i = s.lastIndexOf(':');
+    const address = i >= 0 ? s.slice(i + 1).trim() : s;
+    const type = /^0x[0-9a-fA-F]{40}$/.test(address) ? 'evm' : /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address) ? 'sol' : null;
+    return { label: i >= 0 ? s.slice(0, i).trim() : (type === 'evm' ? 'Rabby' : 'Phantom'), address, type };
+  }).filter(w => w.type);
+}
+
+async function _walGet(url, opts) {
+  const r = await fetch(url, { ...opts, headers: { 'User-Agent': 'hype-bot', ...(opts?.headers || {}) } });
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error(`${new URL(url).host} ${r.status}`);
+  return r.json();
+}
+
+async function _walEvm(addr, c) {
+  const [info, toks] = await Promise.all([
+    _walGet(`${c.api}/api/v2/addresses/${addr}`),
+    _walGet(`${c.api}/api/v2/addresses/${addr}/token-balances`),
+  ]);
+  const out = [];
+  const nat = info?.coin_balance ? Number(BigInt(info.coin_balance)) / 1e18 : 0;
+  if (nat > 0) out.push({ chain: c.name, symbol: c.native, amount: nat, price: +info.exchange_rate || 0 });
+  for (const t of toks || []) {
+    const tk = t.token || {};
+    const px = +tk.exchange_rate || 0;
+    if (tk.type !== 'ERC-20' || !px || !t.value) continue;
+    out.push({ chain: c.name, symbol: tk.symbol || '?', amount: Number(BigInt(t.value)) / 10 ** (+tk.decimals || 0), price: px });
+  }
+  return out;
+}
+
+async function _walHL(addr, spotPx) {
+  const [st, sp] = await Promise.all([
+    hlPost({ type: 'clearinghouseState', user: addr }),
+    hlPost({ type: 'spotClearinghouseState', user: addr }).catch(() => null),
+  ]);
+  const out = [];
+  for (const b of sp?.balances || []) {
+    const amt = +b.total;
+    const px = b.coin === 'USDC' ? 1 : spotPx[b.coin] || 0;
+    if (amt > 0 && px) out.push({ chain: 'Hyperliquid', symbol: b.coin, amount: amt, price: px });
+  }
+  const unified = !!st?.crossMarginSummary;
+  const upnl = (st?.assetPositions || []).reduce((a, p) => a + +(p.position?.unrealizedPnl || 0), 0);
+  const perp = unified ? upnl : +(st?.marginSummary?.accountValue || 0);
+  if (Math.abs(perp) > 0.01) out.push({ chain: 'Hyperliquid', symbol: unified ? 'Perps uPnL' : 'Perps equity', amount: perp, price: 1 });
+  return out;
+}
+
+async function _walSolRpc(rpc, method, params) {
+  const j = await _walGet(rpc, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }) });
+  if (j?.error) throw new Error(`solana rpc: ${j.error.message}`);
+  return j?.result;
+}
+
+async function _walSolHoldings(addr, rpc) {
+  const [bal, a, b] = await Promise.all([
+    _walSolRpc(rpc, 'getBalance', [addr]),
+    _walSolRpc(rpc, 'getTokenAccountsByOwner', [addr, { programId: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' }, { encoding: 'jsonParsed' }]),
+    _walSolRpc(rpc, 'getTokenAccountsByOwner', [addr, { programId: 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb' }, { encoding: 'jsonParsed' }]),
+  ]);
+  const h = {};
+  if ((bal?.value || 0) > 0) h[WAL_SOL_MINT] = bal.value / 1e9;
+  for (const x of [...(a?.value || []), ...(b?.value || [])]) {
+    const info = x.account?.data?.parsed?.info;
+    const amt = +info?.tokenAmount?.uiAmount || 0;
+    if (info?.mint && amt > 0) h[info.mint] = (h[info.mint] || 0) + amt;
+  }
+  return h;
+}
+
+// → { ts, total, wallets: [{ label, address, total, assets: [{ chain, symbol, amount, price, usd }], errors }] }
+async function walletSnapshot(env) {
+  const list = parseWatchWallets(env);
+  if (!list.length) return null;
+  const chainFilter = (env.WALLET_CHAINS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+  const chains = chainFilter.length ? WAL_EVM_CHAINS.filter(c => chainFilter.includes(c.name.toLowerCase())) : WAL_EVM_CHAINS;
+  const evm = list.filter(w => w.type === 'evm');
+  const sol = list.filter(w => w.type === 'sol');
+
+  const [mids, spotMeta] = await Promise.all([
+    hlPost({ type: 'allMids' }).catch(() => ({})),
+    evm.length ? hlPost({ type: 'spotMetaAndAssetCtxs' }).catch(() => null) : null,
+  ]);
+  const hypePx = +mids?.HYPE || 0;
+  const spotPx = {};
+  if (spotMeta) {
+    const [meta, ctxs = []] = spotMeta;
+    (meta?.universe || []).forEach((u, i) => {
+      const px = +(ctxs[i]?.midPx || ctxs[i]?.markPx || 0);
+      const base = meta.tokens?.[u.tokens?.[0]]?.name;
+      if (px && base) spotPx[base] = px;
+    });
+  }
+
+  const run = async (w, jobs) => {
+    const res = await Promise.allSettled(jobs.map(j => j.fn()));
+    const assets = [], errors = [];
+    res.forEach((r, i) => r.status === 'fulfilled' ? assets.push(...r.value) : errors.push(`${jobs[i].name}: ${r.reason?.message || r.reason}`));
+    return { label: w.label, address: w.address, assets, errors };
+  };
+
+  const out = await Promise.all(evm.map(w => run(w, [
+    ...chains.map(c => ({ name: c.name, fn: () => _walEvm(w.address, c) })),
+    { name: 'HyperEVM', fn: async () => {
+      const r = await _walGet('https://rpc.hyperliquid.xyz/evm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_getBalance', params: [w.address, 'latest'] }) });
+      const amt = r?.result ? Number(BigInt(r.result)) / 1e18 : 0;
+      return amt > 0 ? [{ chain: 'HyperEVM', symbol: 'HYPE', amount: amt, price: hypePx }] : [];
+    } },
+    { name: 'Hyperliquid', fn: () => _walHL(w.address, spotPx) },
+  ])));
+
+  const rpc = env.SOLANA_RPC || 'https://api.mainnet-beta.solana.com';
+  const solRaw = await Promise.all(sol.map(async w => {
+    try { return { w, h: await _walSolHoldings(w.address, rpc) }; }
+    catch (e) { return { w, h: {}, err: `Solana: ${e.message}` }; }
+  }));
+  const mints = [...new Set(solRaw.flatMap(s => Object.keys(s.h)))];
+  const px = {};
+  for (let i = 0; i < mints.length; i += 50) {
+    try {
+      const j = await _walGet(`https://lite-api.jup.ag/price/v3?ids=${mints.slice(i, i + 50).join(',')}`);
+      for (const [m, v] of Object.entries(j || {})) if (v?.usdPrice) px[m] = +v.usdPrice;
+    } catch (_) {}
+  }
+  for (const { w, h, err } of solRaw) {
+    const assets = Object.entries(h).filter(([m]) => px[m]).map(([m, amount]) => ({
+      chain: 'Solana', symbol: WAL_SOL_SYMBOLS[m] || `${m.slice(0, 4)}…${m.slice(-4)}`, amount, price: px[m],
+    }));
+    out.push({ label: w.label, address: w.address, assets, errors: err ? [err] : [] });
+  }
+
+  for (const w of out) {
+    w.assets = w.assets.map(a => ({ ...a, usd: a.amount * a.price })).filter(a => Math.abs(a.usd) >= 1).sort((a, b) => b.usd - a.usd);
+    w.total = w.assets.reduce((s, a) => s + a.usd, 0);
+  }
+  return { ts: Date.now(), total: out.reduce((s, w) => s + w.total, 0), wallets: out };
+}
+
+const _walKey = (w, a) => `${w.address}|${a.chain}|${a.symbol}`;
+const _walShortAddr = a => `${a.slice(0, 6)}…${a.slice(-4)}`;
+const _walUsd = n => `${n < 0 ? '-' : ''}$${_fmtM(Math.abs(n))}`;
+
+function walletSummaryBlock(snap) {
+  const rows = [_row('TOTAL', _walUsd(snap.total))];
+  for (const w of snap.wallets) {
+    rows.push(BAR, `  ${w.label} ${_walShortAddr(w.address)}  ${_walUsd(w.total)}`);
+    for (const a of w.assets.slice(0, 6)) rows.push(`   ${a.symbol.slice(0, 10).padEnd(11)}${a.chain.slice(0, 9).padEnd(10)}${_walUsd(a.usd)}`);
+    if (w.assets.length > 6) rows.push(`   +${w.assets.length - 6} more`);
+    if (w.errors.length) rows.push(`   ⚠ ${w.errors.length} source(s) failed`);
+  }
+  return _blk(rows);
+}
+
+async function checkWallets(env) {
+  if (!env.ALERT_STATE) return;
+  const snap = await walletSnapshot(env).catch(e => { console.log('wallets:', e.message); return null; });
+  if (!snap) return;
+  // A failed source would look like the whole balance left — don't alert on partial reads.
+  const complete = snap.wallets.every(w => !w.errors.length);
+
+  let last = null, base = null;
+  try { last = JSON.parse(await env.ALERT_STATE.get(WAL_STATE_KEY) || 'null'); } catch (_) {}
+  try { base = JSON.parse(await env.ALERT_STATE.get(WAL_BASE_KEY) || 'null'); } catch (_) {}
+  const alertPct = +(env.WALLET_ALERT_PCT || 5) / 100;
+  const minUsd = +(env.WALLET_MIN_USD || 100);
+  const lines = [];
+
+  if (complete && last) {
+    const prev = {};
+    for (const w of last.wallets) for (const a of w.assets) prev[_walKey(w, a)] = a;
+    const seen = new Set();
+    for (const w of snap.wallets) {
+      for (const a of w.assets) {
+        const k = _walKey(w, a); seen.add(k);
+        const p = prev[k];
+        const d = a.amount - (p?.amount || 0);
+        if (a.symbol.startsWith('Perps')) continue;           // PnL moves, not transfers
+        if (Math.abs(d) / Math.max(a.amount, p?.amount || 0) >= 0.10 && Math.abs(d * a.price) >= minUsd) {
+          lines.push(`${d > 0 ? '▲ IN ' : '▼ OUT'} ${w.label}: ${d > 0 ? '+' : ''}${(+d.toPrecision(4))} ${a.symbol} (${a.chain}) ≈ ${_walUsd(d * a.price)}`);
+        }
+      }
+    }
+    for (const w of last.wallets) for (const a of w.assets) {
+      if (!seen.has(_walKey(w, a)) && !a.symbol.startsWith('Perps') && a.usd >= minUsd) {
+        lines.push(`▼ OUT ${w.label}: ${a.symbol} (${a.chain}) emptied, was ${_walUsd(a.usd)}`);
+      }
+    }
+  }
+  if (complete && base?.total > 0) {
+    const ch = snap.total / base.total - 1;
+    if (Math.abs(ch) >= alertPct) lines.unshift(`${ch > 0 ? '▲' : '▼'} total ${ch > 0 ? '+' : ''}${(ch * 100).toFixed(1)}% (${_walUsd(base.total)} → ${_walUsd(snap.total)})`);
+  }
+
+  if (lines.length && env.TG_TOKEN && env.TG_CHAT) {
+    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    await tgSend(env.TG_TOKEN, env.TG_CHAT, _hdr('WALLET ALERT') + '\n<pre>' + lines.slice(0, 15).map(esc).join('\n') + '</pre>\n' + walletSummaryBlock(snap));
+  }
+  if (complete) {
+    await env.ALERT_STATE.put(WAL_STATE_KEY, JSON.stringify(snap));
+    if (!base || lines.some(l => l.includes('total'))) await env.ALERT_STATE.put(WAL_BASE_KEY, JSON.stringify({ ts: snap.ts, total: snap.total }));
+  }
+
+  if (new Date().getUTCHours() === 0) {
+    let hist = [];
+    try { hist = JSON.parse(await env.ALERT_STATE.get(WAL_HIST_KEY) || '[]'); } catch (_) {}
+    const date = new Date().toISOString().slice(0, 10);
+    const prevDay = hist.filter(h => h.date !== date).at(-1);
+    hist = hist.filter(h => h.date !== date).concat({ date, total: +snap.total.toFixed(2) }).slice(-400);
+    await env.ALERT_STATE.put(WAL_HIST_KEY, JSON.stringify(hist));
+    if (env.TG_TOKEN && env.TG_CHAT) {
+      const d = prevDay ? snap.total - prevDay.total : null;
+      await tgSend(env.TG_TOKEN, env.TG_CHAT, _hdr('WALLETS · DAILY') + (d != null ? `\n<b>24h ${d >= 0 ? '+' : ''}${_walUsd(d)} (${(d / prevDay.total * 100).toFixed(2)}%)</b>` : '') + '\n' + walletSummaryBlock(snap));
+    }
+  }
+}
+
 // ── HL Pulse — Hyperliquid ecosystem news digest (Workers AI) ─────────────────
 
 function _hlpMatch(txt = '') {
@@ -1680,6 +1941,8 @@ export default {
       ctx.waitUntil(checkOISpikes(env));
       ctx.waitUntil(checkLiqCascade(env));
       ctx.waitUntil(checkPositionAdvisor(env));
+    } else if (cron === '10 * * * *') {
+      ctx.waitUntil(checkWallets(env));
     } else if (cron === '0 0 * * *') {
       ctx.waitUntil(dailySnapshot(env));
       ctx.waitUntil(hlDailyDigest(env));
@@ -1736,6 +1999,7 @@ export default {
     if (url.pathname === '/run-trend')    { ctx.waitUntil(checkTrendAlignment(env)); return new Response('Trend alignment check triggered', { status: 202 }); }
     if (url.pathname === '/run-weekly')   { ctx.waitUntil(weeklyReview(env));        return new Response('Weekly review triggered', { status: 202 }); }
     if (url.pathname === '/run-hl-digest'){ ctx.waitUntil(hlDailyDigest(env));       return new Response('HL digest triggered', { status: 202 }); }
+    if (url.pathname === '/run-wallets')  { ctx.waitUntil(checkWallets(env));        return new Response('Wallet check triggered', { status: 202 }); }
     if (url.pathname === '/run-purr')     { ctx.waitUntil(checkPurrMnav(env));       return new Response('PURR mNAV check triggered', { status: 202 }); }
 
     // ── PURR mNAV — JSON for the dashboard, CSV history for scripts/purr-backtest.mjs
@@ -1774,6 +2038,7 @@ export default {
         SUPABASE_URL:  !!env.SUPABASE_URL,
         SUPABASE_KEY:  !!env.SUPABASE_KEY,
         COINGLASS_KEY: !!env.COINGLASS_KEY,
+        WATCH_WALLETS: parseWatchWallets(env).length,
         ALERT_STATE_KV: !!env.ALERT_STATE,
         AI_BINDING:    !!env.AI,
       };

@@ -9,7 +9,7 @@ mode = "smart"
 binding = "AI"
 
 [triggers]
-crons = ["*/15 * * * *", "0 */4 * * *", "0 0 * * *"]
+crons = ["*/15 * * * *", "0 */4 * * *", "10 * * * *", "0 0 * * *"]
 
 # KV namespace for alert deduplication (4h cooldown per coin)
 # Create with: npx wrangler kv:namespace create ALERT_STATE
@@ -45,3 +45,14 @@ PURR_CASH_USD = "133000000"
 PURR_DEBT_USD = "0"
 # mNAV zone edges: < first = ACCUMULATE, < second = HOLD, < third = TRIM, else REDUCE
 PURR_ZONES = "0.95,1.05,1.20"
+# Wallet monitor (Rabby / Phantom). Addresses go in a SECRET, not here:
+#   npx wrangler secret put WATCH_WALLETS --config wrangler-bot.toml
+#   value: "Rabby:0xabc...,Phantom:7xyz..."   (copy it from the dashboard Wallets tab)
+# Alert when total value moves this % since the last alert
+WALLET_ALERT_PCT = "5"
+# Min USD size of a token in/outflow to alert on
+WALLET_MIN_USD = "100"
+# Optional: limit EVM chains (fewer subrequests), e.g. "Ethereum,Base,Arbitrum"
+WALLET_CHAINS = ""
+# Optional: Solana RPC (a free Helius URL is more reliable than the public one)
+SOLANA_RPC = ""
