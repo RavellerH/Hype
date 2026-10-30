@@ -23,6 +23,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
   <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></symbol>
   <symbol id="i-overview" viewBox="0 0 24 24"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></symbol>
+  <symbol id="i-wallets" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18"/><path d="M7 6V4h10v2"/><circle cx="16.5" cy="15" r="1.2"/></symbol>
   <symbol id="i-capital" viewBox="0 0 24 24"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></symbol>
   <symbol id="i-trades" viewBox="0 0 24 24"><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></symbol>
   <symbol id="i-funding" viewBox="0 0 24 24"><line x1="19" x2="5" y1="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></symbol>
@@ -91,6 +92,7 @@
     <div class="nav-section">Portfolio</div>
     <a class="nav-item active" data-page="overview"   onclick="navigate('overview')"><svg class="nav-ico"><use href="#i-overview"/></svg>Overview</a>
     <a class="nav-item"        data-page="capital"    onclick="navigate('capital')"><svg class="nav-ico"><use href="#i-capital"/></svg>Capital</a>
+    <a class="nav-item"        data-page="wallets"    onclick="navigate('wallets')"><svg class="nav-ico"><use href="#i-wallets"/></svg>Wallets</a>
     <a class="nav-item"        data-page="trades"     onclick="navigate('trades')"><svg class="nav-ico"><use href="#i-trades"/></svg>Trades</a>
     <a class="nav-item"        data-page="funding"    onclick="navigate('funding')"><svg class="nav-ico"><use href="#i-funding"/></svg>Funding</a>
     <a class="nav-item"        data-page="flows"      onclick="navigate('flows')"><svg class="nav-ico"><use href="#i-flows"/></svg>Flows</a>
@@ -143,6 +145,7 @@
       <div class="nav-drawer-section">Portfolio</div>
       <button class="drawer-item active" data-page="overview"  onclick="navigate('overview')"><svg class="nav-ico"><use href="#i-overview"/></svg>Overview</button>
       <button class="drawer-item"        data-page="capital"   onclick="navigate('capital')"><svg class="nav-ico"><use href="#i-capital"/></svg>Capital</button>
+      <button class="drawer-item"        data-page="wallets"   onclick="navigate('wallets')"><svg class="nav-ico"><use href="#i-wallets"/></svg>Wallets</button>
       <button class="drawer-item"        data-page="trades"    onclick="navigate('trades')"><svg class="nav-ico"><use href="#i-trades"/></svg>Trades</button>
       <button class="drawer-item"        data-page="funding"   onclick="navigate('funding')"><svg class="nav-ico"><use href="#i-funding"/></svg>Funding</button>
       <button class="drawer-item"        data-page="flows"     onclick="navigate('flows')"><svg class="nav-ico"><use href="#i-flows"/></svg>Flows</button>
@@ -181,6 +184,7 @@
   <main class="main">
     <div class="page active"  id="page-overview"><div id="overview-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page"         id="page-capital"><div id="capital-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
+    <div class="page"         id="page-wallets"><div id="wallets-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page"         id="page-trades"><div id="trades-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page"         id="page-funding"><div id="funding-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page"         id="page-flows"><div id="flows-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
@@ -224,6 +228,7 @@
 <script src="autojournal.js"></script>
 <script src="journal.js"></script>
 <script src="capital.js"></script>
+<script src="wallets.js"></script>
 <script src="indicators.js"></script>
 <script src="nansen.js"></script>
 <script src="analytics.js"></script>
