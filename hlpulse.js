@@ -261,10 +261,19 @@ function _hlpRender() {
 
 const HLP_PURR_ZONE_CLS = { ACCUMULATE: 'pos', HOLD: '', TRIM: 'neg', REDUCE: 'neg' };
 
-async function _hlpLoadPurr() {
-  const box = document.getElementById('hlp-purr');
+async function _hlpLoadPurr(boxId = 'hlp-purr') {
+  const box = document.getElementById(boxId);
   const botUrl = (localStorage.getItem('hype_bot_url') || '').replace(/\/$/, '');
-  if (!box || !botUrl) return;
+  if (!box) return;
+  if (!botUrl) {
+    box.innerHTML = `<div class="card" style="font-size:12px;color:var(--text-muted)">
+      <div class="card-title">PURR mNAV — live</div>
+      Live mNAV and Telegram alerts come from the bot worker. Deploy it (<code>npx wrangler deploy --config wrangler-bot.toml</code>)
+      and paste its URL in the <a href="javascript:navigate('news')" style="color:var(--accent)">News tab</a> bot-URL field.
+      Until then, use the calculator in <a href="javascript:navigate('purr')" style="color:var(--accent)">PURR Research</a>.
+    </div>`;
+    return;
+  }
   try {
     const r = await fetch(`${botUrl}/purr`);
     const d = await r.json();
