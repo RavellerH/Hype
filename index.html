@@ -45,6 +45,7 @@
   <symbol id="i-news" viewBox="0 0 24 24"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></symbol>
   <symbol id="i-hlpulse" viewBox="0 0 24 24"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></symbol>
   <symbol id="i-brief" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></symbol>
+  <symbol id="i-purr" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/><circle cx="19" cy="8" r="1.5"/></symbol>
   <symbol id="i-research" viewBox="0 0 24 24"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></symbol>
   <symbol id="i-insights" viewBox="0 0 24 24"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></symbol>
   <symbol id="i-fundamentals" viewBox="0 0 24 24"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></symbol>
@@ -123,6 +124,7 @@
     <a class="nav-item"        data-page="brief"        onclick="navigate('brief')"><svg class="nav-ico"><use href="#i-brief"/></svg>Daily Brief</a>
     <a class="nav-item"        data-page="insights"     onclick="navigate('insights')"><svg class="nav-ico"><use href="#i-insights"/></svg>Daily Insight</a>
     <a class="nav-item"        data-page="research"     onclick="navigate('research')"><svg class="nav-ico"><use href="#i-research"/></svg>Weekly Research</a>
+    <a class="nav-item"        data-page="purr"         onclick="navigate('purr')"><svg class="nav-ico"><use href="#i-purr"/></svg>PURR Research</a>
     <a class="nav-item"        data-page="fundamentals" onclick="navigate('fundamentals')"><svg class="nav-ico"><use href="#i-fundamentals"/></svg>Fundamentals</a>
     <a class="nav-item"        data-page="kb"           onclick="navigate('kb')"><svg class="nav-ico"><use href="#i-kb"/></svg>Knowledge Base</a>
 
@@ -172,6 +174,7 @@
       <button class="drawer-item"        data-page="brief"        onclick="navigate('brief')"><svg class="nav-ico"><use href="#i-brief"/></svg>Daily Brief</button>
       <button class="drawer-item"        data-page="insights"     onclick="navigate('insights')"><svg class="nav-ico"><use href="#i-insights"/></svg>Daily Insight</button>
       <button class="drawer-item"        data-page="research"     onclick="navigate('research')"><svg class="nav-ico"><use href="#i-research"/></svg>Weekly Research</button>
+      <button class="drawer-item"        data-page="purr"         onclick="navigate('purr')"><svg class="nav-ico"><use href="#i-purr"/></svg>PURR Research</button>
       <button class="drawer-item"        data-page="fundamentals" onclick="navigate('fundamentals')"><svg class="nav-ico"><use href="#i-fundamentals"/></svg>Fundamentals</button>
       <button class="drawer-item"        data-page="kb"           onclick="navigate('kb')"><svg class="nav-ico"><use href="#i-kb"/></svg>Knowledge Base</button>
       <div class="nav-drawer-section">Tools</div>
@@ -206,6 +209,7 @@
     <div class="page"         id="page-brief"><div id="brief-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page"         id="page-insights"><div id="insights-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page"         id="page-research"><div id="research-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
+    <div class="page"         id="page-purr"><div id="purr-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page"         id="page-fundamentals"><div id="fundamentals-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page"         id="page-arb"><div id="arb-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
     <div class="page"         id="page-defi"><div id="defi-content"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
@@ -243,6 +247,7 @@
 <script src="dailybrief.js"></script>
 <script src="insights.js"></script>
 <script src="research.js"></script>
+<script src="purr-research.js"></script>
 <script src="fundamentals.js"></script>
 <script src="arb.js"></script>
 <script src="defillama.js"></script>
