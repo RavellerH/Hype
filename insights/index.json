@@ -1,5 +1,64 @@
 [
   {
+    "date": "2026-10-31",
+    "file": "2026-10-31.md",
+    "headline": "Wait Regime Calls for Selective Bearish Plays; SOL & HYPE Show Stronger Conviction for Shorts",
+    "market_analysis": "The macro regime remains in a 'WAIT' state, signaling caution and limited conviction for aggressive positioning. Despite a general 'Fear' sentiment, several coins, notably BTC, SOL, and HYPE, show crowded long funding, creating a divergence that could fuel downside if bearish technicals persist. BTC is in a MARKDOWN phase with elevated long crowding, which typically supports a short thesis, but its money flow is neutral, reducing the immediate conviction. ETH also exhibits a MARKDOWN phase but has neutral money flow and uncrowded funding, leading to a low-conviction short setup as signals conflict. In contrast, SOL presents a high-conviction short opportunity with all three signals aligning: a MARKDOWN phase, strong bear money flow indicating real selling, and crowded long funding positioning longs for a squeeze. HYPE similarly shows strong agreement for a short, being in a DISTRIBUTION phase with leveraged selling and crowded longs; however, the 'leveraged sell' flow also introduces a potential for short squeeze if the market sentiment shifts abruptly. SUI's MARKDOWN phase and strong bear money flow point to genuine selling, though uncrowded funding makes it a medium-conviction short setup.",
+    "sentiment_summary": "The broader market sentiment is currently in 'Fear' (30 on F&G Index), which often presents opportunistic zones. However, this fear is juxtaposed against crowded LONG positioning in several tracked coins like BTC, SOL, and HYPE. This divergence indicates that market participants are leaning long into a fearful environment and against prevailing bearish technical phases, which could make them vulnerable to further downside pressure or capitulation. No recent Hyperliquid-specific headlines offer additional sentiment input, keeping focus on on-chain metrics and technicals.",
+    "money_flow_summary": "Money flow reads across the board offer critical distinctions. BTC and ETH exhibit 'NEUTRAL' money flow, suggesting mixed signals from CVD and OI, thus lacking a clear directional edge from volume-driven activity. Conversely, SOL and SUI show 'STRONG BEAR' money flow, characterized by falling price, CVD, and OI, which indicates genuine selling pressure with existing longs exiting positions, supporting continuation of bearish trends. HYPE, while also bearish, displays 'LEVERAGED SELL' money flow, where price and CVD are down but OI is rising. This implies shorts are adding leverage, which, while bearish, carries the inherent risk of a short squeeze if the price finds a floor or sentiment shifts.",
+    "consensus_summary": "High-conviction setups for shorts are identified in SOL and HYPE, where technical phase, money flow, and funding signals all align directionally. BTC presents a conflicted setup due to neutral money flow despite bearish technicals and funding. ETH is the most conflicted, with only one out of three signals aligning for a short, indicating very low conviction.",
+    "position_actions": [],
+    "new_setups": [
+      {
+        "coin": "BTC",
+        "direction": "SHORT",
+        "conviction": "medium",
+        "rationale": "BTC is in a MARKDOWN phase and funding is elevated with longs crowding, which typically aligns for a short. However, money flow is neutral, introducing conflict and reducing overall conviction, suggesting potential for chop or reduced follow-through."
+      },
+      {
+        "coin": "ETH",
+        "direction": "SHORT",
+        "conviction": "low",
+        "rationale": "While ETH is in a MARKDOWN phase, both money flow and funding are neutral. Only one of three directional signals aligns, indicating weak conviction for a short and a higher likelihood of chop or reversal."
+      },
+      {
+        "coin": "SOL",
+        "direction": "SHORT",
+        "conviction": "high",
+        "rationale": "SOL exhibits strong agreement across all signals: a MARKDOWN phase, strong bear money flow indicating real selling, and elevated long crowding providing a favorable setup for shorts. This confluence suggests higher probability of continuation to the downside."
+      },
+      {
+        "coin": "HYPE",
+        "direction": "SHORT",
+        "conviction": "high",
+        "rationale": "HYPE aligns across all three signals for a short, with a DISTRIBUTION phase, 'leveraged sell' money flow, and crowded longs. While this is high conviction, the leveraged selling component also introduces a higher risk of a short squeeze, necessitating careful risk management."
+      },
+      {
+        "coin": "SUI",
+        "direction": "SHORT",
+        "conviction": "medium",
+        "rationale": "SUI shows strong alignment with a MARKDOWN phase and strong bear money flow, indicating real selling. However, the funding rate is low and uncrowded, presenting a neutral signal and thus reducing the overall conviction from high to medium."
+      }
+    ],
+    "regime_verdict": "WAIT",
+    "regime_score": 0,
+    "regime_note": "The 'WAIT' macro regime (score 0/10, confidence 40%) suggests a cautious approach to sizing and risk. This implies that even high-conviction setups should be taken with smaller position sizes than in a more favorable market regime, and greater emphasis should be placed on managing downside risk.",
+    "risks": [
+      "Macro regime 'WAIT' with low confidence (40%) suggests market indecision and potential for sudden shifts, increasing overall trade risk.",
+      "Crowded LONG positions on BTC, SOL, and HYPE, especially HYPE with 'LEVERAGED SELL' money flow, create significant short-squeeze risk if market sentiment or price action reverses.",
+      "BTC dominance suppressing alts could negatively impact altcoin short setups if BTC experiences a counter-trend rally or sustains its dominance."
+    ],
+    "confidence": "medium",
+    "takeaway": "Maintain a cautious stance within the current 'WAIT' regime; prioritize high-conviction bearish setups in SOL and HYPE, while sizing down or avoiding those with conflicting signals.",
+    "oi_snapshot": {
+      "BTC": 3189342994.9068003,
+      "ETH": 2210513514.6967807,
+      "SOL": 516467296.07051927,
+      "HYPE": 1963680434.967363,
+      "SUI": 30884248.840184
+    }
+  },
+  {
     "date": "2026-10-28",
     "file": "2026-10-28.md",
     "headline": "Conflicting Signals and Crowded Longs Dominate in a 'WAIT' Macro Regime",
