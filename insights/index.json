@@ -1,5 +1,52 @@
 [
   {
+    "date": "2026-11-04",
+    "file": "2026-11-04.md",
+    "headline": "Cautious Bull Regime with Conflicting Funding Signals Across Alt Longs; HYPE Shows Divergent Flow",
+    "market_analysis": "The market is currently operating under a low-conviction Bull regime (score 3/10, confidence 55%), with the Fear & Greed Index at 34 signaling a potential opportunistic zone. However, this is tempered by BTC dominance at 59.3%, which is actively suppressing alts despite an otherwise broad alt rally. For BTC, an Accumulation phase is well-supported by spot-driven money flow, indicating genuine demand, with these two signals aligning. The conflict arises from elevated funding and crowded longs, suggesting short-term risk for new long entries. ETH shows a strong Markup phase underpinned by 'STRONG BULL' money flow, signifying real demand and new long participation, a high degree of agreement between technicals and flow. Again, elevated funding introduces a conflict by signaling long crowding. HYPE presents the most significant conflict: a strong MARKDOWN technical phase is directly contradicted by 'SPOT DRIVEN' money flow (rising price/CVD with flat/down OI), which implies spot buying and short covering, a bullish price action. SUI, like BTC, is in an Accumulation phase supported by spot-driven buying, aligning its technical and money flow signals, but also faces the conflict of elevated funding due to long crowding.",
+    "sentiment_summary": "The Fear & Greed Index is at 34 (Fear), which is often seen as an opportunistic zone for accumulation, and aligns opportunistically with the bullish phases seen in BTC, ETH, and SUI. Aggregate funding shows no extreme crowding on a macro level, though individual coin funding rates are elevated for all listed assets. No specific Hyperliquid-relevant headlines were found, leaving market sentiment largely driven by general crypto fear, which diverges from the broad alt rally and underlying spot demand observed in some coins.",
+    "money_flow_summary": "Money flow analysis reveals distinct patterns. BTC, HYPE, and SUI exhibit 'SPOT DRIVEN' flow, characterized by rising price and CVD while Open Interest remains flat or decreases. This indicates genuine spot buying absorbing supply or prompting short covers, rather than new leveraged entries. ETH, in contrast, shows 'STRONG BULL' flow, with price, CVD, and Open Interest all expanding. This signifies robust demand where new leveraged longs are entering, suggesting high conviction and potential for continuation, distinguishing it from the 'spot driven' types.",
+    "consensus_summary": "Today's analysis reveals no high-conviction setups where all three directional signals (technical phase, money flow, funding) are in agreement. BTC, ETH, and SUI all show a medium conviction with two out of three signals aligning bullishly, primarily with funding acting as the conflicting bearish signal due to elevated rates and long crowding. HYPE, however, stands out as highly conflicted, as its strong bearish technical phase is directly contradicted by bullish spot-driven money flow, making it a low-conviction setup.",
+    "position_actions": [],
+    "new_setups": [
+      {
+        "coin": "BTC",
+        "direction": "LONG",
+        "conviction": "medium",
+        "rationale": "The Accumulation phase is strongly supported by 'SPOT DRIVEN' money flow, indicating genuine demand and short covering, providing a solid bullish foundation. The primary conflict arises from elevated funding and crowded long positions, introducing a short-term risk of a flush that warrants caution and reduced sizing."
+      },
+      {
+        "coin": "ETH",
+        "direction": "LONG",
+        "conviction": "medium",
+        "rationale": "ETH is in a robust Markup phase, validated by 'STRONG BULL' money flow signifying real demand and new leveraged long entries, which is a high degree of alignment. The only signal of concern is the elevated funding, indicating long crowding that could lead to minor pullbacks, slightly reducing overall conviction to medium."
+      },
+      {
+        "coin": "HYPE",
+        "direction": "SHORT",
+        "conviction": "low",
+        "rationale": "Despite a strong MARKDOWN technical phase, the 'SPOT DRIVEN' money flow (rising price/CVD, flat/down OI) indicates significant spot buying and short covering, directly contradicting the bearish technicals. This fundamental conflict between flow and phase, compounded by high long funding (which could fuel a short squeeze if spot buying continues), renders this a low-conviction setup."
+      },
+      {
+        "coin": "SUI",
+        "direction": "LONG",
+        "conviction": "medium",
+        "rationale": "The Accumulation phase aligns well with 'SPOT DRIVEN' money flow, suggesting real underlying demand absorbing"
+      }
+    ],
+    "regime_verdict": "BULL",
+    "regime_score": 3,
+    "risks": [],
+    "confidence": null,
+    "oi_snapshot": {
+      "BTC": 3080943211.2725,
+      "ETH": 2342104966.5315604,
+      "SOL": 523738124.48744,
+      "HYPE": 1856123095.153872,
+      "SUI": 29104970.887918
+    }
+  },
+  {
     "date": "2026-11-03",
     "file": "2026-11-03.md",
     "headline": "High-Conviction Bearish Setups Emerge Amidst Broad Weakness and Conflicting Macro Signals",
