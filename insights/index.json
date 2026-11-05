@@ -1,5 +1,65 @@
 [
   {
+    "date": "2026-11-05",
+    "file": "2026-11-05.md",
+    "headline": "Conflicted Signals Persist Amidst 'WAIT' Regime: Caution for New Long Setups",
+    "market_analysis": "The overarching macro regime score of 'WAIT' (1/10) dictates a cautious approach, reinforced by the prevalence of conflicting signals across potential setups. BTC presents a MARKUP phase supported by spot-driven money flow, but its elevated funding rate indicates long crowding, creating a clear conflict for conviction. ETH, despite a strong MARKUP phase, is undermined by a 'SUSPECT PUMP' money flow pattern suggesting short squeezes rather than genuine demand, alongside similarly elevated funding. SOL's MARKUP phase is weakest, with neutral money flow and negative pressure from elevated funding, resulting in only one aligned signal. HYPE is in a MARKDOWN phase with bearish funding, offering 2/3 agreement, yet its neutral money flow reduces the conviction for a strong short. Finally, SUI's MARKUP phase is directly contradicted by 'LEVERAGED SELL' money flow and high funding, flagging significant short-term risk. This pervasive conflict between technical strength, underlying demand, and funding implies low-conviction conditions across the board.",
+    "sentiment_summary": "The Fear & Greed Index sits at a neutral 50, indicating a balanced market mood without extreme sentiment. Aggregate funding across the tracked coins also reports no significant long or short crowding, which suggests a healthy lack of market-wide directional bias. However, this general neutrality in sentiment somewhat conflicts with the elevated funding rates observed on individual long setups for BTC, ETH, SOL, and SUI, hinting at localized, concentrated long interest that isn't reflected in the broader sentiment metrics.",
+    "money_flow_summary": "The money flow analysis reveals a mixed picture, with only BTC showing clear spot-driven demand, indicating real buying interest supporting price action. In contrast, ETH's 'SUSPECT PUMP' flow implies price increases are primarily leverage-driven short squeezes, lacking genuine buying support. SOL and HYPE both exhibit 'NEUTRAL' money flow, meaning there's no clear demand or supply pressure to confirm their respective technical phases. SUI stands out with 'LEVERAGED SELL' flow, where shorts are adding to positions, despite its technical 'MARKUP' phase, creating a significant risk of a short squeeze if the market turns.",
+    "consensus_summary": "No high-conviction setups with full signal agreement are identified today. SOL is explicitly flagged as conflicted, having only one out of three directional signals aligned. ETH and SUI also present significant conflicts with bullish technical phases contradicted by bearish money flow and funding, suggesting low conviction. BTC and HYPE show 2/3 agreement, but the remaining conflicting or neutral signal reduces overall conviction to medium at best.",
+    "position_actions": [],
+    "new_setups": [
+      {
+        "coin": "BTC",
+        "direction": "LONG",
+        "conviction": "medium",
+        "rationale": "While the MARKUP phase aligns with spot-driven money flow, confirming real demand, the elevated funding rate indicates long crowding and introduces a bearish pressure point against the trade."
+      },
+      {
+        "coin": "ETH",
+        "direction": "LONG",
+        "conviction": "low",
+        "rationale": "The technical MARKUP phase is severely compromised by a 'SUSPECT PUMP' money flow, suggesting the move is a short squeeze rather than genuine demand, compounded by elevated funding."
+      },
+      {
+        "coin": "SOL",
+        "direction": "LONG",
+        "conviction": "low",
+        "rationale": "Despite a strong MARKUP technical phase, money flow is neutral, and the elevated funding rate is a clear bearish signal, leading to significant signal conflict and low conviction."
+      },
+      {
+        "coin": "HYPE",
+        "direction": "SHORT",
+        "conviction": "medium",
+        "rationale": "The MARKDOWN phase aligns with elevated funding, but the money flow is neutral, which reduces the conviction for a strong supply-driven move and implies a need for cautious sizing."
+      },
+      {
+        "coin": "SUI",
+        "direction": "LONG",
+        "conviction": "low",
+        "rationale": "The bullish MARKUP phase is directly contradicted by 'LEVERAGED SELL' money flow and high funding, suggesting significant short-term weakness and high risk of a counter-trend move or squeeze."
+      }
+    ],
+    "regime_verdict": "WAIT",
+    "regime_score": 1,
+    "regime_note": "The 'WAIT' macro regime (score 1/10) strongly suggests a low-conviction environment. This implies that today is not a day for aggressive sizing or high-risk entries, instead prioritizing capital preservation and patience for clearer market signals.",
+    "risks": [
+      "The overall macro regime is 'WAIT', indicating market uncertainty and a reduced probability of strong directional follow-through for any setup.",
+      "BTC dominance suppressing alts (59.6%) could negatively impact performance for long altcoin positions, despite individual bullish technical reads.",
+      "Elevated funding rates across multiple long setups (BTC, ETH, SOL, SUI) point to crowding, increasing the risk of long squeezes or reversals.",
+      "Specific money flow anomalies like 'SUSPECT PUMP' on ETH and 'LEVERAGED SELL' on SUI highlight fundamental demand/supply issues that conflict with technical patterns."
+    ],
+    "confidence": "medium",
+    "takeaway": "Today's market is characterized by conflicting signals and a 'WAIT' macro regime. Prioritize capital preservation and extreme caution for any new entries, especially long setups with high funding or questionable money flow.",
+    "oi_snapshot": {
+      "BTC": 3118225651.76696,
+      "ETH": 2505770326.7882395,
+      "SOL": 565235397.45168,
+      "HYPE": 1840055853.23716,
+      "SUI": 31439018.64434
+    }
+  },
+  {
     "date": "2026-11-04",
     "file": "2026-11-04.md",
     "headline": "Cautious Bull Regime with Conflicting Funding Signals Across Alt Longs; HYPE Shows Divergent Flow",
