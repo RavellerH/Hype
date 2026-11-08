@@ -1,5 +1,14 @@
 [
   {
+    "date": "2026-11-08",
+    "file": "2026-11-08.md",
+    "headline": "HYPE Token Declines 2.62% Amidst Overall Market Fear, While HyperEVM TVL Remains Robust",
+    "market_analysis": "HYPE token price experienced a 2.62% decline over the past 24 hours, settling at $77.36. Despite this downward price action, the 8-hour funding rate for HYPE perpetual futures remained marginally positive at +0.0013%, suggesting limited aggressive shorting pressure or sustained, albeit weak, long interest in derivatives. Open Interest (OI) for HYPE stands at a substantial 1.72B, which is notably higher than the platform's total 24-hour perp volume of 1.53B, indicating significant outstanding notional exposure to the token. This divergence between declining spot price",
+    "risks": [],
+    "opportunities": [],
+    "confidence": null
+  },
+  {
     "date": "2026-11-07",
     "file": "2026-11-07.md",
     "headline": "HYPE Price Rises Amidst Broader Market 'Extreme Fear' and Positive Funding",
