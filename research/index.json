@@ -1,5 +1,16 @@
 [
   {
+    "week": "2026-W45",
+    "file": "2026-W45.md",
+    "week_start": "2026-11-01",
+    "week_end": "2026-11-08",
+    "title": "HYPE Token Experiences Volatile Week with Significant Price Declines, Divergent Funding Dynamics, and Persistent Open Interest Unwinding",
+    "summary": "HYPE token experienced a volatile week, marked by two significant price declines on November 3rd and 6th, leading to an overall bearish trajectory. Despite the price weakness, funding rates largely remained positive but low, diverging notably from expectations during sharp sell-offs and suggesting a lack of aggressive shorting pressure or resilient long positioning. Open Interest in HYPE perpetuals saw a steady decline throughout the week, while total platform trading volume initially surged during periods of price volatility before tapering off. Broader market",
+    "risks": [],
+    "opportunities": [],
+    "confidence": null
+  },
+  {
     "week": "2026-W44",
     "file": "2026-W44.md",
     "week_start": "2026-10-25",
