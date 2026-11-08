@@ -1,5 +1,65 @@
 [
   {
+    "date": "2026-11-08",
+    "file": "2026-11-08.md",
+    "headline": "Wait Regime Persists Amidst Broad Alt Weakness and Conflicted Short Setups",
+    "market_analysis": "The overarching macro regime is a 'WAIT' state, marked by broad alt weakness and BTC dominance, which advises caution. Sentiment remains in 'Fear,' aligning with the prevailing bearish technical phases observed across most tracked coins (MARKDOWN or DISTRIBUTION). However, the critical issue is the lack of high-conviction setups: no coin exhibits full agreement across technical phase, money flow, and funding signals. BTC, SOL, and HYPE all show MARKDOWN/DISTRIBUTION phases coupled with elevated funding rates indicating long crowding, which is fundamentally bearish. Yet, their money flow remains 'NEUTRAL,' indicating a lack of clear supply/demand imbalance, conflicting with a strong directional conviction. ETH is even more conflicted, with a DISTRIBUTION phase but neutral money flow and funding, weakening any short bias. SUI presents a 'WEAK RALLY' money flow, which supports a short, but its neutral funding introduces a conflict, making all potential setups inherently less reliable and warranting caution in sizing or execution.",
+    "sentiment_summary": "The Fear & Greed Index at 28 signifies 'Fear,' positioning the market in an opportunistic zone for contrarian plays, yet this aligns with the current bearish technical phases. Importantly, no coin across the tracked list shows signs of crowded long or short positions based on funding rates, reducing the risk of immediate leverage-driven squeezes. There are no recent Hyperliquid-relevant headlines to sway sentiment. Overall, sentiment is bearish and aligns with observed technical weakness, but the lack of crowding suggests genuine price action rather than forced liquidations as the primary driver.",
+    "money_flow_summary": "Money flow analysis reveals a nuanced picture. BTC, ETH, SOL, and HYPE all show 'NEUTRAL' money flow, characterized by either sideways price action despite CVD selling and rising OI, or mixed signals, indicating that real demand or supply is not strongly asserting itself. This neutral stance conflicts with the bearish technical phases and funding signals, suggesting that while price may be trending down, there isn't significant, clear demand or supply pressure driving it. In contrast, SUI exhibits a 'WEAK RALLY,' where price is up but accompanied by net CVD selling and falling OI, pointing to a fragile upward move likely to reverse, signaling underlying distribution rather than genuine strength.",
+    "consensus_summary": "Today offers no high-conviction setups where all three directional signals (phase, money flow, funding) align. All proposed new setups (BTC, ETH, SOL, HYPE, SUI) show some degree of conflict, primarily due to neutral money flow or neutral funding rates that do not confirm the bearish technical phase. ETH is particularly conflicted with only one out of three signals aligned. This environment necessitates extreme caution, suggesting either sitting out or significantly sizing down any positions.",
+    "position_actions": [],
+    "new_setups": [
+      {
+        "coin": "BTC",
+        "direction": "SHORT",
+        "conviction": "medium",
+        "rationale": "The MARKDOWN phase and elevated funding (longs crowding) are bearish signals. However, the NEUTRAL money flow, despite CVD selling, introduces conflict and reduces conviction for a high-probability setup, suggesting a potentially less impulsive move."
+      },
+      {
+        "coin": "ETH",
+        "direction": "SHORT",
+        "conviction": "low",
+        "rationale": "While in a DISTRIBUTION phase, both money flow and funding are neutral. This significant disagreement across signals makes the short bias very low conviction, as there's no clear evidence of active supply or leveraged short interest confirming the technical weakness."
+      },
+      {
+        "coin": "SOL",
+        "direction": "SHORT",
+        "conviction": "medium",
+        "rationale": "The MARKDOWN phase and elevated funding (longs crowding) lean bearish. Yet, the NEUTRAL money flow, which includes CVD buying and rising OI, conflicts with a strong short thesis and indicates unclear real demand/supply dynamics, warranting a cautious approach."
+      },
+      {
+        "coin": "HYPE",
+        "direction": "SHORT",
+        "conviction": "medium",
+        "rationale": "A DISTRIBUTION phase combined with elevated funding (longs crowding) supports a short. However, the NEUTRAL money flow, despite CVD selling, signals a lack of strong, clear supply pressure, which conflicts and dampens the overall conviction."
+      },
+      {
+        "coin": "SUI",
+        "direction": "SHORT",
+        "conviction": "medium",
+        "rationale": "The DISTRIBUTION phase and a 'WEAK RALLY' money flow (price up with CVD selling, falling OI) are strongly bearish. The primary conflict arises from the low, uncrowded funding, which is a neutral signal that doesn't fully confirm the bearish pressure, thus reducing conviction from high to medium."
+      }
+    ],
+    "regime_verdict": "WAIT",
+    "regime_score": 0,
+    "regime_note": "The 'WAIT' macro regime (0/10 score, 40% confidence) suggests extreme caution. This implies reduced sizing, very tight risk management, and potentially waiting for higher-conviction setups to emerge before initiating new positions, especially given the broad alt weakness.",
+    "risks": [
+      "Macro regime confidence is low (40%), potentially leading to unexpected market shifts.",
+      "The prevalence of 'NEUTRAL' money flow across multiple coins makes it difficult to discern true supply/demand, increasing risk for directional bets.",
+      "Lack of high-conviction setups means all potential trades carry significant conflicting signals, requiring higher risk tolerance or smaller sizes.",
+      "BTC dominance suppressing alts could lead to underperformance even if BTC stabilizes."
+    ],
+    "confidence": "low",
+    "takeaway": "Today's market is characterized by a cautious macro 'WAIT' regime and a notable absence of high-conviction trade setups. Conflicting signals across technicals, money flow, and funding advise a disciplined and patient approach.",
+    "oi_snapshot": {
+      "BTC": 3165422833.5140285,
+      "ETH": 2183181178.7776,
+      "SOL": 493851370.4997603,
+      "HYPE": 1720856252.0795395,
+      "SUI": 28047445.3952
+    }
+  },
+  {
     "date": "2026-11-06",
     "file": "2026-11-06.md",
     "headline": "Bearish Technicals Meet Underlying Accumulation Amidst 'WAIT' Macro Regime",
