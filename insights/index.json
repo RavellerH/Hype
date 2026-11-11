@@ -1,5 +1,53 @@
 [
   {
+    "date": "2026-11-11",
+    "file": "2026-11-11.md",
+    "headline": "Bearish Signals Converge for ETH Short, SOL and HYPE Present Conflicts Amidst 'WAIT' Macro Regime",
+    "market_analysis": "The prevailing macro regime is 'WAIT', scoring -1/10 with only 45% confidence, suggesting a period of caution and uncertainty. This aligns with a 'Fear' sentiment (29) and 'Broad weakness' in alt breadth, though BTC funding remains low. For ETH, the technical phase is a clear MARKDOWN, fully supported by a 'STRONG BEAR' money flow (price, CVD, OI all falling) and elevated funding (longs crowding), forming a high-conviction bearish setup with all three signals in agreement. In contrast, SOL, while also in a MARKDOWN phase with 'STRONG BEAR' money flow, shows a conflict with its negative funding rate, which typically favors longs, thereby reducing the conviction for a short. HYPE similarly displays a MARKDOWN phase and elevated funding that would support a short, but its 'ACCUMULATION' money flow (price falling while CVD buys) directly conflicts, indicating underlying demand absorbing supply and making a high-conviction short entry problematic. The macro environment of falling market cap and BTC dominance suppressing alts further reinforces a risk-off bias, favoring high-conviction short plays and urging caution on setups with conflicting signals.",
+    "sentiment_summary": "The Fear & Greed Index at 29 indicates widespread 'Fear,' aligning with the 'Broad weakness' reported in alt breadth and the 'Falling' market cap. There's no significant funding-based crowding across tracked coins, which could prevent immediate squeezes but doesn't negate the underlying bearish pressure. The absence of specific Hyperliquid-relevant headlines means no immediate catalysts are in play. Overall, the sentiment reinforces the cautious 'WAIT' macro regime and is consistent with the observed markdown phases, suggesting that market participants are generally risk-averse.",
+    "money_flow_summary": "ETH and SOL both exhibit 'STRONG BEAR' money flow, characterized by falling price, decreasing CVD, and declining Open Interest. This signifies genuine supply entering the market with leveraged longs actively closing positions, indicating a high likelihood of continuation for the markdown phase. HYPE, however, shows a 'ACCUMULATION' money flow pattern; despite a falling price, CVD is increasing, and OI is decreasing. This suggests that net buyers are absorbing existing supply, potentially smart money accumulating at lower prices while leveraged exposure is being reduced, which is a key divergence from the bearish price action.",
+    "consensus_summary": "ETH stands out as a high-conviction short setup, with its MARKDOWN phase, 'STRONG BEAR' money flow, and elevated funding all aligning. SOL and HYPE, however, present conflicted signals: SOL's negative funding contradicts its short bias, while HYPE's 'ACCUMULATION' money flow diverges from its markdown phase. These conflicts reduce conviction and warrant sizing down or waiting.",
+    "position_actions": [],
+    "new_setups": [
+      {
+        "coin": "ETH",
+        "direction": "SHORT",
+        "conviction": "high",
+        "rationale": "All three directional signals—MARKDOWN phase, 'STRONG BEAR' money flow, and elevated funding (longs crowding)—converge on a bearish outlook. This strong agreement, particularly the real selling indicated by CVD and OI, provides high conviction for a short entry."
+      },
+      {
+        "coin": "SOL",
+        "direction": "SHORT",
+        "conviction": "medium",
+        "rationale": "While the MARKDOWN phase and 'STRONG BEAR' money flow are bearish, the negative funding rate (-0.4% APR) indicates shorts are paying longs, which can be a counter-signal or fuel for a short squeeze. This conflict reduces the overall conviction to medium."
+      },
+      {
+        "coin": "HYPE",
+        "direction": "SHORT",
+        "conviction": "medium",
+        "rationale": "Despite being in a MARKDOWN phase with elevated funding, the 'ACCUMULATION' money flow (price falling but CVD buying) presents a clear divergence, suggesting underlying demand or distribution exhaustion. This conflict with a key signal reduces conviction for a pure short play."
+      }
+    ],
+    "regime_verdict": "WAIT",
+    "regime_score": -1,
+    "regime_note": "The 'WAIT' macro regime (score -1/10) signals a period of uncertainty and broad market weakness, reinforced by a low confidence score (45%). This implies a conservative approach to sizing, prioritizing only high-conviction setups and avoiding or significantly reducing exposure to conflicted signals.",
+    "risks": [
+      "The low confidence (45%) in the 'WAIT' macro regime score means the market environment could shift rapidly, invalidating the cautious stance.",
+      "Conflicting signals on SOL (funding) and HYPE (money flow) introduce uncertainty, potentially leading to whipsaws or unexpected reversals if the dominant signal is misread.",
+      "The absence of Hyperliquid-specific headlines means there's no insight into potential platform-specific catalysts that could rapidly shift sentiment or price action.",
+      "BTC dominance suppressing alts could lead to a 'flight to safety' into BTC, further exacerbating altcoin weakness but also potentially setting up for altcoin relief if BTC stabilizes."
+    ],
+    "confidence": "medium",
+    "takeaway": "Focus on high-conviction bearish setups like ETH where all signals align in the current 'WAIT' macro regime, while exercising caution and reduced sizing on conflicted setups such as SOL and HYPE.",
+    "oi_snapshot": {
+      "BTC": 2963199396.44694,
+      "ETH": 1575941908.56168,
+      "SOL": 387880765.2276801,
+      "HYPE": 1528881983.73898,
+      "SUI": 23889386.492579997
+    }
+  },
+  {
     "date": "2026-11-10",
     "file": "2026-11-10.md",
     "headline": "Conflicting Signals Dominate Amidst Fearful Macro Regime; Spot-Driven Flows Persist",
