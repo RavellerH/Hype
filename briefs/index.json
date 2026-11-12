@@ -1,5 +1,23 @@
 [
   {
+    "date": "2026-11-12",
+    "file": "2026-11-12.md",
+    "headline": "HYPE Price Dips Amidst Strongest Positive Funding Among Peers",
+    "market_analysis": "HYPE's price experienced a modest 1.14% decline over the last 24 hours, settling at $71.42. Despite this price retracement, the 8-hour funding rate for HYPE remained positive at +0.0013%, notably the highest among the listed assets including BTC (+0.0004%), ETH (-0.0001%), and SOL (+0.0005%). This suggests persistent long-side demand or willingness to pay premiums to maintain long positions, even as the asset depreciates. Open Interest (OI) for HYPE stands at 1.53B, closely mirroring ETH's OI of 1.56B, and representing a substantial portion of the total Hyperliquid perp volume of 4.63B over the last 24 hours. The divergence between a declining price and sustained positive funding indicates active accumulation by longs or a market anticipating a rebound, contrasting with broader market sentiment.",
+    "risks": [
+      "The ongoing price decline for HYPE (-1.14%) in the face of the highest positive funding rate among tracked assets (+0.0013%) suggests that long positions are currently accumulating into weakness, posing a risk of a long squeeze if downward pressure intensifies.",
+      "The broader market sentiment, reflected by a Fear & Greed Index reading of 28 (Fear), indicates a cautious environment that could broadly suppress asset prices, potentially overriding localized bullish interest in HYPE.",
+      "A substantial Open Interest of 1.53B for HYPE means a large number of leveraged positions are exposed; a continued downturn could trigger liquidations and accelerate price declines."
+    ],
+    "opportunities": [
+      "The sustained positive funding rate for HYPE, despite a short-term price decline, could indicate underlying bullish conviction among a segment of traders who are willing to pay a premium to maintain long exposure, potentially signaling a belief in future price appreciation.",
+      "The HyperEVM TVL of 2.32B reflects significant activity and liquidity within the Hyperliquid ecosystem, potentially indicating fundamental strength that could, in the long term, support the HYPE token value."
+    ],
+    "news_summary": "No specific news headlines were provided for synthesis in today's brief. However, the broader market sentiment, indicated by a Fear & Greed Index at 28 (Fear), suggests an environment of caution or bearishness. This overall market sentiment aligns with the observed price depreciation across certain assets, but notably contrasts with HYPE's sustained positive funding rate, which suggests pockets of localized bullish sentiment despite the general cautious environment.",
+    "confidence": "medium",
+    "takeaway": "HYPE experienced a slight price drop but maintained strong positive funding, suggesting persistent long interest against a broader fearful market sentiment. This dynamic between price action and funding merits close observation for potential trend continuation or reversal signals."
+  },
+  {
     "date": "2026-11-10",
     "file": "2026-11-10.md",
     "headline": "HYPE Token Sustains Positive Price Action and Significant Open Interest Amidst Broader Market Caution",
