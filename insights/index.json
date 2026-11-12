@@ -1,5 +1,66 @@
 [
   {
+    "date": "2026-11-12",
+    "file": "2026-11-12.md",
+    "headline": "Market Caution Prevails as Bearish Technicals Dominate Low-Conviction Setups",
+    "market_analysis": "The prevailing macro regime is 'WAIT' (score 0/10), reflecting high uncertainty and suggesting a cautious stance. This aligns with a Fear & Greed index at 28 (Fear) and broad altcoin weakness. All tracked coins — BTC, ETH, SOL, HYPE, SUI — are currently in a MARKDOWN technical phase, indicating a generally bearish market structure. However, the conviction for these bearish setups varies significantly. BTC, ETH, and SUI show low directional agreement (1/3 signals), as their technical markdown is not strongly supported by money flow or funding. SOL presents a stronger technical and money flow bearish alignment (2/3 signals), but its negative funding rate conflicts with a short bias by favoring longs. HYPE also shows 2/3 agreement for a short, with elevated funding indicating longs are crowded, which supports a short thesis. Overall, while technicals lean bearish, the lack of broad multi-signal agreement across most assets suggests this is a low-conviction environment for aggressive directional plays.",
+    "sentiment_summary": "The Fear & Greed Index is at 28 (Fear), which typically signals an 'opportunistic zone'. However, this optimistic framing conflicts with the consistently bearish MARKDOWN technical phases observed across all tracked coins, as well as the 'WAIT' macro regime and broad alt weakness. No specific Hyperliquid-relevant headlines are impacting sentiment. Crucially, funding-based crowding is generally low across tracked coins, with no clear long or short crowding, except for HYPE showing elevated funding. This suggests a lack of aggressive positioning from market participants, which aligns with the overall cautious 'WAIT' macro sentiment, rather than supporting a clear opportunistic entry.",
+    "money_flow_summary": "Money flow analysis reveals a mixed picture across the board. BTC, ETH, HYPE, and SUI all display 'NEUTRAL' money flow, characterized by minor price declines with concurrent CVD selling and relatively flat Open Interest. This suggests that while these assets are experiencing price depreciation, it is not being driven by significant real demand/supply shifts or aggressive leverage positions, diminishing conviction for strong follow-through. In contrast, SOL stands out with a 'STRONG BEAR' money flow, where falling prices are accompanied by significant CVD selling and a notable drop in Open Interest, indicating active selling pressure and long exits, suggesting higher conviction for bearish continuation.",
+    "consensus_summary": "Today's analysis reveals no high-conviction setups where all three directional signals (technical phase, money flow, funding) are in strong agreement. BTC, ETH, and SUI are particularly conflicted, with only one out of three signals aligning, making their MARKDOWN phases tenuous. SOL and HYPE show moderate agreement (2/3 signals), but SOL's negative funding rate directly conflicts with a short thesis, while HYPE's neutral money flow tempers its overall conviction, reinforcing a generally low-conviction environment aligned with the macro 'WAIT' regime.",
+    "position_actions": [],
+    "new_setups": [
+      {
+        "coin": "BTC",
+        "direction": "SHORT",
+        "conviction": "low",
+        "rationale": "While in a MARKDOWN phase, money flow is neutral and funding is uncrowded, leading to only 1/3 signals aligning. This conflict reduces conviction for a sustained move despite the bearish technicals."
+      },
+      {
+        "coin": "ETH",
+        "direction": "SHORT",
+        "conviction": "low",
+        "rationale": "Similar to BTC, ETH is in a MARKDOWN phase but lacks confirmation from money flow (neutral) and funding (uncrowded). Only one signal aligns, indicating low conviction for a high-probability short."
+      },
+      {
+        "coin": "SOL",
+        "direction": "SHORT",
+        "conviction": "low",
+        "rationale": "SOL exhibits a strong MARKDOWN phase and strong bear money flow. However, the negative funding rate means shorts pay longs, which conflicts directly with a short thesis by implying long-side interest or making the trade costly to hold, thus lowering conviction despite other bearish signals."
+      },
+      {
+        "coin": "HYPE",
+        "direction": "SHORT",
+        "conviction": "medium",
+        "rationale": "HYPE is in a MARKDOWN phase, and its elevated funding with longs crowding supports a short position due to potential squeeze vulnerability. While money flow is neutral, the agreement between technicals and funding provides a medium-conviction short setup."
+      },
+      {
+        "coin": "SUI",
+        "direction": "SHORT",
+        "conviction": "low",
+        "rationale": "SUI is in a MARKDOWN phase, but both money flow and funding signals are neutral. This results in only one aligned signal, suggesting the bearish technicals might not have strong follow-through and indicating low conviction for a short."
+      }
+    ],
+    "regime_verdict": "WAIT",
+    "regime_score": 0,
+    "regime_note": "The 'WAIT' macro regime (score 0/10) signals an environment of high uncertainty and low directional edge. This implies that any new positions should be sized down significantly and risk management tightened, focusing on capital preservation over aggressive expansion. Large directional bets are not advised until clearer macro signals emerge.",
+    "risks": [
+      "Macro 'WAIT' regime with low confidence (40%) suggests broader market uncertainty.",
+      "Low signal consensus across most tracked coins (1/3 alignment for BTC, ETH, SUI) indicates potential for whipsaws or false breakouts/breakdowns.",
+      "Conflicting funding rates (e.g., SOL's negative funding) can make holding positions against the implied interest costly or unsustainable.",
+      "Fear & Greed Index at 'Fear' (28) could precede an unexpected counter-trend rally or short squeeze, especially with generally uncrowded funding on most assets.",
+      "BTC dominance suppressing alts (32% alt weakness, 59.9% BTC dominance) implies heightened risk for altcoin positions if BTC falters."
+    ],
+    "confidence": "low",
+    "takeaway": "Caution is warranted given the prevailing technical markdown phases are largely unsupported by strong money flow or clear funding-based crowding signals. Focus on capital preservation and waiting for higher conviction opportunities.",
+    "oi_snapshot": {
+      "BTC": 2937548767.3805003,
+      "ETH": 1558254384.83134,
+      "SOL": 363682953.3787799,
+      "HYPE": 1522667104.0961998,
+      "SUI": 23972251.283136003
+    }
+  },
+  {
     "date": "2026-11-11",
     "file": "2026-11-11.md",
     "headline": "Bearish Signals Converge for ETH Short, SOL and HYPE Present Conflicts Amidst 'WAIT' Macro Regime",
