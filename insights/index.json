@@ -1,5 +1,65 @@
 [
   {
+    "date": "2026-11-16",
+    "file": "2026-11-16.md",
+    "headline": "Extreme Fear & Widespread Markdown; SOL Shows High-Conviction Short, Other Setups Conflicted",
+    "market_analysis": "The market operates under an 'Extreme Fear' sentiment amidst a 'WAIT' macro regime, suggesting a cautious approach. All tracked coins are currently in a MARKDOWN phase, aligning with the negative MCap 24h and BTC dominance suppressing alts. However, signal agreement varies significantly across assets. SOL stands out as a high-conviction short, with its MARKDOWN phase, 'LEVERAGED SELL' money flow, and elevated funding (longs crowding) all reinforcing a bearish outlook. In contrast, BTC and HYPE present conflicted signals; despite their MARKDOWN phases, BTC's neutral money flow and uncrowded funding, and HYPE's 'ACCUMULATION' money flow, reduce the conviction for short entries. ETH and SUI also show conflict, with ETH displaying a 'BULL DIVERGENCE' and SUI's negative funding creating counter-trend risk for shorts. This environment calls for highly selective engagement, prioritizing setups with strong signal agreement and avoiding those with conflicting indicators.",
+    "sentiment_summary": "The Fear & Greed Index is at 10, indicating Extreme Fear. This level often coincides with capitulation and historical buy zones, but it currently conflicts with the prevailing MARKDOWN technical phases across all tracked coins, suggesting that price action may not have bottomed despite the fear. Funding-based crowding shows no coin crowded long, but ETH is crowded short with negative funding, presenting a potential squeeze risk or counter-trend opportunity for longs. SOL's elevated funding implies long crowding, which supports a short thesis. No recent Hyperliquid-specific headlines were found to influence sentiment.",
+    "money_flow_summary": "BTC shows a 'NEUTRAL' money flow, indicating no clear institutional or retail directional bias influencing price beyond general market action. ETH exhibits a 'BULL DIVERGENCE,' with CVD buying into price weakness and rising OI, suggesting quiet accumulation despite its markdown phase. SOL and SUI both display 'LEVERAGED SELL' money flow, where declining prices and CVD are accompanied by rising OI, indicating shorts are adding leverage, which increases the risk of a short squeeze should the market reverse. HYPE reports 'ACCUMULATION' flow, with dip buyers absorbing supply while OI decreases, suggesting real buying interest as long exposure reduces.",
+    "consensus_summary": "SOL is identified as the sole high-conviction setup, with all three directional signals (technical phase, money flow, and funding) aligning for a short. BTC and HYPE are explicitly noted as conflicted and low-conviction, due to their money flow and funding not corroborating the technical markdown phase. ETH and SUI also fall into the low-conviction category, as their funding and/or money flow signals directly conflict with a short bias.",
+    "position_actions": [],
+    "new_setups": [
+      {
+        "coin": "BTC",
+        "direction": "SHORT",
+        "conviction": "low",
+        "rationale": "While technically in a MARKDOWN phase with bearish structure, the money flow is neutral and funding is low/uncrowded. This lack of corroborating signals reduces conviction for a strong short entry."
+      },
+      {
+        "coin": "ETH",
+        "direction": "SHORT",
+        "conviction": "low",
+        "rationale": "Despite being in a MARKDOWN phase, the strong BULL DIVERGENCE money flow (CVD buying into price weakness) and deeply negative funding (shorts pay longs) create significant conflicting signals, suggesting potential hidden accumulation and squeeze risk for shorts."
+      },
+      {
+        "coin": "SOL",
+        "direction": "SHORT",
+        "conviction": "high",
+        "rationale": "All signals align for a short: MARKDOWN phase, 'LEVERAGED SELL' money flow (shorts adding leverage), and elevated funding (longs paying shorts). This combination indicates strong bearish momentum and high conviction."
+      },
+      {
+        "coin": "HYPE",
+        "direction": "SHORT",
+        "conviction": "low",
+        "rationale": "Although in a MARKDOWN phase, the 'ACCUMULATION' money flow (buyers absorbing supply with decreasing OI) and uncrowded funding conflict with a high-conviction short. This suggests dip buying activity against the trend."
+      },
+      {
+        "coin": "SUI",
+        "direction": "SHORT",
+        "conviction": "low",
+        "rationale": "While in a MARKDOWN phase with 'LEVERAGED SELL' money flow, the significantly negative funding rate (shorts paying longs) introduces a strong counter-signal, increasing the risk of a short squeeze and reducing conviction for a new short."
+      }
+    ],
+    "regime_verdict": "WAIT",
+    "regime_score": 1,
+    "regime_note": "The 'WAIT' macro regime score of 1/10 indicates extremely unfavorable market conditions for aggressive trading. This mandates strict risk management, conservative position sizing, and a focus exclusively on high-conviction setups where multiple signals align.",
+    "risks": [
+      "Potential for short squeezes on SOL and SUI given the 'LEVERAGED SELL' money flow, especially if market sentiment shifts or underlying accumulation on other assets leads to a bounce.",
+      "The 'Extreme Fear' sentiment (10) could precede a market bounce, directly conflicting with the prevailing MARKDOWN technical phases and presenting a trap for aggressive shorts.",
+      "Low conviction setups across most coins increase the likelihood of chop or quick reversals, emphasizing the need for tight stops.",
+      "BTC dominance suppressing alts could lead to underperformance for altcoin shorts if BTC experiences a relief bounce, even if alts maintain bearish structure."
+    ],
+    "confidence": "medium",
+    "takeaway": "Maintain a highly selective approach, focusing only on the highest conviction setups, particularly given the 'WAIT' regime and widespread signal conflicts.",
+    "oi_snapshot": {
+      "BTC": 2353068152.671394,
+      "ETH": 1102277016.6086597,
+      "SOL": 322374065.72592026,
+      "HYPE": 1282570481.52367,
+      "SUI": 15569225.707168002
+    }
+  },
+  {
     "date": "2026-11-15",
     "file": "2026-11-15.md",
     "headline": "Macro WAIT Regime Amidst Extreme Fear and Widespread MARKDOWN; High Conviction Shorts in BTC, SOL with Caution on Leverage",
