@@ -1,5 +1,52 @@
 [
   {
+    "date": "2026-11-17",
+    "file": "2026-11-17.md",
+    "headline": "SOL Signals Strong Long Conviction Amidst Macro Fear; BTC and SUI Show Conflicting Directional Cues",
+    "market_analysis": "The overall macro regime, while technically 'BULL' at a score of 3/10, shows low confidence (55%) and operates under 'Extreme Fear' sentiment (12). This suggests a fragile environment where high-conviction setups are critical. BTC presents a clear technical MARKDOWN phase, but its money flow exhibits a bullish divergence, indicating hidden accumulation despite recent price weakness. This conflict between bearish technicals and bullish flow, coupled with neutral funding, reduces conviction for a short trade, hinting at potential reversal or consolidation. In contrast, SOL demonstrates strong alignment across all signals for a LONG: a MARKUP phase, a bullish money flow divergence, and significantly negative funding that favors longs and signals crowded shorts. This agreement, amplified by negative funding and macro fear potentially capitulating shorts, makes SOL a high-conviction setup. SUI, while also in a MARKDOWN phase, has neutral money flow and, crucially, negative funding that directly conflicts with a short bias. This makes any short attempt on SUI low conviction.",
+    "sentiment_summary": "Macro sentiment is currently dominated by 'Extreme Fear' (Index 12), which historically acts as a contrarian buy signal and aligns with the weak 'BULL' macro regime. There are no recent Hyperliquid-specific headlines impacting sentiment. Funding-based crowding is observed only in SOL, where shorts are significantly crowded, leading to negative funding that strongly favors long positions. This crowding directly supports SOL's technical markup and bullish money flow, suggesting that fear is driving short positions into a potential squeeze.",
+    "money_flow_summary": "Both BTC and SOL are exhibiting a clear bullish divergence in money flow. Despite recent price declines, CVD is showing persistent buying activity while Open Interest remains stable or increases, signaling quiet accumulation by smart money. This suggests underlying demand is building, which could lead to upward price movements or reversals. SUI's money flow, however, is neutral, with both CVD and OI movements showing no distinct directional edge, indicating a lack of clear demand or supply pressure from derivatives traders.",
+    "consensus_summary": "SOL is the standout high-conviction setup, with all three key directional signals—technical phase, money flow, and funding—aligning for a long. This robust agreement provides a strong basis for action. Conversely, BTC and SUI present conflicted signals; their bearish technical phases are contradicted by either bullish money flow or funding dynamics, suggesting that these setups are low-conviction and warrant caution or waiting for clearer signal alignment.",
+    "position_actions": [],
+    "new_setups": [
+      {
+        "coin": "BTC",
+        "direction": "SHORT",
+        "conviction": "low",
+        "rationale": "While the technical phase is a clear MARKDOWN, the money flow shows a strong bullish divergence with price declining but CVD buying. This conflict, coupled with neutral funding, lowers conviction for a short, suggesting potential accumulation or a pivot."
+      },
+      {
+        "coin": "SOL",
+        "direction": "LONG",
+        "conviction": "high",
+        "rationale": "All three signals align for SOL: a MARKUP technical phase, a bullish money flow divergence, and negative funding favorable to longs. This strong agreement, amplified by crowded shorts, points to a high-conviction long opportunity."
+      },
+      {
+        "coin": "SUI",
+        "direction": "SHORT",
+        "conviction": "low",
+        "rationale": "Despite a MARKDOWN technical phase, SUI's money flow is neutral and funding is significantly negative, favoring longs. This clear conflict in signals makes a short position low conviction and suggests waiting for better alignment."
+      }
+    ],
+    "regime_verdict": "BULL",
+    "regime_score": 3,
+    "regime_note": "The macro regime is a weak BULL (3/10) with moderate confidence (55%). This indicates a fragile bullish environment where aggressive sizing is unwarranted, and only high-conviction setups with strong signal agreement should be prioritized for risk-adjusted trading.",
+    "risks": [
+      "The macro BULL regime score is low (3/10) with only 55% confidence, indicating potential for quick reversals despite 'Extreme Fear' acting as a contrarian signal.",
+      "BTC dominance at 58.4% is currently suppressing alts, which could cap upside for non-BTC assets even if a broader market rally materializes.",
+      "Conflicting signals on BTC and SUI increase the risk of false moves and whipsaws, demanding careful trade management and reduced sizing."
+    ],
+    "confidence": "medium",
+    "takeaway": "Focus on high-conviction setups like SOL, where all signals align, and exercise extreme caution or defer action on conflicted setups given the current fragile macro regime and extreme fear.",
+    "oi_snapshot": {
+      "BTC": 2460744190.54512,
+      "ETH": 1091166969.6086879,
+      "SOL": 323550382.91331387,
+      "HYPE": 1306350731.0574005,
+      "SUI": 15369335.807687998
+    }
+  },
+  {
     "date": "2026-11-16",
     "file": "2026-11-16.md",
     "headline": "Extreme Fear & Widespread Markdown; SOL Shows High-Conviction Short, Other Setups Conflicted",
