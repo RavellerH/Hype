@@ -1,5 +1,23 @@
 [
   {
+    "date": "2026-11-17",
+    "file": "2026-11-17.md",
+    "headline": "HYPE Surges Over 5% Amidst Extreme Market Fear, Outperforming Key Assets",
+    "market_analysis": "HYPE price experienced a significant 5.91% increase, reaching $70.01 in the last 24 hours, starkly contrasting with a broader market characterized by 'Extreme Fear' (Fear & Greed Index 12). While funding for HYPE remained positive at +0.0013%, this rate appears moderate relative to the nearly 6% price surge, suggesting a measured rather than aggressive long accumulation. HYPE's Open Interest (OI) stands at a substantial 1.32B, making it the second-largest among reported assets, trailing only BTC (2.44B) and surpassing ETH (1.11B), which indicates significant dedicated engagement. The Hyperliquid platform also recorded a robust total perpetual volume of 6.50B, underscoring high trading activity, while HyperEVM TVL reached 2.29B, signifying considerable ecosystem growth. This performance for HYPE, alongside positive funding, notably diverges from the negative funding observed in BTC (-0.0001%) and SOL (-0.0013%).",
+    "risks": [
+      "The prevailing 'Extreme Fear' (Fear & Greed Index 12) in the broader market presents a systemic risk, potentially impacting HYPE's sustained outperformance if broader sentiment deteriorates further or contagion effects manifest.",
+      "HYPE's positive funding rate of +0.0013% is modest relative to its +5.91% price surge, which could indicate a lack of exceptionally aggressive long conviction and potentially lead to rapid reversals if market conditions shift.",
+      "Negative funding rates for major assets such as BTC (-0.0001%) and SOL (-0.0013%) signal bearish sentiment in significant market segments, which could eventually exert downward pressure on all crypto assets, including HYPE."
+    ],
+    "opportunities": [
+      "HYPE's substantial price appreciation (+5.91%) and robust Open Interest (1.32B) against a backdrop of 'Extreme Fear' (Fear & Greed Index 12) highlight its strong relative strength and potential for continued outperformance or decoupling from general market trends.",
+      "The significant Hyperliquid total perp volume (6.50B) and HyperEVM TVL (2.29B) indicate a healthy and growing ecosystem with substantial liquidity and utility, which could attract further capital and drive HYPE's fundamental value."
+    ],
+    "news_summary": "The market is operating under conditions of 'Extreme Fear,' as evidenced by a Fear & Greed Index score of 12. This broad negative sentiment stands in direct contradiction to HYPE's robust price performance, which saw a +5.91% increase. This notable divergence suggests that HYPE is currently demonstrating a degree of insulation or specific positive drivers that are allowing it to decouple from pervasive market pessimism.",
+    "confidence": "high",
+    "takeaway": "HYPE shows considerable individual strength and trading activity, reflected in its price and market metrics, even as the broader market experiences extreme fear, though this decoupling requires close monitoring."
+  },
+  {
     "date": "2026-11-16",
     "file": "2026-11-16.md",
     "headline": "HYPE Shows Relative Strength Amidst Extreme Market Fear with Positive Funding and Sustained Open Interest",
