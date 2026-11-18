@@ -1,5 +1,47 @@
 [
   {
+    "date": "2026-11-18",
+    "file": "2026-11-18.md",
+    "headline": "Cautious Outlook Amidst Extreme Fear: Spot-Driven Accumulation in SUI, Mixed Signals for SOL.",
+    "market_analysis": "The macro regime is currently flagged as 'WAIT' with a very low score of 1/10 and low confidence, advocating for a cautious approach. Despite this, the Fear & Greed Index is at 11, signaling 'Extreme Fear,' which historically can precede market bottoms, but is currently diverging from the broader 'WAIT' signal. BTC dominance at 58.4% continues to suppress altcoin performance, with 43% broad alt weakness confirming a risk-off environment. Aggregate funding rates are uncrowded, suggesting leverage is not a primary driver of current price action, aligning with the 'WAIT' regime and allowing for more fundamental-driven moves. For SOL, a MARKUP phase is indicated, but the money flow is neutral, showing CVD selling despite a slight price increase, which conflicts with a strong markup narrative. SUI, however, shows a more compelling ACCUMULATION phase supported by strong spot-driven buying and declining OI, suggesting genuine demand rather than leverage-driven price action.",
+    "sentiment_summary": "The Fear & Greed Index is at an extreme low of 11, indicating 'Extreme Fear.' This typically aligns with bearish price action or capitulation, but here it coincides with nascent bullish technical phases (ACCUMULATION in SUI, MARKUP in SOL). This creates a contrarian divergence where extreme fear might be setting the stage for opportunistic entries, but requires strong confirmation from on-chain and funding metrics. Crucially, there is no significant funding-based crowding across any tracked coin, suggesting current market moves are not primarily fueled by leveraged positions, thus increasing the validity of any spot-driven signals.",
+    "money_flow_summary": "Money flow signals reveal distinct behaviors across the watchlist. SOL exhibits a 'NEUTRAL' money flow: despite a modest price increase, CVD shows selling, indicating supply absorbing demand or a lack of strong conviction buying. This conflicts with a strong markup phase. In contrast, SUI demonstrates a 'SPOT DRIVEN' money flow, with rising CVD and declining Open Interest alongside price appreciation. This is a robust signal for genuine accumulation, suggesting spot buyers are leading the charge and shorts might be covering, lending higher conviction to its accumulation phase.",
+    "consensus_summary": "Based on the provided per-coin directional agreement, neither SOL nor SUI achieves high-conviction status (defined as all three directional signals agreeing). SOL shows 2/3 agreement (phase, funding), but the neutral money flow significantly reduces conviction for a strong upward move. SUI also has 2/3 agreement (phase, money flow), and while its funding is neutral, the strong spot-driven money flow provides a higher quality signal of underlying demand compared to SOL, suggesting it's a relatively stronger setup despite not being 'high-conviction' by the strict 3/3 metric.",
+    "position_actions": [],
+    "new_setups": [
+      {
+        "coin": "SOL",
+        "direction": "LONG",
+        "conviction": "low",
+        "rationale": "While the MARKUP phase and favorable negative funding support a long bias, the NEUTRAL money flow (CVD selling) and fading bullish MACD dilute conviction for an immediate strong move. The R:R of 0.28 is also unfavorable, suggesting limited upside potential relative to stop loss."
+      },
+      {
+        "coin": "SUI",
+        "direction": "LONG",
+        "conviction": "medium",
+        "rationale": "The ACCUMULATION phase is strongly supported by SPOT DRIVEN money flow (CVD buying, OI declining), indicating genuine demand. While funding is neutral, the expanding bullish MACD further reinforces the accumulation narrative, making this a more compelling long setup than SOL."
+      }
+    ],
+    "regime_verdict": "WAIT",
+    "regime_score": 1,
+    "regime_note": "The 'WAIT' macro regime score of 1/10 with low confidence indicates an environment demanding extreme caution. Traders should prioritize smaller position sizing, tighter risk management, and only consider the highest conviction setups, or ideally, wait for clearer directional macro signals.",
+    "risks": [
+      "Macro 'WAIT' regime with low confidence suggests market uncertainty and potential for sudden shifts.",
+      "Persistent BTC dominance (58.4%) and broad alt weakness (43%) could suppress altcoin rallies.",
+      "SOL's neutral money flow conflicting with its markup phase, suggesting potential supply absorption.",
+      "Both SOL and SUI are below their EMA 200, indicating a long-term bearish trend that could reassert itself."
+    ],
+    "confidence": "medium",
+    "takeaway": "Current market conditions favor extreme caution and selective entry, with SUI showing a relatively stronger accumulation signal compared to SOL's mixed signals.",
+    "oi_snapshot": {
+      "BTC": 2616518182.6889,
+      "ETH": 1105974094.27942,
+      "SOL": 326258531.1779401,
+      "HYPE": 1303341137.1882,
+      "SUI": 15281607.548786
+    }
+  },
+  {
     "date": "2026-11-17",
     "file": "2026-11-17.md",
     "headline": "SOL Signals Strong Long Conviction Amidst Macro Fear; BTC and SUI Show Conflicting Directional Cues",
