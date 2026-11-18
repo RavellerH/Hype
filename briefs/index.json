@@ -1,5 +1,23 @@
 [
   {
+    "date": "2026-11-18",
+    "file": "2026-11-18.md",
+    "headline": "HYPE Experiences Modest Dip Amidst Broader Market Extreme Fear and Low Funding Rates",
+    "market_analysis": "HYPE price declined by 1.60% over the last 24 hours, settling at $68.93. Despite this price depreciation, its 8-hour funding rate remained minimally positive at +0.0013%, indicating that aggressive short-side positioning was not dominant. The asset maintains a significant open interest of 1.30 billion, aligning with the platform's robust total perpetual volume of 6.19 billion for the 24-hour period. This low positive funding for HYPE mirrors similar rates observed for BTC and ETH, both at +0.0013%, while SOL diverged with a slightly negative funding rate of -0.0010% for the same period. The overall market sentiment, as indicated by the Fear & Greed Index at 11, points to \"Extreme Fear,\" suggesting a cautious trading environment despite the substantial trading volume on Hyperliquid.",
+    "risks": [
+      "The broader market's 'Extreme Fear' sentiment (Fear & Greed Index at 11) suggests a prevailing risk-off environment, which could continue to exert downward pressure on HYPE and other crypto assets.",
+      "The consistent, albeit low, positive funding rates across HYPE, BTC, and ETH, even with HYPE's price decline, indicate a lack of aggressive leveraged short interest, which could leave the market vulnerable to sudden downside movements if current long positions are liquidated or if sentiment further deteriorates.",
+      "The negative 8-hour funding rate for SOL (-0.0010%) signifies a specific bearish sentiment towards that asset, which could potentially spread to other altcoins if broader market conditions do not improve."
+    ],
+    "opportunities": [
+      "The substantial HyperEVM Total Value Locked (TVL) at 2.27 billion, alongside HYPE's 1.30 billion in open interest, highlights continued platform utility and liquidity, which may attract traders seeking a robust environment during volatile periods.",
+      "Historically, periods of 'Extreme Fear' (Fear & Greed Index at 11) can sometimes precede market reversals or accumulation phases, offering potential entry points for contrarian investors, though this is a general market observation and not a HYPE-specific indicator."
+    ],
+    "news_summary": "The prevailing market sentiment is characterized by \"Extreme Fear,\" as reflected by a Fear & Greed Index reading of 11. Concurrently, Hyperliquid's ecosystem demonstrates resilience with a Total Value Locked (TVL) of 2.27 billion on HyperEVM, suggesting sustained platform activity despite the bearish market backdrop. While HYPE's price experienced a minor dip, its low positive funding rate indicates that aggressive shorting was not widespread, suggesting a degree of stability in leveraged positioning amidst the broader fear. This suggests a nuanced market where underlying platform strength persists even as general market sentiment remains highly apprehensive.",
+    "confidence": "high",
+    "takeaway": "HYPE saw a modest price correction while maintaining low positive funding, set against a backdrop of pronounced market fear but robust platform TVL and significant open interest."
+  },
+  {
     "date": "2026-11-17",
     "file": "2026-11-17.md",
     "headline": "HYPE Surges Over 5% Amidst Extreme Market Fear, Outperforming Key Assets",
