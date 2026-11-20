@@ -1,5 +1,24 @@
 [
   {
+    "date": "2026-11-20",
+    "file": "2026-11-20.md",
+    "headline": "HYPE Price Declines 3.61% Amidst Extreme Market Fear, Funding Remains Marginally Positive",
+    "market_analysis": "HYPE token experienced a notable 3.61% price depreciation over the past 24 hours, settling at 65.39. Despite this downturn, its 8-hour funding rate remained marginally positive at +0.0013%, mirroring BTC's rate and suggesting a slight premium for long positions, which diverges from typical trends during significant price drops. Total open interest for HYPE stands at 1.22B, positioning it as the second-largest OI among the listed assets, behind BTC's 2.47B. Hyperliquid's total perpetual volume for the 24-hour period registered 7.47B. This combination of declining price and sustained positive funding, albeit low, indicates that while selling pressure exists, there isn't aggressive shorting pushing funding rates negative, nor are longs capitulating en masse; however, without historical data for OI and volume, it is difficult to determine net capital flow.",
+    "risks": [
+      "The prevailing 'Extreme Fear' sentiment, indicated by a Fear & Greed Index of 12, suggests a high probability of continued market volatility and potential further downward pressure on HYPE and other crypto assets.",
+      "HYPE's 3.61% 24-hour price decline could be the initiation of a sustained downtrend, particularly if the low positive funding rate fails to attract sufficient buying interest to stabilize or reverse the price.",
+      "The absence of strong negative funding despite a price drop might imply that existing longs are simply holding rather than aggressively adding, which could lead to further liquidations if market conditions worsen."
+    ],
+    "opportunities": [
+      "HYPE's substantial open interest of 1.22B, second only to BTC among the tracked assets, suggests significant trader engagement and liquidity, which could fuel a robust recovery if broader market sentiment improves.",
+      "The consistent positive funding rate for HYPE, even amidst a price decline and compared to negative funding rates on assets like SOL and SUI, may indicate a structural preference for long exposure or underlying confidence in a rebound among some market participants.",
+      "The HyperEVM's considerable Total Value Locked (TVL) of 2.23B underscores strong platform utility and user adoption, potentially serving as a fundamental support for the HYPE token's long-term value."
+    ],
+    "news_summary": "The available data provides no specific external news headlines or developments for this period. Instead, the market's focus is on HYPE's 3.61% price decline to 65.39, set against a backdrop of 'Extreme Fear' reflected by a Fear & Greed Index of 12. Notably, despite this negative price action, HYPE's funding rate remained marginally positive, unlike some other altcoins, suggesting that internal market dynamics and sentiment, rather than specific external news, are currently dictating price movements.",
+    "confidence": "medium",
+    "takeaway": "HYPE experienced a significant price drop amidst overall market fear, yet its funding rates maintained a slight positive bias, reflecting a nuanced market dynamic where immediate selling pressure is met with some underlying long positioning."
+  },
+  {
     "date": "2026-11-19",
     "file": "2026-11-19.md",
     "headline": "HYPE Price Declines Amidst Extreme Market Fear, HyperEVM TVL Remains Robust",
