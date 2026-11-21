@@ -1,5 +1,27 @@
 [
   {
+    "date": "2026-11-21",
+    "file": "2026-11-21.md",
+    "headline": "Conflicting Spot Buying Challenges Bearish Technicals Amidst Extreme Fear; HYPE Only Medium Conviction Short",
+    "market_analysis": "The market currently operates within a \"WAIT\" macro regime, characterized by broad altcoin weakness and overall capital outflows, aligning with the dominant MARKDOWN technical phases observed across all tracked coins. However, this pervasive bearish technical outlook is consistently challenged by a \"SPOT DRIVEN\" money flow, where rising price and CVD with declining OI suggest genuine buying or short covering, rather than leverage-fueled speculation. For BTC, SOL, and SUI, their strong MARKDOWN phases (bearish) conflict significantly with both the bullish spot money flow and negative funding rates (favorable for longs), creating a divergence that complicates a clear short thesis. ETH also presents a conflicted picture, with bearish technicals against bullish money flow and neutral funding. Only HYPE shows partial signal alignment for its short bias, as its MARKDOWN phase and elevated funding (indicating long crowding, hence bearish) agree, despite conflicting bullish spot flow, making it the highest, albeit still medium, conviction short setup. This overall environment of conflicting signals, especially between technical bearishness and underlying spot buying, points to an indecisive market where high-conviction directional plays are scarce.",
+    "sentiment_summary": "The Extreme Fear index (12) suggests capitulation levels, which historically can precede reversals, thus conflicting with the dominant MARKDOWN technical phases that indicate further downside. While BTC funding remains low and uncrowded, SOL and SUI are notably crowded short. This crowded short positioning, when combined with underlying spot buying, poses a significant risk of short squeezes. The divergence between prevailing fearful sentiment and observed spot demand across several assets implies that smart money might be accumulating or covering positions even as the broader retail market remains cautious.",
+    "money_flow_summary": "Across all tracked coins, the money flow is characterized as \"SPOT DRIVEN.\" This pattern, where price and CVD are rising while Open Interest remains flat or declines, indicates that recent price movements are fueled by genuine spot market demand or ongoing short covering. This suggests an underlying buying pressure is active, absorbing selling interest or forcing short positions to unwind, even in assets displaying bearish technical structures. This flow type distinguishes real demand/supply dynamics from purely leverage-driven squeezes.",
+    "consensus_summary": "Today, there are no high-conviction setups with full agreement across all three directional signals (phase, money flow, funding). ETH is explicitly noted as conflicted, but BTC, SOL, and SUI also show significant conflicts between their bearish technical phases and bullish money flow/funding reads. HYPE is the only setup approaching medium conviction for a short, as its bearish technical phase and bearish funding signal align, despite",
+    "position_actions": [],
+    "new_setups": [],
+    "regime_verdict": "WAIT",
+    "regime_score": 1,
+    "risks": [],
+    "confidence": null,
+    "oi_snapshot": {
+      "BTC": 2103726197.5592144,
+      "ETH": 961860776.0597998,
+      "SOL": 289001629.20744014,
+      "HYPE": 1075454347.8407981,
+      "SUI": 12550121.166864002
+    }
+  },
+  {
     "date": "2026-11-20",
     "file": "2026-11-20.md",
     "headline": "Macro WAIT Regime Amidst Broad Markdown and Divergent Money Flows",
