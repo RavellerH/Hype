@@ -1,5 +1,23 @@
 [
   {
+    "date": "2026-11-22",
+    "file": "2026-11-22.md",
+    "headline": "HYPE Gains 5.55% Amidst 'Extreme Fear' Market, Negative Funding Divergence Noted",
+    "market_analysis": "HYPE registered a notable 5.55% price increase over the past 24 hours, reaching $59.74, a movement that contrasts with the broader market sentiment of 'Extreme Fear.' This upward price action occurred despite HYPE's 8-hour funding rate resting at a slightly negative -0.0017%, suggesting that the rally might not be primarily driven by aggressive perp long accumulation. The asset's Open Interest stands at a substantial $1.10B, indicating significant outstanding contracts on Hyperliquid. Concurrently, the platform recorded a robust total perp volume of $5.94B, underscoring active trading across the exchange, though HYPE's funding dynamics imply a potentially mixed short-term directional conviction within its own perp market.",
+    "risks": [
+      "The prevailing market sentiment of 'Extreme Fear,' as reflected by a Fear & Greed Index score of 11, presents a significant macro headwind that could impede HYPE's sustained independent rally.",
+      "The divergence between HYPE's positive price appreciation and its negative funding rate suggests a lack of strong conviction from new perp long positions, which could make the recent gains vulnerable to profit-taking or a reversal, particularly if broader market sentiment deteriorates.",
+      "Widespread negative funding rates observed across major assets like BTC (-0.0005%), ETH (-0.0018%), and SOL (-0.0019%) indicate a general bearish or cautious positioning across Hyperliquid, potentially limiting HYPE's upside if wider market risk aversion intensifies."
+    ],
+    "opportunities": [
+      "HYPE's distinct price resilience, marked by a 5.55% gain against a backdrop of 'Extreme Fear' and negative funding across other major perps, could signal underlying asset-specific strength or emergent demand.",
+      "The HyperEVM's Total Value Locked (TVL) of $2.14B demonstrates significant capital commitment and potential growing utility within the ecosystem, which could contribute to HYPE's long-term value proposition and user engagement."
+    ],
+    "news_summary": "No specific news headlines were provided in the context. However, the prevailing market sentiment, as indicated by a Fear & Greed Index of 11, is characterized by 'Extreme Fear.' This broad market caution stands in notable contrast to HYPE's individual price performance, which registered a 5.55% increase over the past 24 hours. The market's overall cautious stance, also evidenced by negative funding rates for major assets, suggests that HYPE's upward movement is occurring against a backdrop of general de-risking or bearish positioning across the platform.",
+    "confidence": "high",
+    "takeaway": "HYPE demonstrated a significant price increase despite broader market 'Extreme Fear' and its own negative funding rate, indicating a localized rally with potentially divergent perp market sentiment."
+  },
+  {
     "date": "2026-11-21",
     "file": "2026-11-21.md",
     "headline": "HYPE Price Dips Over 13% Amidst Extreme Fear, Positive Funding Persists",
@@ -2127,23 +2145,5 @@
     "news_summary": "No specific news headlines or market-moving events related to HYPE or the broader Hyperliquid ecosystem were provided in the context. Therefore, it is not possible to synthesize news sentiment or assess its alignment with current price and funding data.",
     "confidence": "medium",
     "takeaway": "HYPE demonstrated independent strength with positive price action and strong funding, contrasting with a broader market environment characterized by 'Extreme Fear'."
-  },
-  {
-    "date": "2026-06-29",
-    "file": "2026-06-29.md",
-    "headline": "HYPE climbs 0.65% despite Extreme Fear index, while funding stays marginally positive",
-    "market_analysis": "HYPE rose 0.65% to $63.41 over the past 24 hours, while its 8‑hour funding rate edged up to +0.0013%, a level too small to indicate strong directional bias. Open interest held at $1.32 bn, suggesting that the price gain is occurring on a stable pool of contracts rather than fresh inflows. Total perpetual volume across Hyperliquid reached $3.93 bn, outpacing the HyperEVM TVL of $1.41 bn and underscoring active trading despite limited capital backing. The Fear & Greed Index at 12 signals extreme fear, a backdrop that traditionally pressures prices lower, creating a divergence between sentiment and the modest upside in HYPE. Comparable assets show similar funding neutrality—BTC at +0.0013% with $2.05 bn OI and ETH at +0.0005% with $1.13 bn OI—indicating a broader market lull rather than an HYPE‑specific rally.",
-    "risks": [
-      "Extreme fear (FGI 12) may trigger rapid downside moves if risk aversion intensifies.",
-      "Funding rates are near‑neutral (+0.0013%); any shift to negative funding could quickly reverse the price gain.",
-      "High open interest ($1.32 bn) combined with modest price movement could signal crowded positioning vulnerable to liquidations."
-    ],
-    "opportunities": [
-      "Positive, albeit tiny, funding (+0.0013%) could attract short‑term longs seeking to capitalize on low‑cost carry.",
-      "Robust perp volume ($3.93 bn) relative to TVL ($1.41 bn) indicates liquidity depth that may support further incremental price moves."
-    ],
-    "news_summary": "The market data shows a rare alignment where HYPE's price appreciates modestly while the Fear & Greed Index records extreme fear, suggesting a possible short‑term disconnect between sentiment and price. Funding across major coins remains marginally positive, reinforcing the view of a low‑volatility, risk‑off environment rather than a bullish breakout. Open interest is stable at high levels, which could either buttress the current price or become a liability if sentiment pivots sharply. Overall, the limited news flow points to market participants maintaining positions rather than initiating new directional bets.",
-    "confidence": "medium",
-    "takeaway": "HYPE's price uptick occurs in a cautious market context, with funding and open interest offering limited directional cues. Monitoring sentiment shifts and funding trends will be essential for assessing near‑term price stability."
   }
 ]
