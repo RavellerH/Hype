@@ -1,5 +1,27 @@
 [
   {
+    "date": "2026-11-23",
+    "file": "2026-11-23.md",
+    "headline": "Conflicting Macro Signals Amidst Extreme Fear: Short Squeeze Potential vs. Crowded Longs",
+    "market_analysis": "The macro landscape presents a dichotomy, with the Fear & Greed Index registering Extreme Fear (11) even as the macro regime leans 'BULL' (4/10 confidence) and alt breadth shows a broad rally. This suggests a contrarian buy zone, but with underlying market caution. BTC is in a MARKUP phase, yet money flow indicates a 'SUSPECT PUMP' driven by short liquidations, not organic demand, and funding is elevated, creating a clear conflict between technical strength and real buying interest. ETH, in ACCUMULATION, also shows conflicting signals; favorable negative funding for longs is offset by 'LEVERAGED SELL' money flow, suggesting shorts are adding positions, thus increasing short squeeze risk. SOL emerges as the most aligned opportunity, with a strong MARKUP phase bolstered by 'STRONG BULL' money flow and uncrowded funding. In contrast, SUI, despite a MARKUP and 'STRONG BULL' flow, is heavily penalized by elevated funding and an abysmal risk-reward, rendering it unattractive. Overall, the market exhibits critical divergences between technical phases, money flow, and funding, demanding careful signal interpretation.",
+    "sentiment_summary": "The Fear & Greed Index at 11 indicates Extreme Fear, a historical contrarian buy signal. This sentiment stands in stark contrast to the 'BULL' macro regime and broad altcoin rally, suggesting a disconnect where market participants remain highly cautious despite potential underlying strength. Funding-based crowding is low overall for tracked coins, with only HYPE noted as crowded SHORT, indicating potential for targeted short squeezes but generally not over-leveraged long positions across the board.",
+    "money_flow_summary": "BTC's 'SUSPECT PUMP' money flow implies that its recent price appreciation is largely due to short squeezes and not genuine demand, as CVD shows net selling pressure with rising OI. ETH's 'LEVERAGED SELL' scenario highlights shorts adding leverage (rising OI) as price and CVD decline, setting up a potential short squeeze opportunity if the underlying selling pressure subsides. Conversely, SOL and SUI both exhibit 'STRONG BULL' money flow, characterized by rising prices, net buying CVD, and expanding OI, which points to legitimate demand and sustained long interest supporting their respective uptrends.",
+    "consensus_summary": "Today's analysis reveals no setups that meet the strict criteria for 'high-conviction' with all three directional signals (technical phase, money flow, funding) in full agreement, as per the provided context. Most setups, including BTC, ETH, and SUI, present significant conflicts between their phase, flow, and/or funding signals, warranting cautious sizing or a patient approach.",
+    "position_actions": [],
+    "new_setups": [],
+    "regime_verdict": "BULL",
+    "regime_score": 4,
+    "risks": [],
+    "confidence": null,
+    "oi_snapshot": {
+      "BTC": 2348031210.82852,
+      "ETH": 1052119004.2838398,
+      "SOL": 296480066.89299995,
+      "HYPE": 1151346055.8428004,
+      "SUI": 15040297.651999999
+    }
+  },
+  {
     "date": "2026-11-22",
     "file": "2026-11-22.md",
     "headline": "Leveraged Shorts Accumulate Amidst Widespread Markdown, Funding Divergence Raises Squeeze Risk",
