@@ -1,5 +1,52 @@
 [
   {
+    "date": "2026-11-26",
+    "file": "2026-11-26.md",
+    "headline": "Markup Phases Battle Leveraged Selling Amidst High Funding Drag",
+    "market_analysis": "The market presents a complex picture today, with a moderately bullish macro regime (score 5/10) contrasting sharply with an Extreme Fear sentiment (11), suggesting a potential contrarian opportunity if underlying strength prevails. All watchlist coins (BTC, SOL, HYPE, SUI) are technically in a MARKUP phase, indicating bullish structure and momentum building with prices above key EMAs. However, this technical bullishness is directly conflicted by the money flow for BTC, SOL, and HYPE, which shows \"LEVERAGED SELL\" (CVD down, OI up), implying current price drops are fueled by increasing short leverage rather than genuine demand absence. Compounding this, funding rates across these assets are elevated (10-11% APR), indicating longs are already crowded and paying a premium, which acts as a drag and further conflicts with new long entries. For SUI, the MARKUP phase is even more isolated, as its money flow is \"NEUTRAL\" and funding is similarly elevated, leading to a weaker directional conviction. This pervasive conflict between strong bullish technical phases and immediate bearish pressure from leveraged shorts and high funding defines today's trading environment, suggesting high volatility potential.",
+    "sentiment_summary": "The Fear & Greed Index at 11 signals Extreme Fear, historically a buy zone, which aligns somewhat with the broader BULL macro regime. Crucially, while aggregate funding across tracked coins shows no market-wide crowding, the specific watchlist assets (BTC, SOL, HYPE, SUI) exhibit elevated funding rates (10-11% APR), indicating localized long crowding. This localized long crowding conflicts with the otherwise uncrowded market sentiment, suggesting caution for specific long entries despite the overall fear index presenting a contrarian opportunity.",
+    "money_flow_summary": "BTC, SOL, and HYPE all display a 'LEVERAGED SELL' money flow, characterized by falling prices and CVD alongside rising Open Interest. This pattern suggests that current selling pressure is not indicative of genuine supply from exiting holders, but rather aggressive shorting activity by new participants. This creates a dynamic where price dips could be short-squeeze opportunities if the underlying technical markup phases hold. In contrast, SUI's 'NEUTRAL' money flow, with selling CVD but rising OI, is inconclusive regarding real demand or supply, lacking the clear squeeze potential seen in the other assets.",
+    "consensus_summary": "Today presents no high-conviction setups where all three key directional signals (technical phase, money flow, funding) are in agreement. Instead, BTC, SOL, and HYPE are notably conflicted, with bullish MARKUP phases clashing with bearish LEVERAGED SELL money flow and elevated funding. SUI exhibits even lower conviction, as its MARKUP phase is contradicted by neutral money flow and high funding.",
+    "position_actions": [],
+    "new_setups": [
+      {
+        "coin": "BTC",
+        "direction": "LONG",
+        "conviction": "medium",
+        "rationale": "Technicals indicate a MARKUP phase with bullish structure (Above EMA 20 & 50, EMA 20 rising), but current price action is pressured by leveraged short-selling. Elevated funding suggests existing long crowding. The conflict between bullish technicals and bearish short-term flow/funding lowers conviction, but the leveraged shorts present a potential squeeze opportunity if technicals prevail."
+      },
+      {
+        "coin": "SOL",
+        "direction": "LONG",
+        "conviction": "medium",
+        "rationale": "The MARKUP phase, supported by bullish EMA structure, points to upside potential. However, money flow indicates leveraged shorts are driving recent dips, and high funding flags existing long crowding, creating a headwind for new longs but also potential for a short squeeze if technicals assert."
+      },
+      {
+        "coin": "HYPE",
+        "direction": "LONG",
+        "conviction": "medium",
+        "rationale": "HYPE's technicals suggest a MARKUP phase with upward momentum indicators. Yet, recent price declines are attributed to leveraged short additions, while high funding rates indicate crowded longs. This creates a conflicted setup where bullish technicals face immediate pressure from short-side leverage and funding drag, but also a potential squeeze play."
+      },
+      {
+        "coin": "SUI",
+        "direction": "LONG",
+        "conviction": "low",
+        "rationale": "While SUI exhibits a bullish MARKUP phase, its money flow is neutral with rising OI, lacking clear demand or supply signals. Crit"
+      }
+    ],
+    "regime_verdict": "BULL",
+    "regime_score": 5,
+    "risks": [],
+    "confidence": null,
+    "oi_snapshot": {
+      "BTC": 2217345506.5842004,
+      "ETH": 1090294039.4065187,
+      "SOL": 293317741.77206004,
+      "HYPE": 1129144140.6409578,
+      "SUI": 16432787.275799997
+    }
+  },
+  {
     "date": "2026-11-25",
     "file": "2026-11-25.md",
     "headline": "Extreme Fear & WAIT Regime: Divergent Signals Across Altcoins, HYPE Short Remains High Conviction",
