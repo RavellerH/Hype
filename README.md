@@ -205,6 +205,33 @@ Configure in Settings tab. Paste your bot token (from [@BotFather](https://t.me/
 
 ---
 
+## WhatsApp Daily Brief (optional)
+
+`scripts/daily-brief.mjs` also sends the brief (headline, market analysis, risks, opportunities,
+takeaway) to WhatsApp after it is written. Add **one** of these secret sets in
+Settings → Secrets and variables → Actions. With neither set, WhatsApp is skipped; a failed send is
+logged but does not fail the workflow.
+
+**Option A — CallMeBot (free, personal, quickest):**
+1. Save `+34 644 66 32 62` in your contacts and send it the WhatsApp message
+   `I allow callmebot to send me messages`. It replies with your API key.
+2. Secrets: `WA_CALLMEBOT_PHONE` (your number with country code, e.g. `+628123456789`) and
+   `WA_CALLMEBOT_APIKEY`.
+
+**Option B — Meta WhatsApp Cloud API (official):**
+1. Create an app at developers.facebook.com → add WhatsApp → note the *Phone number ID* and create a
+   permanent System User access token with `whatsapp_business_messaging`.
+2. Secrets: `WA_TOKEN`, `WA_PHONE_ID`, `WA_TO` (recipient number, digits with country code).
+3. WhatsApp only delivers free-form messages within 24h of the recipient last messaging your
+   business number. For a reliable daily push, create and get approved a Utility template whose body
+   has one variable (e.g. `Daily brief: {{1}}`) and set `WA_TEMPLATE` (template name) and optionally
+   `WA_TEMPLATE_LANG` (default `en`). Template variables can't contain line breaks, so the brief is
+   flattened onto one line and capped at 1024 characters.
+
+Test it with Actions → *Daily Hyperliquid Brief* → *Run workflow*.
+
+---
+
 ## APIU Macro Proxy (optional)
 
 Surfaces [apiu.ai](https://apiu.ai)'s BTC daily verdict + regime state as a second-opinion card in the Intel tab. APIU is MCP-only, so a thin Cloudflare Worker (`cloudflare/apiu-worker.js`) speaks the MCP handshake server-side and exposes plain JSON — the API key never touches the browser.

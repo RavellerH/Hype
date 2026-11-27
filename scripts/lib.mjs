@@ -493,6 +493,56 @@ export async function tgSend(token, chatId, text) {
   });
 }
 
+// ── WhatsApp ──────────────────────────────────────────────────────────────
+// Two providers, picked by which env vars are set:
+//  • Meta WhatsApp Cloud API: WA_TOKEN + WA_PHONE_ID + WA_TO
+//      - WA_TEMPLATE set   → sends that approved template, text as body param {{1}}
+//                            (needed for business-initiated messages outside the 24h window)
+//      - WA_TEMPLATE unset → sends a free-form text message (only delivered if WA_TO
+//                            messaged the business number in the last 24h)
+//  • CallMeBot (free, personal use): WA_CALLMEBOT_PHONE + WA_CALLMEBOT_APIKEY
+// Returns the provider name used, or null if WhatsApp is not configured.
+export async function waSend(text, env = process.env) {
+  const body = String(text || '').slice(0, 3900);
+  const { WA_TOKEN, WA_PHONE_ID, WA_TO, WA_TEMPLATE, WA_TEMPLATE_LANG,
+          WA_CALLMEBOT_PHONE, WA_CALLMEBOT_APIKEY } = env;
+
+  if (WA_TOKEN && WA_PHONE_ID && WA_TO) {
+    const to = WA_TO.replace(/[^0-9]/g, '');
+    const msg = WA_TEMPLATE
+      ? {
+          messaging_product: 'whatsapp', to, type: 'template',
+          template: {
+            name: WA_TEMPLATE,
+            language: { code: WA_TEMPLATE_LANG || 'en' },
+            components: [{
+              type: 'body',
+              // template params may not contain newlines/tabs or 4+ consecutive spaces
+              parameters: [{ type: 'text', text: body.replace(/\s*\n+\s*/g, ' · ').replace(/\s{4,}/g, '   ').slice(0, 1024) }],
+            }],
+          },
+        }
+      : { messaging_product: 'whatsapp', to, type: 'text', text: { preview_url: false, body } };
+    const r = await fetch(`https://graph.facebook.com/v21.0/${WA_PHONE_ID}/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${WA_TOKEN}` },
+      body: JSON.stringify(msg),
+    });
+    if (!r.ok) throw new Error(`WhatsApp Cloud API ${r.status}: ${await r.text()}`);
+    return 'cloud-api';
+  }
+
+  if (WA_CALLMEBOT_PHONE && WA_CALLMEBOT_APIKEY) {
+    const q = new URLSearchParams({ phone: WA_CALLMEBOT_PHONE, text: body, apikey: WA_CALLMEBOT_APIKEY });
+    const r = await fetch(`https://api.callmebot.com/whatsapp.php?${q}`);
+    const t = await r.text();
+    if (!r.ok || (/error|invalid/i.test(t) && !/queued|sent/i.test(t))) throw new Error(`CallMeBot ${r.status}: ${t.slice(0, 300)}`);
+    return 'callmebot';
+  }
+
+  return null;
+}
+
 export function isoWeek(d) {
   const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
   date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));

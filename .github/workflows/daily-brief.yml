@@ -21,6 +21,13 @@ jobs:
           LLM_ROUTER_URL: ${{ secrets.LLM_ROUTER_URL }}
           TG_TOKEN: ${{ secrets.TG_TOKEN }}
           TG_CHAT: ${{ secrets.TG_CHAT }}
+          WA_TOKEN: ${{ secrets.WA_TOKEN }}
+          WA_PHONE_ID: ${{ secrets.WA_PHONE_ID }}
+          WA_TO: ${{ secrets.WA_TO }}
+          WA_TEMPLATE: ${{ secrets.WA_TEMPLATE }}
+          WA_TEMPLATE_LANG: ${{ secrets.WA_TEMPLATE_LANG }}
+          WA_CALLMEBOT_PHONE: ${{ secrets.WA_CALLMEBOT_PHONE }}
+          WA_CALLMEBOT_APIKEY: ${{ secrets.WA_CALLMEBOT_APIKEY }}
           SIGNAL_COINS: 'BTC,ETH,SOL,HYPE,SUI'
       - name: Commit brief
         run: |

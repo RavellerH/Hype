@@ -1,6 +1,6 @@
 import {
   getFundingRates, getFearGreed, getHLNews, getHLStats,
-  writeEntry, tgSend, extractJSON, routedDraft, _f8, _fmtM, esc,
+  writeEntry, tgSend, waSend, extractJSON, routedDraft, _f8, _fmtM, esc,
 } from './lib.mjs';
 
 const BRIEF_SYSTEM = `You are a senior Hyperliquid (HYPE) market analyst. Base every claim ONLY on the
@@ -96,6 +96,27 @@ async function main() {
   if (TG_TOKEN && TG_CHAT) {
     await tgSend(TG_TOKEN, TG_CHAT,
       `<b>░▒▓ DAILY BRIEF ▓▒░</b>\n<b>${esc(brief.headline)}</b>\n<pre>${esc(brief.takeaway)}</pre>\n<i>full brief in dashboard → Brief tab</i>`);
+  }
+
+  // WhatsApp: WA formatting uses *bold* / _italic_; strip stray markers from model text
+  const waClean = s => String(s || '').replace(/[*_~`]/g, '');
+  const waText = [
+    `*DAILY BRIEF · ${today}*`,
+    `*${waClean(brief.headline)}*`,
+    '',
+    waClean(brief.market_analysis),
+    ...(brief.risks?.length ? ['', '*Risks*', ...brief.risks.map(r => `• ${waClean(r)}`)] : []),
+    ...(brief.opportunities?.length ? ['', '*Opportunities*', ...brief.opportunities.map(o => `• ${waClean(o)}`)] : []),
+    '',
+    `*Takeaway:* ${waClean(brief.takeaway)}`,
+    `_confidence: ${waClean(brief.confidence || 'n/a')}_`,
+  ].join('\n');
+  try {
+    const via = await waSend(waText);
+    if (via) console.log(`WhatsApp brief sent via ${via}`);
+  } catch (e) {
+    // don't fail the run (and lose the commit) because WhatsApp delivery failed
+    console.error('WhatsApp send failed:', e.message);
   }
 }
 
