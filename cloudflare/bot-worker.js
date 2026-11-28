@@ -214,7 +214,7 @@ async function getFundingRates() {
   meta.universe.forEach((u, i) => {
     const ctx = ctxs[i];
     result[u.name] = {
-      fundingRate: parseFloat(ctx.funding || 0),
+      fundingRate: parseFloat(ctx.funding || 0) * 8, // HL pays hourly; ×8 → 8h, same units as Binance/Bybit
       openInterest: parseFloat(ctx.openInterest || 0),
       markPx: parseFloat(ctx.markPx || 0),
     };
@@ -1860,7 +1860,7 @@ async function getHLStats() {
     if (c) {
       stats.hypePx      = parseFloat(c.markPx);
       stats.hype24h     = c.prevDayPx ? (stats.hypePx / parseFloat(c.prevDayPx) - 1) * 100 : null;
-      stats.hypeFunding = parseFloat(c.funding);
+      stats.hypeFunding = parseFloat(c.funding) * 8; // HL hourly → 8h
       stats.hypeOI      = parseFloat(c.openInterest) * stats.hypePx;
     }
     stats.hlVolume24h = ctxs.reduce((s, x) => s + (parseFloat(x.dayNtlVlm) || 0), 0);

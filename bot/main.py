@@ -214,7 +214,7 @@ def fetch_all_market_contexts(info: Info) -> dict[str, dict]:
             if name and i < len(ctxs):
                 ctx = ctxs[i]
                 result[name] = {
-                    "funding_rate":  float(ctx.get("funding", 0) or 0),
+                    "funding_rate":  float(ctx.get("funding", 0) or 0) * 8,  # HL pays hourly; x8 -> 8h
                     "open_interest": float(ctx.get("openInterest", 0) or 0),
                 }
         return result

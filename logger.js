@@ -97,7 +97,7 @@ async function logMarket(client, ts) {
     const mark    = parseFloat(c.markPx    || 0);
     const oracle  = parseFloat(c.oraclePx  || 0);
     const prev    = parseFloat(c.prevDayPx || 0);
-    const funding = parseFloat(c.funding   || 0);
+    const funding = parseFloat(c.funding   || 0) * 8; // HL hourly → 8h (matches funding_rate_8h column)
     return {
       ts,
       coin:              coin.name,

@@ -37,7 +37,7 @@ async function _hmFetch() {
     if (!name) return;
 
     const markPx = parseFloat(ctx.markPx || 0);
-    const funding = parseFloat(ctx.funding || 0);
+    const funding = parseFloat(ctx.funding || 0) * 8; // HL hourly → 8h
     const oi = parseFloat(ctx.openInterest || 0);
     if (oi === 0) return;
 
@@ -143,7 +143,7 @@ function _hmRender() {
 
   const cardsHtml = filtered.map(c => {
     const bg     = _hmFundBg(c.funding);
-    const fmtPct = (c.funding * 100 >= 0 ? '+' : '') + (c.funding * 100).toFixed(4) + '%';
+    const fmtPct = (c.funding * 100 >= 0 ? '+' : '') + (c.funding * 100).toFixed(4) + '%/8h';
     const fColor = c.funding < 0 ? 'var(--green)' : c.funding > 0 ? 'var(--red)' : 'var(--text-muted)';
     return `
       <div style="background:${bg};border:1px solid var(--border);border-radius:var(--radius-md);

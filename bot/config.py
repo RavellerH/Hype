@@ -43,7 +43,7 @@ MIN_VOLUME_RATIO      = 1.20   # recent vol must be 1.2× average
 MIN_WALLET_SIGNALS    = 1      # at least 1 smart wallet must be long
 MIN_CONFLUENCE_SCORE  = 5      # minimum score (0-10) to allow entry
 
-# ── Funding rate filter (8h rate from metaAndAssetCtxs)
+# ── Funding rate filter (8h-equivalent: HL's hourly metaAndAssetCtxs rate ×8)
 # Skip long entry if funding is extremely positive (crowded longs paying too much)
 MAX_LONG_FUNDING_RATE  = 0.0020   # 0.20% per 8h — too crowded to go long
 # Skip short entry if funding is extremely negative (crowded shorts)

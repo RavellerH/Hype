@@ -106,7 +106,7 @@ async function _hlpFetchStats() {
     if (c) {
       stats.hypePx      = parseFloat(c.markPx);
       stats.hype24h     = c.prevDayPx ? (stats.hypePx / parseFloat(c.prevDayPx) - 1) * 100 : null;
-      stats.hypeFunding = parseFloat(c.funding);
+      stats.hypeFunding = parseFloat(c.funding) * 8; // HL pays hourly; ×8 → 8h-equivalent
       stats.hypeOI      = parseFloat(c.openInterest) * stats.hypePx;
     }
     stats.hlVolume24h = ctxs.reduce((s, x) => s + (parseFloat(x.dayNtlVlm) || 0), 0);

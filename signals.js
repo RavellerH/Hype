@@ -72,7 +72,7 @@ async function _sigMarketContexts() {
     universe.forEach((u, i) => {
       if (i < ctxs.length) {
         out[u.name] = {
-          fundingRate:  parseFloat(ctxs[i].funding      || 0),
+          fundingRate:  parseFloat(ctxs[i].funding      || 0) * 8, // HL hourly → 8h
           openInterest: parseFloat(ctxs[i].openInterest || 0),
           markPx:       parseFloat(ctxs[i].markPx       || 0),
         };

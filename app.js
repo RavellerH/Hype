@@ -165,7 +165,7 @@ function buildMarketCtx(raw) {
   (meta?.universe||[]).forEach((asset,i)=>{
     const ctx=ctxs[i]||{}, name=asset.name||'';
     if (!name) return;
-    const f=parseFloat(ctx.funding||0);
+    const f=parseFloat(ctx.funding||0)*8; // HL funding is paid hourly; ×8 → 8h-equivalent
     result[name]={ funding_rate_8h:f, funding_apr:f*3*365*100, mark_price:parseFloat(ctx.markPx||0) };
   });
   return result;
@@ -453,7 +453,7 @@ function parseMarketData([meta, assetCtxs]) {
     const oi = parseFloat(ctx.openInterest || 0);
     const oiUsd = oi * markPx;
     const volume = parseFloat(ctx.dayNtlVlm || 0);
-    const funding = parseFloat(ctx.funding || 0);
+    const funding = parseFloat(ctx.funding || 0) * 8; // HL funding is paid hourly; ×8 → 8h-equivalent
     return {
       coin: asset.name,
       price: markPx,
@@ -1615,7 +1615,7 @@ function marketFeaturedCard(d){
 
 function marketBias(fr, chgPct) {
   let score = 0;
-  // Funding rate (primary signal — 8h rate from HL)
+  // Funding rate (primary signal — 8h-equivalent; HL hourly rate ×8)
   if      (fr >  0.001)   score += 3;  // >0.1%/8h — very crowded long
   else if (fr >  0.0003)  score += 2;  // >0.03%/8h — elevated long
   else if (fr >  0.00005) score += 1;  // >0.005%/8h — mild long

@@ -35,7 +35,7 @@ async function _fetchArb() {
       const ctx = ctxs[i] || {};
       return {
         coin:   asset.name,
-        rate:   parseFloat(ctx.funding || 0),
+        rate:   parseFloat(ctx.funding || 0) * 8, // HL pays hourly; ×8 → 8h, same units as BN/BB/OKX
         markPx: parseFloat(ctx.markPx  || 0),
       };
     }).filter(c => c.coin);

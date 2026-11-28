@@ -54,7 +54,7 @@ async function _ocFetch() {
       const ctx = ctxs?.[i];
       if (!ctx) return;
       d.hlOI[c.name]      = parseFloat(ctx.openInterest || 0);
-      d.hlFunding[c.name] = parseFloat(ctx.funding || 0);
+      d.hlFunding[c.name] = parseFloat(ctx.funding || 0) * 8; // HL hourly → 8h
       d.hlMark[c.name]    = parseFloat(ctx.markPx || 0);
     });
   }
@@ -260,7 +260,7 @@ function _ocSectionFlow(d) {
   let fundDisp = '—';
   if (btcF != null) {
     const pct = (btcF * 100).toFixed(4);
-    fundDisp = `${btcF >= 0 ? '+' : ''}${pct}%`;
+    fundDisp = `${btcF >= 0 ? '+' : ''}${pct}%/8h`;
     if (btcF > 0.0003)       fundLabel = _ocBadge('HIGH','red');
     else if (btcF > 0.00005) fundLabel = _ocBadge('POSITIVE','yellow');
     else if (btcF < -0.0001) fundLabel = _ocBadge('NEGATIVE','green');

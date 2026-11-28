@@ -640,7 +640,7 @@ async function loadHYPEIntel(phaseMeta) {
             prevPx:   parseFloat(ctx.prevDayPx || mark),
             oi,
             vol,
-            funding:  parseFloat(ctx.funding || 0),
+            funding:  parseFloat(ctx.funding || 0) * 8, // HL hourly → 8h
           };
         }
       });
@@ -744,7 +744,7 @@ async function loadHYPEIntel(phaseMeta) {
         </div>
         <div>
           <div class="stat-label">Funding /8h</div>
-          <div style="font-family:var(--mono);font-size:17px;font-weight:700;color:${hype.funding>=0?'var(--green)':'var(--red)'}">${(hype.funding*100).toFixed(4)}%</div>
+          <div style="font-family:var(--mono);font-size:17px;font-weight:700;color:${hype.funding>=0?'var(--green)':'var(--red)'}">${(hype.funding*100).toFixed(4)}%/8h</div>
           <div style="font-size:10px" class="muted">${hype.funding>0?'longs paying':'shorts paying'}</div>
         </div>
         <div>
@@ -792,7 +792,7 @@ async function buildFullTA(coin, tf, candles, rawMarketCtx) {
   const atr    = atrArr.filter(v=>v!==null).at(-1);
   const mf     = iMoneyFlow(opens, closes, vols);
 
-  const fr  = rawMarketCtx ? parseFloat(rawMarketCtx.funding || 0) : 0;
+  const fr  = rawMarketCtx ? parseFloat(rawMarketCtx.funding || 0) * 8 : 0; // HL hourly → 8h
   const oi  = rawMarketCtx ? parseFloat(rawMarketCtx.openInterest || 0) * price : 0;
   const oiPrev = taOIPrev?.[coin + tf] ?? null;
   if (typeof taOIPrev !== 'undefined') taOIPrev[coin + tf] = oi;
