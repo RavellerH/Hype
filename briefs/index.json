@@ -1,5 +1,24 @@
 [
   {
+    "date": "2026-11-28",
+    "file": "2026-11-28.md",
+    "headline": "HYPE Token Drops 5% as Negative Funding Intensifies Amidst 'Extreme Fear'",
+    "market_analysis": "HYPE token experienced a notable price decline of 5.02% over the last 24 hours, settling at $62.98. This downturn is corroborated by a significantly negative 8-hour funding rate of -0.0017%, indicating a strong bearish bias and prevalent short positioning among traders, which stands as the most negative funding rate among the listed assets. Despite the price dip, HYPE maintains a substantial Open Interest (OI) of $1.18B, suggesting sustained engagement even as the price falls. The platform's total perpetual volume reached $5.19B, reinforcing deep liquidity and active trading conditions for HYPE and other assets on Hyperliquid, even during a period of price contraction.",
+    "risks": [
+      "HYPE token price is exhibiting significant negative momentum, evidenced by a 5.02% daily drop and a leading negative funding rate of -0.0017%, suggesting continued downward pressure.",
+      "The broader market sentiment, indicated by a Fear & Greed Index of 10 ('Extreme Fear'), suggests systemic bearish pressure that could further depress asset prices across the board.",
+      "Sustained negative funding across multiple assets (BTC -0.0005%, SOL -0.0002%, SUI -0.0009%) points to a pervasive short bias that could lead to further market-wide liquidations or price declines."
+    ],
+    "opportunities": [
+      "Hyperliquid's high total perp volume ($5.19B) indicates robust liquidity and active trading, allowing for efficient position entry and exit even in volatile conditions.",
+      "The HyperEVM TVL of $2.27B suggests strong underlying ecosystem activity and value, which may not be fully reflected in the HYPE token's current valuation amidst broader market fear.",
+      "Significant Open Interest in HYPE ($1.18B) points to sustained engagement with the asset, potentially indicating a foundation for recovery if broader market sentiment shifts from 'Extreme Fear'."
+    ],
+    "news_summary": "The market is currently operating under 'Extreme Fear,' as evidenced by a Fear & Greed Index reading of 10. This overarching negative sentiment appears to align directly with HYPE's significant price decline and the widespread negative funding rates observed across multiple assets, including BTC (-0.0005%), SOL (-0.0002%), and SUI (-0.0009%). While ETH shows a slightly positive funding rate (+0.0003%), the dominant theme is one of caution and bearish positioning, strongly supporting the price action observed and reinforcing the current market weakness.",
+    "confidence": "high",
+    "takeaway": "Current market data points to significant short-term bearish pressure on HYPE and the broader crypto market, while the Hyperliquid platform maintains robust liquidity and underlying ecosystem value. Traders are predominantly short, reflecting the pervasive 'Extreme Fear' sentiment."
+  },
+  {
     "date": "2026-11-27",
     "file": "2026-11-27.md",
     "headline": "Hyperliquid (HYPE) Surges Nearly 8% Amidst Low Funding Rates and Extreme Market Fear",
@@ -2128,23 +2147,5 @@
     "news_summary": "The broader market is currently characterized by 'Extreme Fear,' as reflected by a Fear & Greed Index of 25. Despite this overarching negative sentiment, HYPE has demonstrated significant resilience, registering a 3.66% price increase over the last 24 hours, which conflicts with the general market's risk-off posture. The substantial HyperEVM TVL of $1.32B indicates continued utility and adoption of the Hyperliquid ecosystem, providing a potential counter-narrative to the prevailing market apprehension. No specific news headlines were provided, limiting the ability to assess the impact of particular events on HYPE's performance.",
     "confidence": "medium",
     "takeaway": "HYPE is demonstrating notable individual strength with positive price action and sustained open interest, contrasting with a broader market characterized by 'Extreme Fear.'"
-  },
-  {
-    "date": "2026-07-20",
-    "file": "2026-07-20.md",
-    "headline": "HYPE Price Dips Marginally as Funding Stays Low Amidst Broad Market Fear",
-    "market_analysis": "HYPE's price experienced a marginal decline of 0.69% over the past 24 hours, settling at $60.34. Despite this downtick, the 8-hour funding rate for HYPE remained slightly positive at +0.0002%, indicating a mild, rather than aggressive, long bias among perpetual traders that was insufficient to counter the price depreciation. HYPE's Open Interest stands at a significant $1.37 billion, demonstrating robust participant engagement, while the Hyperliquid platform registered a substantial total perp volume of $2.11 billion within 24 hours. The HyperEVM TVL further reinforces platform health at $1.30 billion. Notably, HYPE's funding rate is considerably lower compared to major assets like BTC and ETH, both showing +0.0013% funding, suggesting less speculative fervor for HYPE perpetuals even as the broader Fear & Greed Index points to 'Fear' at 29.",
-    "risks": [
-      "The overall market sentiment is bearish, as evidenced by a Fear & Greed Index of 29 ('Fear'), which could continue to exert downward pressure on HYPE's price despite its robust platform metrics.",
-      "HYPE's modest price decline occurred even with a positive, albeit minimal, funding rate (+0.0002%), suggesting that long positions are not strong enough to drive price appreciation or absorb selling pressure effectively.",
-      "While HYPE's Open Interest is substantial at $1.37 billion, a sustained downturn in the broader crypto market could lead to deleveraging across assets, potentially increasing volatility for HYPE perpetuals."
-    ],
-    "opportunities": [
-      "The significant Open Interest of $1.37 billion for HYPE, coupled with a $1.30 billion TVL on HyperEVM, highlights strong underlying platform activity and user engagement, potentially laying a foundation for future recovery or sustained interest.",
-      "The Hyperliquid platform's total 24-hour perpetual volume of $2.11 billion signifies deep liquidity and active trading, which can attract and support continued participation even during periods of price consolidation or minor dips."
-    ],
-    "news_summary": "The provided data consists exclusively of numerical market metrics and does not include any news headlines, press releases, or narrative information to synthesize. Therefore, no news summary can be generated beyond stating the absence of such data within the given context.",
-    "confidence": "medium",
-    "takeaway": "HYPE experienced a slight price decline with minimal positive funding, contrasting with a broader market fear sentiment, yet it maintains strong open interest and platform activity."
   }
 ]
